@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── ENUMS ────────────────────────────────────────────────────────────────────
+
+enum TaxRegime {
+  SIMPLES_NACIONAL
+  LUCRO_PRESUMIDO
+  LUCRO_REAL
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum SaleStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
+enum TaxRuleStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+// ─── CORE ─────────────────────────────────────────────────────────────────────
+
+model Company {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  document   String     @unique          // CNPJ
+  taxRegime  TaxRegime  @default(SIMPLES_NACIONAL)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  users      User[]
+  products   Product[]
+  clients    Client[]
+  sales      Sale[]
+
+  @@map("companies")
+}
+
+model User {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId    String    @db.Uuid
+  name         String
+  email        String
+  passwordHash String
+  role         UserRole  @default(MEMBER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+
+  @@unique([companyId, email])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @db.Uuid
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+// ─── OPERATIONAL ──────────────────────────────────────────────────────────────
+
+model Product {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId   String   @db.Uuid
+  name        String
+  sku         String
+  ncmCode     String   @db.VarChar(8)    // NCM: 8 digits
+  unitPrice   Decimal  @db.Decimal(12, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  saleItems SaleItem[]
+
+  @@unique([companyId, sku])
+  @@map("products")
+}
+
+model Client {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId String   @db.Uuid
+  name      String
+  document  String               // CPF or CNPJ
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  sales   Sale[]
+
+  @@unique([companyId, document])
+  @@map("clients")
+}
+
+// ─── TRANSACTIONAL ────────────────────────────────────────────────────────────
+
+model Sale {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyId   String     @db.Uuid
+  clientId    String     @db.Uuid
+  status      SaleStatus @default(DRAFT)
+  totalAmount Decimal    @db.Decimal(12, 2)
+
+  // Tax breakdown snapshot — current model
+  totalPis    Decimal    @db.Decimal(12, 2) @default(0)
+  totalCofins Decimal    @db.Decimal(12, 2) @default(0)
+  totalIcms   Decimal    @db.Decimal(12, 2) @default(0)
+  totalIss    Decimal    @db.Decimal(12, 2) @default(0)
+
+  // Tax breakdown snapshot — reform model (from official calculator)
+  totalIbs    Decimal    @db.Decimal(12, 2) @default(0)
+  totalCbs    Decimal    @db.Decimal(12, 2) @default(0)
+  totalIs     Decimal    @db.Decimal(12, 2) @default(0)
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  company  Company    @relation(fields: [companyId], references: [id])
+  client   Client     @relation(fields: [clientId], references: [id])
+  items    SaleItem[]
+
+  @@map("sales")
+}
+
+model SaleItem {
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId    String  @db.Uuid
+  productId String  @db.Uuid
+
+  // Fiscal snapshot — values frozen at the time of sale
+  quantity       Int
+  unitPrice      Decimal @db.Decimal(12, 2)  // snapshot
+  ncmCode        String  @db.VarChar(8)       // snapshot
+  totalPrice     Decimal @db.Decimal(12, 2)
+
+  // Current model rates snapshot
+  pisRate        Decimal @db.Decimal(8, 4)
+  cofinsRate     Decimal @db.Decimal(8, 4)
+  icmsRate       Decimal @db.Decimal(8, 4)
+  issRate        Decimal @db.Decimal(8, 4)
+
+  // Reform model rates snapshot (from official calculator)
+  ibsRate        Decimal @db.Decimal(8, 4)
+  cbsRate        Decimal @db.Decimal(8, 4)
+  isRate         Decimal @db.Decimal(8, 4)
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("sale_items")
+}
+
+// ─── MASTER DATA ──────────────────────────────────────────────────────────────
+
+model TaxRule {
+  id         String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ncmCode    String        @db.VarChar(8)
+  taxRegime  TaxRegime
+  status     TaxRuleStatus @default(DRAFT)
+
+  // Current model rates
+  pisRate    Decimal       @db.Decimal(8, 4)
+  cofinsRate Decimal       @db.Decimal(8, 4)
+  icmsRate   Decimal       @db.Decimal(8, 4)
+  issRate    Decimal       @db.Decimal(8, 4)
+
+  validFrom  DateTime      @default(now())
+  validUntil DateTime?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  // No companyId — global table, applies to all tenants
+
+  @@unique([ncmCode, taxRegime, status])
+  @@map("tax_rules")
+}

@@ -1,0 +1,215 @@
+# =============================================================================
+# TaxSim — Tax Reform Simulation 2026
+# Stack: Next.js 15 | Fastify (TS) | PostgreSQL 16 | Prisma ORM
+# Official Calculator: Brazilian Federal Revenue (LC 214/2025)
+# Architecture: Multi-tenant | Network isolation per layer
+# =============================================================================
+
+name: taxsim
+
+# ---------------------------------------------------------------------------
+# VOLUMES
+# ---------------------------------------------------------------------------
+volumes:
+  postgres_data:
+    driver: local
+    labels:
+      com.taxsim.description: "Persistent PostgreSQL data — DO NOT remove"
+  api_node_modules:
+  web_node_modules:
+  web_next_cache:
+
+    # ---------------------------------------------------------------------------
+    # NETWORKS
+    # Three distinct networks:
+    #   • app_network            → Next.js <-> Fastify API (standard bridge)
+    #   • db_network             → Fastify API <-> PostgreSQL (isolated)
+    #   • tax_calculator_network → Fastify API <-> Official Tax Calculator (isolated)
+    # ---------------------------------------------------------------------------
+networks:
+  app_network:
+    driver: bridge
+    labels:
+      com.taxsim.layer: "application"
+
+  db_network:
+    driver: bridge
+    internal: true # Isolated network: no routing to host
+    labels:
+      com.taxsim.layer: "data"
+
+  tax_calculator_network:
+    driver: bridge
+    internal: true # Isolated: only the API can reach the tax calculator
+    labels:
+      com.taxsim.layer: "tax-engine"
+
+# ---------------------------------------------------------------------------
+# SERVICES
+# ---------------------------------------------------------------------------
+services:
+
+  # -------------------------------------------------------------------------
+  # DATABASE — PostgreSQL 16
+  # Accessible ONLY by the API (db_network). Never exposed to host in production.
+  # In dev, port 5432 is mapped for inspection via DBeaver/pgAdmin.
+  # -------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: taxsim-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-taxsim_db}
+      POSTGRES_USER: ${POSTGRES_USER:-taxsim_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    ports:
+      # Remove in production
+      - "127.0.0.1:5432:5432"
+    networks:
+      - db_network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-taxsim_user} -d ${POSTGRES_DB:-taxsim_db}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # -------------------------------------------------------------------------
+  # TAX CALCULATOR — Brazilian Federal Revenue Official Service (LC 214/2025)
+  #
+  # ⚠️  Image is NOT on Docker Hub. Import it before the first `docker compose up`:
+  #     $ docker import /path/to/calculadora.tar.gz calculadora-image
+  #
+  # Available endpoints (dev only — ports exposed to host):
+  #   http://localhost:8080/api → Standard Regime API (IBS/CBS/IS)
+  #   http://localhost:8081/api → Simplified Split Payment API
+  #   http://localhost:80       → Web UI (not used by compose)
+  # -------------------------------------------------------------------------
+  tax-calculator:
+    image: calculadora-image
+    container_name: taxsim-tax-calculator
+    restart: unless-stopped
+    working_dir: /calculadora
+    command: bash start.sh
+    ports:
+      # Exposed locally for manual testing and Swagger UI in dev
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8081:8081"
+    networks:
+      - tax_calculator_network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:8080/api || exit 1" ]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 60s # Java application requires extra startup time
+
+  # -------------------------------------------------------------------------
+  # API — Fastify + TypeScript
+  # Orchestrates: Official Tax Calculator (new model: IBS/CBS/IS) +
+  # Internal Tax Engine (current model: PIS/COFINS/ICMS/ISS) →
+  # produces a comparative breakdown for the frontend.
+  # -------------------------------------------------------------------------
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: taxsim-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      tax-calculator:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+
+      # --- Database (Prisma) ---
+      DATABASE_URL: postgresql://${POSTGRES_USER:-taxsim_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-taxsim_db}?schema=public
+
+      # --- Official Tax Calculator (Federal Revenue) ---
+      TAX_CALCULATOR_STANDARD_URL: http://tax-calculator:8080/api
+      TAX_CALCULATOR_SPLIT_PAYMENT_URL: http://tax-calculator:8081/api
+
+      # --- Auth ---
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:?Set REFRESH_TOKEN_SECRET in .env}
+      REFRESH_TOKEN_EXPIRES_IN: ${REFRESH_TOKEN_EXPIRES_IN:-7d}
+
+      # --- App ---
+      API_PORT: 3333
+      API_HOST: 0.0.0.0
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+
+      # --- Internal Tax Engine (current tax model) ---
+      DEFAULT_TAX_REGIME: ${DEFAULT_TAX_REGIME:-SIMPLES_NACIONAL}
+
+    volumes:
+      # Source code mounted for hot reload (tsx --watch)
+      - ./apps/api/src:/app/src:cached
+      - ./apps/api/prisma:/app/prisma:cached
+      # Isolated node_modules volume — prevents WSL2/Windows binary conflicts
+      - api_node_modules:/app/node_modules
+    ports:
+      - "127.0.0.1:3333:3333"
+    networks:
+      - app_network # Receives requests from Next.js
+      - db_network # Accesses PostgreSQL
+      - tax_calculator_network # Accesses Official Tax Calculator
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:3333/health || exit 1" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # -------------------------------------------------------------------------
+  # APP — Next.js 15 (App Router)
+  # Connected ONLY to app_network. No direct access to the database or the
+  # tax calculator — all data logic goes through the Fastify API.
+  # -------------------------------------------------------------------------
+  app:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile.dev
+      target: development
+    container_name: taxsim-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+
+      # Server-side communication (RSC/SSR) → internal Docker hostname
+      API_INTERNAL_URL: http://api:3333
+
+      # Client-side communication → accessible from the browser outside Docker
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3333}
+
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?Set NEXTAUTH_SECRET in .env}
+      NEXT_TELEMETRY_DISABLED: 1
+
+    volumes:
+      - ./apps/web/src:/app/src:cached
+      - ./apps/web/public:/app/public:cached
+      # Isolated Next.js cache and node_modules — prevents WSL2/Windows binary conflicts
+      - web_next_cache:/app/.next
+      - web_node_modules:/app/node_modules
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      - app_network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1" ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
