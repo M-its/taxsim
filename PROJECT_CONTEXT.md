@@ -127,14 +127,15 @@ pattern. It relates strictly to `sale_id`.
 - Tenant security is guaranteed via **protected joins**: any query for sale
   items must validate `company_id` through the parent `sales` table
 
-### 4.3 Primary Keys — UUID v7
+### 4.3 Primary Keys — UUID v4
 
-**Decision:** UUID v7 instead of UUID v4 or sequential integers.
+**Decision:** UUID v4 instead of UUID v7.
 
 **Justification:**
-- UUID v7 is time-ordered, which massively optimizes index performance and
-  INSERT throughput in PostgreSQL
-- Remains completely unpredictable and safe for external URLs
+- UUID v4 avoids third-party libraries due to its native support. 
+- UUID v7 would be preferred in a high-volume production SaaS for its
+  time-ordered property, which optimizes PostgreSQL index performance on
+  insert-heavy tables. For this portfolio scope, v4 is sufficient.
 
 ### 4.4 Monetary Fields — Decimal(12,2)
 

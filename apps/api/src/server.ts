@@ -1,21 +1,51 @@
 import Fastify from 'fastify'
+import cors from '@fastify/cors'
+import jwt from '@fastify/jwt'
+import { errorHandlerPlugin } from './shared/errors/errorHandler.js'
 
 const app = Fastify({ logger: true })
 
-app.get('/health', async () => {
-  return { status: 'ok', service: 'taxsim-api' }
+await app.register(cors, {
+  origin: process.env.CORS_ORIGIN ?? true,
+  credentials: true,
 })
 
-const start = async () => {
+await app.register(jwt, {
+  secret: process.env.JWT_SECRET ?? 'dev-secret-change-me',
+})
+
+await app.register(errorHandlerPlugin)
+
+app.get('/health', async () => {
+  return {
+    status: 'ok',
+    service: 'taxsim-api',
+    timestamp: new Date().toISOString(),
+  }
+})
+
+const start = async (): Promise<void> => {
   try {
-    await app.listen({
-      port: Number(process.env.API_PORT) || 3333,
-      host: process.env.API_HOST || '0.0.0.0',
-    })
+    const port = Number(process.env.API_PORT) || 3333
+    const host = process.env.API_HOST || '0.0.0.0'
+
+    await app.listen({ port, host })
+    app.log.info(`Server listening on ${host}:${port}`)
   } catch (err) {
     app.log.error(err)
     process.exit(1)
   }
 }
 
-start()
+const shutdown = async (signal: string): Promise<void> => {
+  app.log.info(`Received ${signal}. Starting graceful shutdown...`)
+  await app.close()
+  process.exit(0)
+}
+
+process.on('SIGINT', () => void shutdown('SIGINT'))
+process.on('SIGTERM', () => void shutdown('SIGTERM'))
+
+void start()
+
+export { app }
