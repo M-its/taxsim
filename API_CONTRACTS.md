@@ -138,9 +138,9 @@ Sets new cookie: `refreshToken=<newToken>; HttpOnly; ...`
 ---
 
 ### POST /auth/logout
-Invalidates all refresh tokens for the current user.
+Invalidates all refresh tokens for the current user across all devices.
 
-**Request:** no body — reads `refreshToken` cookie
+**Request:** Authorization: Bearer <accessToken>
 
 **Response 204:** no body
 

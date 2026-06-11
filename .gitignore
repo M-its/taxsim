@@ -12,3 +12,4 @@ apps/web/.next/
 # OS
 .DS_Store
 Thumbs.db
+opencode.txt

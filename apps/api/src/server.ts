@@ -1,7 +1,9 @@
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
+import cookie from '@fastify/cookie'
 import { errorHandlerPlugin } from './shared/errors/errorHandler.js'
+import { authRoutes } from './modules/auth/auth.routes.js'
 
 const app = Fastify({ logger: true })
 
@@ -14,7 +16,11 @@ await app.register(jwt, {
   secret: process.env.JWT_SECRET ?? 'dev-secret-change-me',
 })
 
+await app.register(cookie)
+
 await app.register(errorHandlerPlugin)
+
+await app.register(authRoutes, { prefix: '/auth' })
 
 app.get('/health', async () => {
   return {
