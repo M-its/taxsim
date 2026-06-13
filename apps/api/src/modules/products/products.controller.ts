@@ -12,6 +12,14 @@ import {
   deleteProduct,
 } from './products.service.js'
 
+import type { Product } from '@prisma/client'
+import { formatDecimal } from '../../shared/formatters/decimal.js'
+
+const formatProductResponse = (product: Product) => ({
+  ...product,
+  unitPrice: formatDecimal(product.unitPrice),
+})
+
 export const listHandler = async (
   request: FastifyRequest,
   reply: FastifyReply,
@@ -19,7 +27,10 @@ export const listHandler = async (
   const companyId = request.user.companyId
   const query = listProductsSchema.parse(request.query)
   const result = await listProducts(companyId, query)
-  return reply.send(result)
+  return reply.send({
+    ...result,
+    data: result.data.map(formatProductResponse),
+  })
 }
 
 export const getHandler = async (
@@ -29,7 +40,7 @@ export const getHandler = async (
   const companyId = request.user.companyId
   const { id } = request.params
   const product = await getProduct(companyId, id)
-  return reply.send(product)
+  return reply.send(formatProductResponse(product))
 }
 
 export const createHandler = async (
@@ -39,7 +50,7 @@ export const createHandler = async (
   const companyId = request.user.companyId
   const body = createProductSchema.parse(request.body)
   const product = await createProduct(companyId, body)
-  return reply.status(201).send(product)
+  return reply.status(201).send(formatProductResponse(product))
 }
 
 export const updateHandler = async (
@@ -50,7 +61,7 @@ export const updateHandler = async (
   const { id } = request.params
   const body = updateProductSchema.parse(request.body)
   const product = await updateProduct(companyId, id, body)
-  return reply.send(product)
+  return reply.send(formatProductResponse(product))
 }
 
 export const deleteHandler = async (

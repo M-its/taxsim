@@ -10,3 +10,9 @@
 **Problem:** Prisma Decimal.toString() trunca zeros à direita
 **Fix:** Criar shared/formatters/decimal.ts com formatDecimal() usando .toDecimalPlaces(2).toString()
 **Rule:** Nunca usar Number() ou toFixed() em campos Decimal — sempre usar o método do objeto Decimal do Prisma
+
+## [2026-06-13] formatDecimal — toFixed(2) é o correto
+**Context:** Serializar campos Decimal do Prisma para string com 2 casas decimais
+**Problem:** .toDecimalPlaces(2).toString() remove zeros à direita
+**Fix:** value.toFixed(2) — método nativo do objeto Decimal do Prisma
+**Rule:** Usar toFixed(2) apenas para serialização de resposta HTTP, nunca em cálculos
