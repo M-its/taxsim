@@ -1,0 +1,30 @@
+import { z } from 'zod'
+
+export const createProductSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  sku: z.string().min(1, 'SKU is required'),
+  ncmCode: z.string().length(8, 'NCM code must be exactly 8 characters'),
+  unitPrice: z.string().refine(
+    (val) => {
+      const num = Number(val)
+      return !Number.isNaN(num) && num > 0
+    },
+    { message: 'unitPrice must be a positive number' },
+  ),
+})
+
+export const updateProductSchema = createProductSchema
+
+export const listProductsSchema = z.object({
+  page: z
+    .string()
+    .optional()
+    .transform((val) => (val ? Number(val) : 1))
+    .pipe(z.number().int().positive()),
+  limit: z
+    .string()
+    .optional()
+    .transform((val) => (val ? Number(val) : 20))
+    .pipe(z.number().int().positive().max(100)),
+  search: z.string().optional(),
+})

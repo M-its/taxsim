@@ -4,6 +4,8 @@ import jwt from '@fastify/jwt'
 import cookie from '@fastify/cookie'
 import { errorHandlerPlugin } from './shared/errors/errorHandler.js'
 import { authRoutes } from './modules/auth/auth.routes.js'
+import { productsRoutes } from './modules/products/products.routes.js'
+import { clientsRoutes } from './modules/clients/clients.routes.js'
 
 const app = Fastify({ logger: true })
 
@@ -21,6 +23,8 @@ await app.register(cookie)
 await app.register(errorHandlerPlugin)
 
 await app.register(authRoutes, { prefix: '/auth' })
+await app.register(productsRoutes, { prefix: '/products' })
+await app.register(clientsRoutes, { prefix: '/clients' })
 
 app.get('/health', async () => {
   return {
