@@ -6,6 +6,7 @@ import { errorHandlerPlugin } from './shared/errors/errorHandler.js'
 import { authRoutes } from './modules/auth/auth.routes.js'
 import { productsRoutes } from './modules/products/products.routes.js'
 import { clientsRoutes } from './modules/clients/clients.routes.js'
+import { salesRoutes } from './modules/sales/sales.routes.js'
 
 const app = Fastify({ logger: true })
 
@@ -25,6 +26,7 @@ await app.register(errorHandlerPlugin)
 await app.register(authRoutes, { prefix: '/auth' })
 await app.register(productsRoutes, { prefix: '/products' })
 await app.register(clientsRoutes, { prefix: '/clients' })
+await app.register(salesRoutes, { prefix: '/sales' })
 
 app.get('/health', async () => {
   return {

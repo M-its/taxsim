@@ -35,6 +35,8 @@ export const registerHandler = async (
       name: company.name,
       document: company.document,
       taxRegime: company.taxRegime,
+      municipioCode: company.municipioCode,
+      uf: company.uf,
     },
     accessToken: tokens.accessToken,
   }

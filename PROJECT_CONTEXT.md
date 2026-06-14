@@ -455,3 +455,37 @@ docker compose run --rm api npx prisma studio
 # Reset database (⚠️ deletes all data)
 docker compose run --rm api npx prisma migrate reset
 ```
+
+---
+
+## 13. Tax Engine Architecture Decisions (from grill-me session)
+
+### Decision 1 — RFB Unavailability
+Fail fast with circuit breaker. TaxCalculatorUnavailableError → 422 UNPROCESSABLE.
+Historical sales use DB snapshots and are unaffected by outages.
+
+### Decision 2 — Internal Engine Contract
+Zero-Prisma. Engine receives plain JS objects.
+taxRules as Record<ncmCode, TaxRule> for O(1) lookup.
+TaxRuleNotFoundError as pure domain error.
+Rates included in output for snapshot assembly.
+
+### Decision 3 — Orchestrator Merge
+Parallel Promise.all([internalEngine, officialCalculator]).
+Zip by array index (Orchestrator controls input order).
+Orchestrator computes delta, builds snapshots and breakdown.
+
+### Decision 4 — RFB Calculator Input
+cClassTrib and cst added to tax_rules table.
+Orchestrator enriches items before calling Tax Calculator client.
+
+### Decision 5 — RFB Municipality/UF
+municipioCode (Int) and uf (String 2 chars) added to Company model.
+Required at registration. Orchestrator reads from authenticated user's company.
+
+### RFB Calculator Output Mapping
+- IBS = vIBSUF + vIBSMun (combined)
+- ibsRate = pAliqEfetRegIBSUF + pAliqEfetRegIBSMun
+- cbsRate = pAliqEfetRegCBS
+- isRate = pIS
+- All values toFixed(2), all rates toFixed(4)

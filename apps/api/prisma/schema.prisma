@@ -36,12 +36,14 @@ enum TaxRuleStatus {
 // ─── CORE ─────────────────────────────────────────────────────────────────────
 
 model Company {
-  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name       String
-  document   String     @unique          // CNPJ
-  taxRegime  TaxRegime  @default(SIMPLES_NACIONAL)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String
+  document      String     @unique          // CNPJ
+  taxRegime     TaxRegime  @default(SIMPLES_NACIONAL)
+  municipioCode Int?
+  uf            String?    @db.VarChar(2)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
 
   users      User[]
   products   Product[]
@@ -180,6 +182,10 @@ model TaxRule {
   ncmCode    String        @db.VarChar(8)
   taxRegime  TaxRegime
   status     TaxRuleStatus @default(DRAFT)
+
+  // Reform model classification (required by RFB calculator)
+  cClassTrib String        @db.VarChar(6)
+  cst        String        @db.VarChar(3)
 
   // Current model rates
   pisRate    Decimal       @db.Decimal(8, 4)

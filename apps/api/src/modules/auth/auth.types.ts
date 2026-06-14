@@ -34,6 +34,8 @@ export type RegisterResponse = {
     name: string
     document: string
     taxRegime: string
+    municipioCode: number | null
+    uf: string | null
   }
   accessToken: string
 }

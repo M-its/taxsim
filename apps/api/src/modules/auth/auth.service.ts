@@ -51,6 +51,8 @@ export const register = async (
           name: input.company.name,
           document: input.company.document,
           taxRegime: input.company.taxRegime,
+          municipioCode: input.company.municipioCode,
+          uf: input.company.uf,
         },
       })
 
