@@ -5,7 +5,6 @@ export interface TaxCalculatorItemInput {
   cClassTrib: string
   baseCalculo: number
   quantidade: number
-  unidade: string
 }
 
 export interface TaxCalculatorInput {

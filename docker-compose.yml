@@ -99,6 +99,7 @@ services:
       # Exposed locally for manual testing and Swagger UI in dev
       - "127.0.0.1:8080:8080"
       - "127.0.0.1:8081:8081"
+      - "127.0.0.1:9080:80"    #Nginx da calculadora
     networks:
       - tax_calculator_network
     healthcheck:

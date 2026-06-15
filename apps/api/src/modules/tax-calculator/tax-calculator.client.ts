@@ -32,7 +32,7 @@ function checkCircuitBreaker(): void {
 
   if (circuitBreaker.state === 'OPEN') {
     if (
-      circuitBreaker.lastFailureTime &&
+      circuitBreaker.lastFailureTime !== null &&
       now - circuitBreaker.lastFailureTime > OPEN_DURATION_MS
     ) {
       circuitBreaker.state = 'HALF_OPEN'
@@ -40,18 +40,6 @@ function checkCircuitBreaker(): void {
     } else {
       throw new TaxCalculatorUnavailableError()
     }
-  }
-
-  if (circuitBreaker.state === 'HALF_OPEN') {
-    // Allow one request through
-  }
-
-  // Clean old failures outside window
-  if (
-    circuitBreaker.lastFailureTime &&
-    now - circuitBreaker.lastFailureTime > FAILURE_WINDOW_MS
-  ) {
-    circuitBreaker.failures = 0
   }
 }
 
@@ -77,7 +65,7 @@ export async function calculateReformModel(
   checkCircuitBreaker()
 
   try {
-    const response = await fetch(`${TAX_CALCULATOR_URL}/calculadora`, {
+    const response = await fetch(`${TAX_CALCULATOR_URL}/calculadora/regime-geral`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
@@ -92,16 +80,38 @@ export async function calculateReformModel(
     }
 
     const rfbResponse = (await response.json()) as {
-      objetos: unknown[]
-      total: unknown
+      objetos: Array<{
+        nObj: number
+        tribCalc: {
+          IBSCBS: {
+            gIBSCBS: {
+              vBC: number
+              gIBSUF: { pIBSUF: number; vIBSUF: number }
+              gIBSMun: { pIBSMun: number; vIBSMun: number }
+              vIBS: number
+              gCBS: { pCBS: number; vCBS: number }
+              gTribRegular: {
+                pAliqEfetRegIBSUF: number
+                pAliqEfetRegIBSMun: number
+                pAliqEfetRegCBS: number
+              }
+            }
+          }
+        }
+      }>
+      total: {
+        tribCalc: {
+          IBSCBSTot: {
+            gIBS: { vIBS: number }
+            gCBS: { vCBS: number }
+          }
+        }
+      }
     }
 
     recordSuccess()
 
-    return mapRfbResponseToReformResult(
-      rfbResponse as { objetos: unknown[]; total: unknown },
-      originalItems,
-    )
+    return mapRfbResponseToReformResult(rfbResponse, originalItems)
   } catch (error) {
     if (error instanceof TaxCalculatorUnavailableError) {
       throw error
@@ -145,7 +155,6 @@ export function buildOperacaoInput(
         cClassTrib: item.cClassTrib,
         baseCalculo,
         quantidade: item.quantity,
-        unidade: 'UN',
       }
     }),
   }
