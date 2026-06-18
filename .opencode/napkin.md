@@ -16,3 +16,9 @@
 **Problem:** .toDecimalPlaces(2).toString() remove zeros à direita
 **Fix:** value.toFixed(2) — método nativo do objeto Decimal do Prisma
 **Rule:** Usar toFixed(2) apenas para serialização de resposta HTTP, nunca em cálculos
+
+## [2026-06-17] pnpm version must be pinned in Dockerfile
+**Context:** Migrating API from npm to pnpm
+**Problem:** `corepack prepare pnpm@latest` installs a different version than the host, causing lockfile verification failures and ERR_PNPM_IGNORED_BUILDS
+**Fix:** Pin exact version: `corepack prepare pnpm@10.17.1 --activate` + `"packageManager": "pnpm@10.17.1"` in package.json
+**Rule:** Never use @latest for package managers in Dockerfiles — always pin exact version

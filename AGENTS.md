@@ -60,3 +60,25 @@ feat | fix | chore | docs | refactor: short description
 
 ## Never commit
 .env — secrets live in environment only
+
+DEBUGGING RULES
+
+1. Never rebuild containers to fix TypeScript or React errors.
+
+2. If a compiler error exists:
+   stop all other investigations.
+
+3. Follow one hypothesis at a time.
+
+4. Never modify a file unless you can explain why that file is related to the current issue.
+
+5. After every modification:
+   - run typecheck
+   - run build
+   - verify the original error
+
+6. If a route returns 500:
+   inspect logs before changing code.
+
+7. Stop after finding the root cause.
+   Do not continue exploring alternative fixes.
