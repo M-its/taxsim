@@ -61,7 +61,6 @@ export function RecentOperationsTable({ operations }: RecentOperationsTableProps
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut", delay: 0.6 }}
       style={{ willChange: "transform, opacity" }}
-      layout={false}
       className="rounded-none border border-[#27272a] bg-[#18181b]"
     >
       <div className="border-b border-[#27272a] p-5">
@@ -87,11 +86,10 @@ export function RecentOperationsTable({ operations }: RecentOperationsTableProps
             {operations.map((operation, index) => (
               <motion.tr
                 key={operation.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, ease: "easeOut", delay: 0.7 + index * 0.05 }}
                 style={{ willChange: "transform, opacity" }}
-                layout={false}
                 className="border-b border-[#27272a] transition-colors last:border-b-0 hover:bg-[#27272a]/30"
               >
                 <TableCell className="text-sm text-[#fafafa]">

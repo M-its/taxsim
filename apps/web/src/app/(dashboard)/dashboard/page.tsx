@@ -21,13 +21,9 @@ export default function DashboardPage() {
 
       <KpiGrid data={mockKpiData} />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <TaxBarChart data={mockTaxLoadByMonth} />
-        </div>
-        <div>
-          <TaxDonutChart data={mockTaxComposition} />
-        </div>
+      <div className="grid grid-cols-1 gap-4 items-stretch lg:grid-cols-[2fr_1fr]">
+        <TaxBarChart data={mockTaxLoadByMonth} />
+        <TaxDonutChart data={mockTaxComposition} />
       </div>
 
       <RecentOperationsTable operations={mockRecentSales} />

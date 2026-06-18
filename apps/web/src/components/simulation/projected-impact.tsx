@@ -16,7 +16,6 @@ export function ProjectedImpact({ savings, savingsPercent }: ProjectedImpactProp
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut", delay: 0.3 }}
       style={{ willChange: "transform, opacity" }}
-      layout={false}
       className="rounded-none border border-[#34d399]/30 bg-gradient-to-r from-[#34d399]/10 to-[#18181b] p-6"
     >
       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">

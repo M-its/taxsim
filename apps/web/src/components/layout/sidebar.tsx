@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
@@ -13,6 +12,7 @@ import {
   Settings,
   PanelLeftClose,
   PanelLeftOpen,
+  X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -26,52 +26,70 @@ const navItems = [
 
 interface SidebarProps {
   className?: string
+  isOpen?: boolean
+  onToggle?: () => void
 }
 
-export function Sidebar({ className }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false)
+export function Sidebar({ className, isOpen = true, onToggle }: SidebarProps) {
   const pathname = usePathname()
 
   return (
     <aside
-      style={{ width: collapsed ? 64 : 256 }}
+      style={{ width: isOpen ? 256 : 64 }}
       className={cn(
         "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-[#27272a] bg-[#18181b]",
+        !isOpen && "hidden",
+        "md:flex",
         className
       )}
     >
-      <div className="flex h-14 items-center justify-between border-b border-[#27272a] px-4">
-        <div className="flex items-center">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-[#09090b] text-[#34d399]">
-            <Calculator className="h-5 w-5" />
-          </div>
-          <AnimatePresence initial={false}>
-            {!collapsed && (
+      <div
+        className={cn(
+          "flex h-14 shrink-0 items-center border-b border-[#27272a]",
+          isOpen ? "justify-between px-4" : "justify-center px-2"
+        )}
+      >
+        {isOpen && (
+          <div className="flex items-center">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-[#09090b] text-[#34d399]">
+              <Calculator className="h-5 w-5" />
+            </div>
+            <AnimatePresence initial={false}>
               <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                key="logo-text"
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
                 transition={{ duration: 0.2 }}
                 style={{ willChange: "transform, opacity" }}
-                layout={false}
                 className="ml-3 text-sm font-semibold tracking-tight text-[#fafafa]"
               >
                 TaxSim
               </motion.span>
-            )}
-          </AnimatePresence>
-        </div>
+            </AnimatePresence>
+          </div>
+        )}
+
         <button
           type="button"
-          onClick={() => setCollapsed((prev) => !prev)}
-          className="flex h-8 w-8 shrink-0 items-center justify-center text-[#a1a1aa] transition-colors hover:bg-[#27272a] hover:text-[#fafafa]"
-          aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
+          onClick={onToggle}
+          className="hidden h-8 w-8 shrink-0 items-center justify-center text-[#a1a1aa] transition-colors hover:bg-[#27272a] hover:text-[#fafafa] md:flex"
+          aria-label={isOpen ? "Recolher menu" : "Expandir menu"}
         >
-          {collapsed ? (
-            <PanelLeftOpen className="h-4 w-4" />
-          ) : (
+          {isOpen ? (
             <PanelLeftClose className="h-4 w-4" />
+          ) : (
+            <PanelLeftOpen className="h-4 w-4" />
           )}
+        </button>
+
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex h-8 w-8 items-center justify-center text-[#a1a1aa] transition-colors hover:bg-[#27272a] hover:text-[#fafafa] md:hidden"
+          aria-label="Fechar menu"
+        >
+          <X className="h-4 w-4" />
         </button>
       </div>
 
@@ -94,14 +112,13 @@ export function Sidebar({ className }: SidebarProps) {
                 >
                   <Icon className="h-[18px] w-[18px] shrink-0" />
                   <AnimatePresence initial={false}>
-                    {!collapsed && (
+                    {isOpen && (
                       <motion.span
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 4 }}
                         transition={{ duration: 0.2 }}
                         style={{ willChange: "transform, opacity" }}
-                        layout={false}
                         className="truncate"
                       >
                         {item.label}
@@ -118,18 +135,20 @@ export function Sidebar({ className }: SidebarProps) {
       <div className="border-t border-[#27272a] p-2">
         <Link
           href="/configuracoes"
-          className="flex items-center gap-3 rounded-none px-3 py-2 text-sm text-[#a1a1aa] transition-colors hover:bg-[#27272a] hover:text-[#fafafa]"
+          className={cn(
+            "flex items-center gap-3 rounded-none px-3 py-2 text-sm text-[#a1a1aa] transition-colors hover:bg-[#27272a] hover:text-[#fafafa]",
+            !isOpen && "justify-center"
+          )}
         >
           <Settings className="h-[18px] w-[18px] shrink-0" />
           <AnimatePresence initial={false}>
-            {!collapsed && (
+            {isOpen && (
               <motion.span
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
                 transition={{ duration: 0.2 }}
                 style={{ willChange: "transform, opacity" }}
-                layout={false}
               >
                 Configurações
               </motion.span>

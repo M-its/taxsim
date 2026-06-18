@@ -68,7 +68,6 @@ export function SimulationForm({ onSubmit, defaultValues }: SimulationFormProps)
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
       style={{ willChange: "transform, opacity" }}
-      layout={false}
       onSubmit={handleSubmit}
       className="rounded-none border border-[#27272a] bg-[#18181b] p-5"
     >

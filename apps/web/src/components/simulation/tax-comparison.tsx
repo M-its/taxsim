@@ -52,7 +52,6 @@ export function TaxComparison({ data }: TaxComparisonProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
         style={{ willChange: "transform, opacity" }}
-        layout={false}
       >
         <Card className="rounded-none border-[#27272a] bg-[#18181b]">
           <CardHeader className="border-b border-[#27272a] pb-4">
@@ -98,7 +97,6 @@ export function TaxComparison({ data }: TaxComparisonProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
         style={{ willChange: "transform, opacity" }}
-        layout={false}
       >
         <Card className="rounded-none border-[#34d399]/30 bg-gradient-to-br from-[#34d399]/5 to-[#18181b]">
           <CardHeader className="border-b border-[#27272a] pb-4">

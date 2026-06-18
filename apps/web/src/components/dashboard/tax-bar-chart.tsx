@@ -25,8 +25,7 @@ export function TaxBarChart({ data }: TaxBarChartProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut", delay: 0.4 }}
       style={{ willChange: "transform, opacity" }}
-      layout={false}
-      className="rounded-none border border-[#27272a] bg-[#18181b] p-5"
+      className="h-full rounded-none border border-[#27272a] bg-[#18181b] p-5"
     >
       <div className="mb-6">
         <h3 className="text-sm font-medium text-[#fafafa]">

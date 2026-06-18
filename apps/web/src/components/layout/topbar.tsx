@@ -1,7 +1,7 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import { Search, Bell } from "lucide-react"
+import { Search, Bell, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -19,9 +19,15 @@ function breadcrumbLabel(path: string): string {
 
 interface TopbarProps {
   className?: string
+  isSidebarOpen?: boolean
+  onToggleSidebar?: () => void
 }
 
-export function Topbar({ className }: TopbarProps) {
+export function Topbar({
+  className,
+  isSidebarOpen = true,
+  onToggleSidebar,
+}: TopbarProps) {
   const pathname = usePathname()
   const label = breadcrumbLabel(pathname)
 
@@ -29,18 +35,33 @@ export function Topbar({ className }: TopbarProps) {
     <header
       className={cn(
         "fixed left-0 right-0 top-0 z-30 flex h-14 items-center justify-between border-b border-[#27272a] bg-[#09090b]/95 px-6 backdrop-blur",
+        isSidebarOpen ? "md:pl-64" : "md:pl-16",
         className
       )}
     >
-      <div className="flex items-center ml-6 gap-2 text-sm text-[#a1a1aa]">
-        <span>TaxSim</span>
-        <span>/</span>
-        <span className="text-[#fafafa]">{label}</span>
+      <div className="flex items-center gap-2 md:ml-6">
+        <button
+          type="button"
+          onClick={onToggleSidebar}
+          className="p-2 hover:bg-zinc-800 transition-colors cursor-pointer rounded-none md:hidden"
+          aria-label="Abrir menu"
+        >
+          <Menu className="h-5 w-5 text-[#a1a1aa]" />
+        </button>
+
+        <div className="flex items-center gap-2 text-sm text-[#a1a1aa]">
+          <span>TaxSim</span>
+          <span>/</span>
+          <span className="text-[#fafafa]">{label}</span>
+        </div>
       </div>
 
       <div className="flex items-center gap-4">
         <div className="relative hidden w-64 sm:block">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a1a1aa]" />
+          <Search
+            size={14}
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none"
+          />
           <Input
             type="text"
             placeholder="Buscar..."
@@ -50,20 +71,20 @@ export function Topbar({ className }: TopbarProps) {
 
         <button
           type="button"
-          className="relative flex h-9 w-9 items-center justify-center rounded-none border border-[#27272a] bg-[#18181b] text-[#a1a1aa] transition-colors hover:border-[#3f3f46] hover:text-[#fafafa]"
+          className="relative p-2 hover:bg-zinc-800 transition-colors cursor-pointer rounded-none"
           aria-label="Notificações"
         >
-          <Bell className="h-4 w-4" />
-          <span className="absolute right-2 top-2 h-2 w-2 bg-[#34d399]" />
+          <Bell className="h-4 w-4 text-[#a1a1aa]" />
+          <span className="absolute right-1 top-1 h-2 w-2 bg-[#34d399]" />
         </button>
 
         <button
           type="button"
-          className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-none border border-[#27272a] bg-[#18181b] p-0 text-[#fafafa] transition-colors hover:bg-[#27272a]"
+          className="p-2 hover:bg-zinc-800 transition-colors cursor-pointer rounded-none"
           aria-label="Usuário"
         >
-          <Avatar className="h-full w-full rounded-none">
-            <AvatarFallback className="rounded-none bg-transparent text-xs font-medium text-[#fafafa]">
+          <Avatar className="h-5 w-5 rounded-none">
+            <AvatarFallback className="rounded-none bg-transparent text-[10px] font-medium text-[#fafafa]">
               JS
             </AvatarFallback>
           </Avatar>

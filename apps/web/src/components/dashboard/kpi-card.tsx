@@ -33,14 +33,12 @@ export function KpiCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: "easeOut", delay: index * 0.1 }}
-      whileHover={{ y: -2, borderColor: "#3f3f46" }}
       style={{ willChange: "transform, opacity" }}
-      layout={false}
       className={cn(
-        "rounded-none border bg-[#18181b] p-5 transition-colors duration-300",
+        "rounded-none border bg-[#18181b] p-5 transition-all duration-300 hover:-translate-y-0.5",
         variant === "emerald"
           ? "border-[#34d399]/30 bg-gradient-to-br from-[#34d399]/10 to-[#18181b]"
-          : "border-[#27272a]"
+          : "border-[#27272a] hover:border-[#3f3f46]"
       )}
     >
       <div className="flex items-start justify-between">
