@@ -1,0 +1,4 @@
+overrides:
+  hono: "4.12.25"
+  nanoid: "3.3.12"
+  node-releases: "2.0.47"

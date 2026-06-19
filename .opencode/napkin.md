@@ -22,3 +22,9 @@
 **Problem:** `corepack prepare pnpm@latest` installs a different version than the host, causing lockfile verification failures and ERR_PNPM_IGNORED_BUILDS
 **Fix:** Pin exact version: `corepack prepare pnpm@10.17.1 --activate` + `"packageManager": "pnpm@10.17.1"` in package.json
 **Rule:** Never use @latest for package managers in Dockerfiles — always pin exact version
+
+## [2026-06-19] Docker volumes must include tsconfig.json for path aliases
+**Context:** Module not found for @/lib/utils after pnpm migration
+**Problem:** docker-compose.yml only mounted src/ and public/ as volumes — tsconfig.json was baked into the image at build time, but when rebuilding only the deps layer, path alias resolution broke
+**Fix:** Add explicit volume mounts for tsconfig.json and next.config.ts
+**Rule:** Any config file Next.js reads at runtime (tsconfig.json, next.config.ts) must be in docker-compose volumes, not just copied at build time

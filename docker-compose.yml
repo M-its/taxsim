@@ -99,7 +99,7 @@ services:
       # Exposed locally for manual testing and Swagger UI in dev
       - "127.0.0.1:8080:8080"
       - "127.0.0.1:8081:8081"
-      - "127.0.0.1:9080:80"    #Nginx da calculadora
+      - "127.0.0.1:9080:80" #Nginx da calculadora
     networks:
       - tax_calculator_network
     healthcheck:
@@ -202,6 +202,8 @@ services:
       - ./apps/web/src:/app/src:cached
       - ./apps/web/public:/app/public:cached
       # Isolated Next.js cache and node_modules — prevents WSL2/Windows binary conflicts
+      - ./apps/web/tsconfig.json:/app/tsconfig.json:cached
+      - ./apps/web/next.config.ts:/app/next.config.ts:cached
       - web_next_cache:/app/.next
       - web_node_modules:/app/node_modules
     ports:
