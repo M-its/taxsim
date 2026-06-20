@@ -28,3 +28,9 @@
 **Problem:** docker-compose.yml only mounted src/ and public/ as volumes — tsconfig.json was baked into the image at build time, but when rebuilding only the deps layer, path alias resolution broke
 **Fix:** Add explicit volume mounts for tsconfig.json and next.config.ts
 **Rule:** Any config file Next.js reads at runtime (tsconfig.json, next.config.ts) must be in docker-compose volumes, not just copied at build time
+
+## [2026-06-19] postcss.config.mjs must be mounted as Docker volume
+**Context:** CSS loading with 200 but Tailwind classes not applying — page rendered unstyled
+**Problem:** docker-compose.yml volumes only included src/, public/, tsconfig.json, next.config.ts — postcss.config.mjs was missing, so Tailwind v4 never processed @import "tailwindcss" in globals.css
+**Fix:** Add ./apps/web/postcss.config.mjs:/app/postcss.config.mjs:cached to app service volumes
+**Rule:** Every config file at the project root that a build tool reads (postcss, tailwind, next.config, tsconfig) must be explicitly mounted — Docker volumes don't auto-include root-level configs, only what's listed

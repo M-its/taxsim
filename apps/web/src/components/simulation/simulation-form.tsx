@@ -34,10 +34,22 @@ function formatCurrencyInput(value: string): string {
   }).format(numeric)
 }
 
-function formatPercentInput(value: string): string {
-  const cleaned = value.replace(/[^0-9.,]/g, "").replace(",", ".")
-  const numeric = parseFloat(cleaned || "0")
+// Percent inputs store the RAW numeric string the user is typing (e.g. "7", "7.5")
+// Display formatting only happens when rendering, never mutates the stored value mid-typing.
+function formatPercentDisplay(rawDigits: string): string {
+  if (!rawDigits) return "0,00%"
+  const numeric = Number(rawDigits) / 100
   return `${numeric.toFixed(2).replace(".", ",")}%`
+}
+
+function percentDigitsToRatio(rawDigits: string): string {
+  const numeric = Number(rawDigits || "0") / 100 / 100
+  return numeric.toFixed(4)
+}
+
+function ratioToPercentDigits(ratio: string): string {
+  const numeric = parseFloat(ratio || "0") * 100 * 100
+  return Math.round(numeric).toString()
 }
 
 export function SimulationForm({ onSubmit, defaultValues }: SimulationFormProps) {
@@ -46,19 +58,31 @@ export function SimulationForm({ onSubmit, defaultValues }: SimulationFormProps)
       ? formatCurrencyInput(defaultValues.grossRevenue.replace(".", ""))
       : "R$ 1.000.000,00"
   )
-  const [ibsRate, setIbsRate] = useState(
-    defaultValues?.ibsRate ? formatPercentInput(defaultValues.ibsRate) : "7,00%"
+
+  // Store raw digits typed (e.g. user types "7" then "0" then "0" -> "700")
+  // formatPercentDisplay converts "700" -> "7,00%"
+  const [ibsRateDigits, setIbsRateDigits] = useState(
+    defaultValues?.ibsRate ? ratioToPercentDigits(defaultValues.ibsRate) : "700"
   )
-  const [cbsRate, setCbsRate] = useState(
-    defaultValues?.cbsRate ? formatPercentInput(defaultValues.cbsRate) : "2,70%"
+  const [cbsRateDigits, setCbsRateDigits] = useState(
+    defaultValues?.cbsRate ? ratioToPercentDigits(defaultValues.cbsRate) : "270"
   )
+
+  function handlePercentChange(
+    event: React.ChangeEvent<HTMLInputElement>,
+    setter: (value: string) => void
+  ) {
+    // Keep only digits the user typed — ignore the "%" and "," already rendered
+    const digitsOnly = event.target.value.replace(/\D/g, "")
+    setter(digitsOnly)
+  }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     onSubmit({
       grossRevenue: currencyToRaw(grossRevenue),
-      ibsRate: ibsRate.replace(/[^0-9.,]/g, "").replace(",", "."),
-      cbsRate: cbsRate.replace(/[^0-9.,]/g, "").replace(",", "."),
+      ibsRate: percentDigitsToRatio(ibsRateDigits),
+      cbsRate: percentDigitsToRatio(cbsRateDigits),
     })
   }
 
@@ -100,8 +124,8 @@ export function SimulationForm({ onSubmit, defaultValues }: SimulationFormProps)
           </Label>
           <Input
             id="ibsRate"
-            value={ibsRate}
-            onChange={(event) => setIbsRate(formatPercentInput(event.target.value))}
+            value={formatPercentDisplay(ibsRateDigits)}
+            onChange={(event) => handlePercentChange(event, setIbsRateDigits)}
             className="rounded-none border-[#27272a] bg-[#09090b] font-numbers text-[#fafafa] placeholder:text-[#71717a] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
           />
         </div>
@@ -112,8 +136,8 @@ export function SimulationForm({ onSubmit, defaultValues }: SimulationFormProps)
           </Label>
           <Input
             id="cbsRate"
-            value={cbsRate}
-            onChange={(event) => setCbsRate(formatPercentInput(event.target.value))}
+            value={formatPercentDisplay(cbsRateDigits)}
+            onChange={(event) => handlePercentChange(event, setCbsRateDigits)}
             className="rounded-none border-[#27272a] bg-[#09090b] font-numbers text-[#fafafa] placeholder:text-[#71717a] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
           />
         </div>
