@@ -1,10 +1,20 @@
 "use client"
 
 import { usePathname } from "next/navigation"
+import Link from "next/link"
 import { Search, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 function breadcrumbLabel(path: string): string {
   const map: Record<string, string> = {
@@ -69,17 +79,58 @@ export function Topbar({
           />
         </div>
 
-        <button
-          type="button"
-          className="p-2 hover:bg-zinc-800 transition-colors cursor-pointer rounded-none"
-          aria-label="Usuário"
-        >
-          <Avatar className="h-5 w-5 rounded-none">
-            <AvatarFallback className="rounded-none bg-transparent text-[10px] font-medium text-[#fafafa]">
-              JS
-            </AvatarFallback>
-          </Avatar>
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <button
+                type="button"
+                className="p-2 hover:bg-zinc-800 transition-colors cursor-pointer rounded-none"
+                aria-label="Abrir menu do usuário"
+              >
+                <Avatar className="h-5 w-5 rounded-none">
+                  <AvatarFallback className="rounded-none bg-transparent text-[10px] font-medium text-[#fafafa]">
+                    JS
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+            }
+          />
+
+          <DropdownMenuContent
+            align="end"
+            sideOffset={8}
+            className="rounded-none border border-[#27272a] bg-[#18181b] text-[#fafafa] min-w-[220px]"
+          >
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="rounded-none px-3 py-1.5 text-sm font-medium text-[#fafafa]">
+                João Silva
+              </DropdownMenuLabel>
+              <DropdownMenuLabel className="rounded-none px-3 py-0 text-xs font-normal text-[#a1a1aa]">
+                joao@acme.com
+              </DropdownMenuLabel>
+              <DropdownMenuLabel className="rounded-none px-3 py-1.5 text-xs text-[#a1a1aa]">
+                Acme Ltda
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator className="bg-[#27272a]" />
+            <DropdownMenuItem
+              render={
+                <Link
+                  href="/configuracoes"
+                  className="rounded-none px-3 py-1.5 text-sm text-[#a1a1aa] focus:bg-[#27272a] focus:text-[#fafafa]"
+                >
+                  Configurações
+                </Link>
+              }
+            />
+
+            <DropdownMenuSeparator className="bg-[#27272a]" />
+
+            <DropdownMenuItem className="rounded-none px-3 py-1.5 text-sm text-red-500 focus:bg-red-500/10 focus:text-red-500">
+              Sair
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   )
