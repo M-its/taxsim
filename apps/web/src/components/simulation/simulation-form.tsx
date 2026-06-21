@@ -34,22 +34,16 @@ function formatCurrencyInput(value: string): string {
   }).format(numeric)
 }
 
-// Percent inputs store the RAW numeric string the user is typing (e.g. "7", "7.5")
-// Display formatting only happens when rendering, never mutates the stored value mid-typing.
-function formatPercentDisplay(rawDigits: string): string {
-  if (!rawDigits) return "0,00%"
-  const numeric = Number(rawDigits) / 100
-  return `${numeric.toFixed(2).replace(".", ",")}%`
+// Percent fields: free-text while editing, formatted only on blur (SAP/NetSuite pattern).
+function ratioToPercentText(ratio: string): string {
+  const numeric = parseFloat(ratio || "0") * 100
+  return numeric.toFixed(2).replace(".", ",")
 }
 
-function percentDigitsToRatio(rawDigits: string): string {
-  const numeric = Number(rawDigits || "0") / 100 / 100
+function percentTextToRatio(text: string): string {
+  const cleaned = text.replace(/[^\d,.-]/g, "").replace(",", ".")
+  const numeric = parseFloat(cleaned || "0") / 100
   return numeric.toFixed(4)
-}
-
-function ratioToPercentDigits(ratio: string): string {
-  const numeric = parseFloat(ratio || "0") * 100 * 100
-  return Math.round(numeric).toString()
 }
 
 export function SimulationForm({ onSubmit, defaultValues }: SimulationFormProps) {
@@ -59,30 +53,30 @@ export function SimulationForm({ onSubmit, defaultValues }: SimulationFormProps)
       : "R$ 1.000.000,00"
   )
 
-  // Store raw digits typed (e.g. user types "7" then "0" then "0" -> "700")
-  // formatPercentDisplay converts "700" -> "7,00%"
-  const [ibsRateDigits, setIbsRateDigits] = useState(
-    defaultValues?.ibsRate ? ratioToPercentDigits(defaultValues.ibsRate) : "700"
+  // Raw editable text — no % symbol while typing, only digits/comma.
+  const [ibsRateText, setIbsRateText] = useState(
+    defaultValues?.ibsRate ? ratioToPercentText(defaultValues.ibsRate) : "7,00"
   )
-  const [cbsRateDigits, setCbsRateDigits] = useState(
-    defaultValues?.cbsRate ? ratioToPercentDigits(defaultValues.cbsRate) : "270"
+  const [cbsRateText, setCbsRateText] = useState(
+    defaultValues?.cbsRate ? ratioToPercentText(defaultValues.cbsRate) : "2,70"
   )
 
-  function handlePercentChange(
-    event: React.ChangeEvent<HTMLInputElement>,
+  function handlePercentBlur(
+    value: string,
     setter: (value: string) => void
   ) {
-    // Keep only digits the user typed — ignore the "%" and "," already rendered
-    const digitsOnly = event.target.value.replace(/\D/g, "")
-    setter(digitsOnly)
+    // On blur: normalize whatever the user typed into "X,XX" format.
+    const cleaned = value.replace(/[^\d,.-]/g, "").replace(",", ".")
+    const numeric = parseFloat(cleaned || "0")
+    setter(numeric.toFixed(2).replace(".", ","))
   }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     onSubmit({
       grossRevenue: currencyToRaw(grossRevenue),
-      ibsRate: percentDigitsToRatio(ibsRateDigits),
-      cbsRate: percentDigitsToRatio(cbsRateDigits),
+      ibsRate: percentTextToRatio(ibsRateText),
+      cbsRate: percentTextToRatio(cbsRateText),
     })
   }
 
@@ -122,24 +116,40 @@ export function SimulationForm({ onSubmit, defaultValues }: SimulationFormProps)
           <Label htmlFor="ibsRate" className="text-xs text-[#a1a1aa]">
             Alíquota IBS Estimada (%)
           </Label>
-          <Input
-            id="ibsRate"
-            value={formatPercentDisplay(ibsRateDigits)}
-            onChange={(event) => handlePercentChange(event, setIbsRateDigits)}
-            className="rounded-none border-[#27272a] bg-[#09090b] font-numbers text-[#fafafa] placeholder:text-[#71717a] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
-          />
+          <div className="relative">
+            <Input
+              id="ibsRate"
+              value={ibsRateText}
+              onChange={(event) => setIbsRateText(event.target.value)}
+              onBlur={(event) => handlePercentBlur(event.target.value, setIbsRateText)}
+              onFocus={(event) => event.target.select()}
+              inputMode="decimal"
+              className="rounded-none border-[#27272a] bg-[#09090b] pr-7 font-numbers text-[#fafafa] placeholder:text-[#71717a] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#71717a]">
+              %
+            </span>
+          </div>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="cbsRate" className="text-xs text-[#a1a1aa]">
             Alíquota CBS Estimada (%)
           </Label>
-          <Input
-            id="cbsRate"
-            value={formatPercentDisplay(cbsRateDigits)}
-            onChange={(event) => handlePercentChange(event, setCbsRateDigits)}
-            className="rounded-none border-[#27272a] bg-[#09090b] font-numbers text-[#fafafa] placeholder:text-[#71717a] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
-          />
+          <div className="relative">
+            <Input
+              id="cbsRate"
+              value={cbsRateText}
+              onChange={(event) => setCbsRateText(event.target.value)}
+              onBlur={(event) => handlePercentBlur(event.target.value, setCbsRateText)}
+              onFocus={(event) => event.target.select()}
+              inputMode="decimal"
+              className="rounded-none border-[#27272a] bg-[#09090b] pr-7 font-numbers text-[#fafafa] placeholder:text-[#71717a] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
+            />
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-[#71717a]">
+              %
+            </span>
+          </div>
         </div>
       </div>
 

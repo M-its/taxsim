@@ -1,7 +1,7 @@
 "use client"
 
 import { usePathname } from "next/navigation"
-import { Search, Bell, Menu } from "lucide-react"
+import { Search, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -68,15 +68,6 @@ export function Topbar({
             className="h-9 rounded-none border-[#27272a] bg-[#18181b] pl-8 text-sm text-[#fafafa] placeholder:text-[#71717a] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
           />
         </div>
-
-        <button
-          type="button"
-          className="relative p-2 hover:bg-zinc-800 transition-colors cursor-pointer rounded-none"
-          aria-label="Notificações"
-        >
-          <Bell className="h-4 w-4 text-[#a1a1aa]" />
-          <span className="absolute right-1 top-1 h-2 w-2 bg-[#34d399]" />
-        </button>
 
         <button
           type="button"
