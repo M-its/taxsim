@@ -61,7 +61,7 @@ const UF_OPTIONS = [
 const inputClassName =
   "rounded-none border-[#27272a] bg-[#09090b] text-[#fafafa] placeholder:text-[#71717a] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
 
-export default function ConfiguracoesPage() {
+export default function SettingsPage() {
   const [form, setForm] = useState<CompanyFormData>({
     name: "Acme Ltda",
     document: "12.345.678/0001-95",

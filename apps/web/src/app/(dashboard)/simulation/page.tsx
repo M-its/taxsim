@@ -7,7 +7,7 @@ import { ProjectedImpact } from "@/components/simulation/projected-impact"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { mockSimulationResponse } from "@/lib/mock-data"
 
-export default function SimulacaoPage() {
+export default function SimulationPage() {
   const [simulation, setSimulation] = useState(mockSimulationResponse)
   const [formData, setFormData] = useState<SimulationFormData>({
     grossRevenue: "1000000.00",

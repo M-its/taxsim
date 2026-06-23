@@ -137,6 +137,38 @@ Sets new cookie: `refreshToken=<newToken>; HttpOnly; ...`
 
 ---
 
+### GET /auth/me
+
+Returns the currently authenticated user and their company.
+
+**Auth:** `Authorization: Bearer <accessToken>`
+
+**Response 200:**
+```json
+{
+  "user": {
+    "id": "uuid",
+    "name": "João Silva",
+    "email": "joao@acme.com",
+    "role": "OWNER",
+    "companyId": "uuid"
+  },
+  "company": {
+    "id": "uuid",
+    "name": "Acme Ltda",
+    "document": "12345678000195",
+    "taxRegime": "SIMPLES_NACIONAL",
+    "municipioCode": 1234567,
+    "uf": "SP"
+  }
+}
+```
+
+**Errors:**
+- `401 UNAUTHORIZED` — missing or invalid access token
+
+---
+
 ### POST /auth/logout
 Invalidates all refresh tokens for the current user across all devices.
 

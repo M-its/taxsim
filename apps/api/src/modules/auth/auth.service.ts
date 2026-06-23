@@ -127,3 +127,18 @@ export const logout = async (token: string): Promise<void> => {
 export const logoutAll = async (userId: string): Promise<void> => {
   await prisma.refreshToken.deleteMany({ where: { userId } })
 }
+
+export const me = async (
+  userId: string,
+): Promise<{ user: User; company: Company }> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { company: true },
+  })
+
+  if (!user) {
+    throw AppError.unauthorized('User not found')
+  }
+
+  return { user, company: user.company }
+}

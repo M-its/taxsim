@@ -1,4 +1,4 @@
-export default function ProdutosPage() {
+export default function ProductsPage() {
   return (
     <div className="space-y-4">
       <div>

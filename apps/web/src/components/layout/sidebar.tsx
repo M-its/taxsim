@@ -18,10 +18,10 @@ import { cn } from "@/lib/utils"
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Produtos", href: "/produtos", icon: Package },
-  { label: "Clientes", href: "/clientes", icon: Users },
-  { label: "Vendas", href: "/vendas", icon: Receipt },
-  { label: "Simulação", href: "/simulacao", icon: Calculator },
+  { label: "Produtos", href: "/products", icon: Package },
+  { label: "Clientes", href: "/customers", icon: Users },
+  { label: "Vendas", href: "/sales", icon: Receipt },
+  { label: "Simulação", href: "/simulation", icon: Calculator },
 ]
 
 interface SidebarProps {
@@ -134,7 +134,7 @@ export function Sidebar({ className, isOpen = true, onToggle }: SidebarProps) {
 
       <div className="border-t border-[#27272a] p-2">
         <Link
-          href="/configuracoes"
+          href="settings"
           className={cn(
             "flex items-center gap-3 rounded-none px-3 py-2 text-sm text-[#a1a1aa] transition-colors hover:bg-[#27272a] hover:text-[#fafafa]",
             !isOpen && "justify-center"

@@ -1,8 +1,10 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import '@fastify/cookie'
+import type { TaxRegime, UserRole } from '@prisma/client'
 import { AppError } from '../../shared/errors/AppError.js'
+import { authenticate } from '../../shared/middlewares/authenticate.js'
 import { registerSchema, loginSchema } from './auth.schema.js'
-import { register, login, refresh, logout, logoutAll } from './auth.service.js'
+import { register, login, refresh, logout, logoutAll, me } from './auth.service.js'
 import type { AuthResponse, JwtPayload, RegisterResponse } from './auth.types.js'
 
 const COOKIE_OPTIONS = {
@@ -110,3 +112,45 @@ export const logoutAllHandler = async (
   reply.clearCookie('refreshToken', { path: '/auth/refresh' })
   reply.status(204)
 }
+
+export const meHandler = async (
+  request: FastifyRequest,
+): Promise<{
+  user: {
+    id: string
+    name: string
+    email: string
+    role: UserRole
+    companyId: string
+  }
+  company: {
+    id: string
+    name: string
+    document: string
+    taxRegime: TaxRegime
+    municipioCode: number | null
+    uf: string | null
+  }
+}> => {
+  const payload = request.user as JwtPayload
+  const { user, company } = await me(payload.sub)
+
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      companyId: user.companyId,
+    },
+    company: {
+      id: company.id,
+      name: company.name,
+      document: company.document,
+      taxRegime: company.taxRegime,
+      municipioCode: company.municipioCode,
+      uf: company.uf,
+    },
+  }
+}
+

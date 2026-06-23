@@ -18,11 +18,12 @@ import {
 
 function breadcrumbLabel(path: string): string {
   const map: Record<string, string> = {
+    "/customers": "Clientes",
     "/dashboard": "Dashboard",
-    "/produtos": "Produtos",
-    "/clientes": "Clientes",
-    "/vendas": "Vendas",
-    "/simulacao": "Simulação",
+    "/products": "Produtos",
+    "/sales": "Vendas",
+    "/settings": "Configurações",
+    "/simulation": "Simulação"
   }
   return map[path] ?? "Taxsim"
 }
@@ -116,7 +117,7 @@ export function Topbar({
             <DropdownMenuItem
               render={
                 <Link
-                  href="/configuracoes"
+                  href="/settings"
                   className="rounded-none px-3 py-1.5 text-sm text-[#a1a1aa] focus:bg-[#27272a] focus:text-[#fafafa]"
                 >
                   Configurações
