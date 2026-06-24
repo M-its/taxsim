@@ -205,6 +205,7 @@ services:
       - ./apps/web/tsconfig.json:/app/tsconfig.json:cached
       - ./apps/web/next.config.ts:/app/next.config.ts:cached
       - ./apps/web/postcss.config.mjs:/app/postcss.config.mjs:cached
+      - ./apps/web/eslint.config.mjs:/app/eslint.config.mjs:cached
       - web_next_cache:/app/.next
       - web_node_modules:/app/node_modules
     ports:

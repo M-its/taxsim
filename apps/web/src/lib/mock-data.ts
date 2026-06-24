@@ -64,7 +64,7 @@ export const mockRecentSales: SaleSummary[] = [
     id: "a1b2c3d4-0002-0000-0000-000000000002",
     clientId: "b2c3d4e5-0002-0000-0000-000000000002",
     clientName: "Comércio Minas ME",
-    status: "PENDENTE",
+    status: "DRAFT",
     totalAmount: "5200.00",
     currentModel: {
       totalPis: "42.64",
@@ -89,7 +89,7 @@ export const mockRecentSales: SaleSummary[] = [
     id: "a1b2c3d4-0003-0000-0000-000000000003",
     clientId: "b2c3d4e5-0003-0000-0000-000000000003",
     clientName: "Serviços Rio S/A",
-    status: "REJEITADA",
+    status: "CANCELLED",
     totalAmount: "12500.00",
     currentModel: {
       totalPis: "0.00",
@@ -139,7 +139,7 @@ export const mockRecentSales: SaleSummary[] = [
     id: "a1b2c3d4-0005-0000-0000-000000000005",
     clientId: "b2c3d4e5-0005-0000-0000-000000000005",
     clientName: "Tech Imports EIRELI",
-    status: "PENDENTE",
+    status: "DRAFT",
     totalAmount: "8400.00",
     currentModel: {
       totalPis: "68.88",

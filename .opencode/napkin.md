@@ -34,3 +34,8 @@
 **Problem:** docker-compose.yml volumes only included src/, public/, tsconfig.json, next.config.ts — postcss.config.mjs was missing, so Tailwind v4 never processed @import "tailwindcss" in globals.css
 **Fix:** Add ./apps/web/postcss.config.mjs:/app/postcss.config.mjs:cached to app service volumes
 **Rule:** Every config file at the project root that a build tool reads (postcss, tailwind, next.config, tsconfig) must be explicitly mounted — Docker volumes don't auto-include root-level configs, only what's listed
+
+## [2026-06-20] eslint.config.mjs also needs Docker volume mount
+**Context:** Same root-cause class as tsconfig.json/postcss.config.mjs
+**Fix:** Mount ./apps/web/eslint.config.mjs:/app/eslint.config.mjs:cached in docker-compose.yml
+**Rule:** Any root-level config file referenced by a build/lint/format tool must be explicitly volume-mounted, not just present in the image build context

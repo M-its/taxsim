@@ -36,7 +36,7 @@ const inputVariants = cva(
 )
 
 interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement>,
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
     VariantProps<typeof inputVariants> {
   startIcon?: React.ReactNode
   endIcon?: React.ReactNode

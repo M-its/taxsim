@@ -6,6 +6,7 @@ import { Search, Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { useAuth } from "@/components/auth/auth-provider"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,6 +29,13 @@ function breadcrumbLabel(path: string): string {
   return map[path] ?? "Taxsim"
 }
 
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/)
+  const first = parts[0]?.[0] ?? ""
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : ""
+  return (first + last).toUpperCase() || "U"
+}
+
 interface TopbarProps {
   className?: string
   isSidebarOpen?: boolean
@@ -41,6 +49,7 @@ export function Topbar({
 }: TopbarProps) {
   const pathname = usePathname()
   const label = breadcrumbLabel(pathname)
+  const { user, company, logout } = useAuth()
 
   return (
     <header
@@ -90,7 +99,7 @@ export function Topbar({
               >
                 <Avatar className="h-5 w-5 rounded-none">
                   <AvatarFallback className="rounded-none bg-transparent text-[10px] font-medium text-[#fafafa]">
-                    JS
+                    {user ? initials(user.name) : "U"}
                   </AvatarFallback>
                 </Avatar>
               </button>
@@ -104,13 +113,13 @@ export function Topbar({
           >
             <DropdownMenuGroup>
               <DropdownMenuLabel className="rounded-none px-3 py-1.5 text-sm font-medium text-[#fafafa]">
-                João Silva
+                {user?.name ?? "Usuário"}
               </DropdownMenuLabel>
               <DropdownMenuLabel className="rounded-none px-3 py-0 text-xs font-normal text-[#a1a1aa]">
-                joao@acme.com
+                {user?.email ?? "—"}
               </DropdownMenuLabel>
               <DropdownMenuLabel className="rounded-none px-3 py-1.5 text-xs text-[#a1a1aa]">
-                Acme Ltda
+                {company?.name ?? "—"}
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator className="bg-[#27272a]" />
@@ -127,9 +136,17 @@ export function Topbar({
 
             <DropdownMenuSeparator className="bg-[#27272a]" />
 
-            <DropdownMenuItem className="rounded-none px-3 py-1.5 text-sm text-red-500 focus:bg-red-500/10 focus:text-red-500">
-              Sair
-            </DropdownMenuItem>
+            <DropdownMenuItem
+              render={
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="w-full rounded-none px-3 py-1.5 text-left text-sm text-red-500 focus:bg-red-500/10 focus:text-red-500"
+                >
+                  Sair
+                </button>
+              }
+            />
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { Sidebar } from "@/components/layout/sidebar"
 import { Topbar } from "@/components/layout/topbar"
+import { RequireAuth } from "@/components/auth/require-auth"
 
 export default function DashboardLayout({
   children,
@@ -22,20 +23,22 @@ export default function DashboardLayout({
   const toggleSidebar = () => setIsSidebarOpen((prev) => !prev)
 
   return (
-    <div className="min-h-screen bg-[#09090b]">
-      <Topbar
-        isSidebarOpen={isSidebarOpen}
-        onToggleSidebar={toggleSidebar}
-      />
-      <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
-      <main
-        className={cn(
-          "min-h-screen pt-14",
-          isSidebarOpen ? "md:pl-64" : "md:pl-16"
-        )}
-      >
-        <div className="mx-auto max-w-7xl p-6">{children}</div>
-      </main>
-    </div>
+    <RequireAuth>
+      <div className="min-h-screen bg-[#09090b]">
+        <Topbar
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={toggleSidebar}
+        />
+        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+        <main
+          className={cn(
+            "min-h-screen pt-14",
+            isSidebarOpen ? "md:pl-64" : "md:pl-16"
+          )}
+        >
+          <div className="mx-auto max-w-7xl p-6">{children}</div>
+        </main>
+      </div>
+    </RequireAuth>
   )
 }
