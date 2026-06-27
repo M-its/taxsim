@@ -68,7 +68,7 @@ async function refreshAccessToken(): Promise<string> {
   return refreshPromise
 }
 
-async function apiFetch(
+export async function apiFetch(
   input: string,
   init?: RequestInit,
 ): Promise<Response> {
