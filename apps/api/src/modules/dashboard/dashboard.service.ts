@@ -67,11 +67,11 @@ async function getYtdKpis(companyId: string, referenceDate: Date): Promise<Dashb
 
   const rows = await prisma.$queryRaw<YtdAggregateRow[]>`
     SELECT
-      COALESCE(SUM("totalPis" + "totalCofins" + "totalIcms" + "totalIss"), 0) AS currentTotal,
-      COALESCE(SUM("totalIbs" + "totalCbs" + "totalIs"), 0) AS reformTotal,
-      COALESCE(SUM("totalIbs"), 0) AS projectedIbs,
-      COALESCE(SUM("totalCbs"), 0) AS projectedCbs,
-      COALESCE(SUM("totalIs"), 0) AS projectedIs
+      COALESCE(SUM("totalPis" + "totalCofins" + "totalIcms" + "totalIss"), 0) AS "currentTotal",
+      COALESCE(SUM("totalIbs" + "totalCbs" + "totalIs"), 0) AS "reformTotal",
+      COALESCE(SUM("totalIbs"), 0) AS "projectedIbs",
+      COALESCE(SUM("totalCbs"), 0) AS "projectedCbs",
+      COALESCE(SUM("totalIs"), 0) AS "projectedIs"
     FROM sales
     WHERE "companyId" = ${companyId}::uuid
       AND status = 'CONFIRMED'
