@@ -478,7 +478,59 @@ Confirms a DRAFT sale. Status becomes CONFIRMED and is immutable after this.
 
 ---
 
-## 5. Simulation (stateless — does not persist)
+## 5. Dashboard
+
+### GET /dashboard/summary
+
+Returns aggregated dashboard data for the authenticated company. All
+aggregations include only `CONFIRMED` sales. `CANCELLED` and `DRAFT` sales
+are excluded.
+
+**Query params:** none
+
+**Response 200:**
+
+```json
+{
+  "kpis": {
+    "estimatedSavings": "387000.00",
+    "estimatedSavingsPercent": "-57.08",
+    "projectedIbs": "210000.00",
+    "projectedCbs": "81000.00",
+    "projectedIs": "0.00"
+  },
+  "taxLoadByMonth": [
+    { "month": "2026-01", "current": "4200.00", "reform": "1890.00" },
+    { "month": "2026-02", "current": "3800.00", "reform": "1710.00" },
+    { "month": "2026-03", "current": "5100.00", "reform": "2295.00" },
+    { "month": "2026-04", "current": "4700.00", "reform": "2115.00" },
+    { "month": "2026-05", "current": "5600.00", "reform": "2520.00" },
+    { "month": "2026-06", "current": "4900.00", "reform": "2205.00" }
+  ],
+  "taxComposition": [
+    { "name": "IBS", "value": "72.00" },
+    { "name": "CBS", "value": "28.00" },
+    { "name": "IS", "value": "0.00" }
+  ]
+}
+```
+
+**Aggregation rules:**
+
+| Field | Window | Definition |
+|---|---|---|
+| `kpis.estimatedSavings` | YTD (1 Jan → now) | `SUM(reform taxes) - SUM(current taxes)` for CONFIRMED sales. Signed, 2 decimals. |
+| `kpis.estimatedSavingsPercent` | YTD | Percentage change from current total. Signed, 2 decimals. |
+| `kpis.projectedIbs` | YTD | `SUM(totalIbs)` for CONFIRMED sales. |
+| `kpis.projectedCbs` | YTD | `SUM(totalCbs)` for CONFIRMED sales. |
+| `kpis.projectedIs` | YTD | `SUM(totalIs)` for CONFIRMED sales. |
+| `taxLoadByMonth[].current` | Rolling 6 months | Monthly `SUM(totalPis + totalCofins + totalIcms + totalIss)`. Zero-filled for months with no sales. |
+| `taxLoadByMonth[].reform` | Rolling 6 months | Monthly `SUM(totalIbs + totalCbs + totalIs)`. Zero-filled for months with no sales. |
+| `taxComposition[].value` | YTD | Share of projectedIbs / projectedCbs / projectedIs relative to their sum. |
+
+---
+
+## 6. Simulation (stateless — does not persist)
 
 ### POST /sales/simulate
 Runs the tax engine without creating any record. Used for the dashboard simulator.
@@ -550,7 +602,7 @@ Runs the tax engine without creating any record. Used for the dashboard simulato
 
 ---
 
-## 6. Auth token flow summary
+## 7. Auth token flow summary
 
 ```
 1. POST /auth/login

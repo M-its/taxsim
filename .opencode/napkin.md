@@ -39,3 +39,9 @@
 **Context:** Same root-cause class as tsconfig.json/postcss.config.mjs
 **Fix:** Mount ./apps/web/eslint.config.mjs:/app/eslint.config.mjs:cached in docker-compose.yml
 **Rule:** Any root-level config file referenced by a build/lint/format tool must be explicitly volume-mounted, not just present in the image build context
+
+## [2026-06-21] DB columns are camelCase (no @map in schema)
+**Context:** Raw SQL query failed with "column created_at does not exist"
+**Problem:** Prisma schema has no @map directives, so DB columns are camelCase exactly as written (createdAt, companyId, totalPis, etc.), not snake_case
+**Fix:** Any $queryRaw must use double-quoted camelCase: "createdAt", "companyId"
+**Rule:** Never assume snake_case in raw SQL for this project — check schema.prisma first, columns match TS field names exactly, case-sensitive with required double quotes

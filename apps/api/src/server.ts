@@ -7,6 +7,7 @@ import { authRoutes } from './modules/auth/auth.routes.js'
 import { productsRoutes } from './modules/products/products.routes.js'
 import { clientsRoutes } from './modules/clients/clients.routes.js'
 import { salesRoutes } from './modules/sales/sales.routes.js'
+import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js'
 
 const app = Fastify({ logger: true })
 
@@ -27,6 +28,7 @@ await app.register(authRoutes, { prefix: '/auth' })
 await app.register(productsRoutes, { prefix: '/products' })
 await app.register(clientsRoutes, { prefix: '/clients' })
 await app.register(salesRoutes, { prefix: '/sales' })
+await app.register(dashboardRoutes, { prefix: '/dashboard' })
 
 app.get('/health', async () => {
   return {

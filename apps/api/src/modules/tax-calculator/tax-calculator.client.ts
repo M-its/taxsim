@@ -85,15 +85,15 @@ export async function calculateReformModel(
         tribCalc: {
           IBSCBS: {
             gIBSCBS: {
-              vBC: number
-              gIBSUF: { pIBSUF: number; vIBSUF: number }
-              gIBSMun: { pIBSMun: number; vIBSMun: number }
-              vIBS: number
-              gCBS: { pCBS: number; vCBS: number }
+              vBC: string
+              gIBSUF: { pIBSUF: string; vIBSUF: string }
+              gIBSMun: { pIBSMun: string; vIBSMun: string }
+              vIBS: string
+              gCBS: { pCBS: string; vCBS: string }
               gTribRegular: {
-                pAliqEfetRegIBSUF: number
-                pAliqEfetRegIBSMun: number
-                pAliqEfetRegCBS: number
+                pAliqEfetRegIBSUF: string
+                pAliqEfetRegIBSMun: string
+                pAliqEfetRegCBS: string
               }
             }
           }
@@ -102,8 +102,8 @@ export async function calculateReformModel(
       total: {
         tribCalc: {
           IBSCBSTot: {
-            gIBS: { vIBS: number }
-            gCBS: { vCBS: number }
+            gIBS: { vIBS: string }
+            gCBS: { vCBS: string }
           }
         }
       }
