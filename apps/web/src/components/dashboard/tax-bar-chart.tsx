@@ -62,7 +62,7 @@ export function TaxBarChart({ data }: TaxBarChartProps) {
               labelStyle={{ color: "#fafafa", fontSize: 12 }}
               itemStyle={{ color: "#fafafa", fontSize: 12 }}
               formatter={(value: number, name: string) => [
-                formatCurrencyCompact(value * 1000),
+                formatCurrencyCompact(value),
                 name,
               ]}
             />

@@ -14,12 +14,16 @@ export function formatCurrencyCompact(value: number | string): string {
   const numeric = typeof value === "string" ? parseFloat(value) : value
   if (Number.isNaN(numeric)) return "R$ 0"
 
+  // Only abbreviate (mil/mi/bi) above R$ 100.000 — below that, precision
+  // matters more than space savings.
+  const useCompact = Math.abs(numeric) >= 100_000
+
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-    notation: "compact",
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
+    notation: useCompact ? "compact" : "standard",
+    minimumFractionDigits: useCompact ? 1 : 2,
+    maximumFractionDigits: useCompact ? 1 : 2,
   }).format(numeric)
 }
 
