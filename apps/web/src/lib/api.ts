@@ -1,4 +1,6 @@
 import type { LoginInput, RegisterInput, User, Company } from './auth.types'
+import type { ProductListResponse } from './product.types'
+import type { SimulationRequest, SimulationResponse } from './simulation.types'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333'
 
@@ -157,4 +159,16 @@ export async function logout(): Promise<void> {
   if (!response.ok && response.status !== 401) {
     throw await parseError(response)
   }
+}
+
+export async function getProducts(search?: string): Promise<ProductListResponse> {
+  const query = new URLSearchParams({ limit: '50' })
+  if (search) {
+    query.set('search', search)
+  }
+  return apiGet<ProductListResponse>(`/products?${query.toString()}`)
+}
+
+export async function simulateSales(payload: SimulationRequest): Promise<SimulationResponse> {
+  return apiPost<SimulationResponse>('/sales/simulate', payload)
 }

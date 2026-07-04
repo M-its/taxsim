@@ -1,59 +1,86 @@
 "use client"
 
 import { useState } from "react"
-import { SimulationForm, type SimulationFormData } from "@/components/simulation/simulation-form"
+import { SimulationForm, type SimulationFormItem } from "@/components/simulation/simulation-form"
 import { TaxComparison } from "@/components/simulation/tax-comparison"
 import { ProjectedImpact } from "@/components/simulation/projected-impact"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { mockSimulationResponse } from "@/lib/mock-data"
+import { useAuth } from "@/components/auth/auth-provider"
+import { simulateSales, ApiError } from "@/lib/api"
+import type { SimulationResponse } from "@/lib/simulation.types"
+
+function SkeletonBlock({ className }: { className?: string }) {
+  return <div className={"animate-pulse bg-[#27272a] " + (className ?? "")} />
+}
+
+function getSimulationErrorMessage(err: unknown): string {
+  if (err instanceof ApiError) {
+    if (err.status === 503) {
+      return "Calculadora tributária indisponível. Tente novamente."
+    }
+
+    if (err.status === 422) {
+      const backendMessage = err.message.toLowerCase()
+      if (
+        backendMessage.includes("calculator") ||
+        backendMessage.includes("calculadora")
+      ) {
+        return "Calculadora tributária indisponível. Tente novamente."
+      }
+      return "NCM não encontrado nas regras fiscais. Verifique o código NCM."
+    }
+
+    return err.message || "Erro ao calcular simulação. Tente novamente."
+  }
+
+  return "Erro ao calcular simulação. Tente novamente."
+}
 
 export default function SimulationPage() {
-  const [simulation, setSimulation] = useState(mockSimulationResponse)
-  const [formData, setFormData] = useState<SimulationFormData>({
-    grossRevenue: "1000000.00",
-    ibsRate: "0.0700",
-    cbsRate: "0.0270",
-  })
+  const { company, isLoading } = useAuth()
+  const [simulation, setSimulation] = useState<SimulationResponse | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  function handleRecalculate(data: SimulationFormData) {
-    setFormData(data)
-    // In a real implementation this would call POST /sales/simulate.
-    // For now we keep the mock response aligned with the API contract shape.
-    const grossRevenue = parseFloat(data.grossRevenue)
-    const ibsRate = parseFloat(data.ibsRate)
-    const cbsRate = parseFloat(data.cbsRate)
+  async function handleSimulate(items: SimulationFormItem[]) {
+    if (!company) return
 
-    const totalIbs = grossRevenue * ibsRate
-    const totalCbs = grossRevenue * cbsRate
-    const totalIs = 0
-    const reformTotal = totalIbs + totalCbs + totalIs
+    setError(null)
+    setIsSubmitting(true)
 
-    const currentTotal = grossRevenue * 0.226
-    const absolute = reformTotal - currentTotal
-    const percentual = absolute / currentTotal
+    try {
+      const result = await simulateSales({
+        taxRegime: company.taxRegime,
+        items,
+      })
+      setSimulation(result)
+    } catch (err) {
+      setSimulation(null)
+      setError(getSimulationErrorMessage(err))
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
-    setSimulation({
-      totalAmount: grossRevenue.toFixed(2),
-      currentModel: {
-        totalPis: (grossRevenue * 0.0082).toFixed(2),
-        totalCofins: (grossRevenue * 0.0378).toFixed(2),
-        totalIcms: (grossRevenue * 0.18).toFixed(2),
-        totalIss: "0.00",
-        total: currentTotal.toFixed(2),
-        effectiveRate: "0.2260",
-      },
-      reformModel: {
-        totalIbs: totalIbs.toFixed(2),
-        totalCbs: totalCbs.toFixed(2),
-        totalIs: totalIs.toFixed(2),
-        total: reformTotal.toFixed(2),
-        effectiveRate: ((ibsRate + cbsRate)).toFixed(4),
-      },
-      delta: {
-        absolute: absolute.toFixed(2),
-        percentual: percentual.toFixed(2),
-      },
-    })
+  if (isLoading || !company) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <SkeletonBlock className="h-6 w-40" />
+          <SkeletonBlock className="mt-2 h-4 w-72" />
+        </div>
+        <div className="space-y-5 rounded-none border border-[#27272a] bg-[#18181b] p-5">
+          <div className="flex items-center gap-3">
+            <SkeletonBlock className="h-8 w-8" />
+            <div className="space-y-2">
+              <SkeletonBlock className="h-4 w-48" />
+              <SkeletonBlock className="h-3 w-32" />
+            </div>
+          </div>
+          <SkeletonBlock className="h-24" />
+          <SkeletonBlock className="h-10 w-40" />
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -65,57 +92,28 @@ export default function SimulationPage() {
         </p>
       </div>
 
-      <SimulationForm onSubmit={handleRecalculate} defaultValues={formData} />
+      <SimulationForm
+        taxRegime={company.taxRegime}
+        isLoadingCompany={isLoading}
+        isSubmitting={isSubmitting}
+        onSubmit={handleSimulate}
+      />
 
-      <Tabs defaultValue="comparison" className="w-full">
-        <TabsList className="rounded-none border border-[#27272a] bg-[#18181b] p-1">
-          <TabsTrigger
-            value="comparison"
-            className="rounded-none text-sm text-[#a1a1aa] data-[state=active]:bg-[#27272a] data-[state=active]:text-[#fafafa]"
-          >
-            Comparativo Lado-a-Lado
-          </TabsTrigger>
-          <TabsTrigger
-            value="credits"
-            className="rounded-none text-sm text-[#a1a1aa] data-[state=active]:bg-[#27272a] data-[state=active]:text-[#fafafa]"
-          >
-            Análise de Créditos
-          </TabsTrigger>
-        </TabsList>
+      {error && (
+        <div className="rounded-none border border-red-900/50 bg-red-900/10 p-4 text-sm text-red-400">
+          {error}
+        </div>
+      )}
 
-        <TabsContent value="comparison" className="mt-4 space-y-4">
-          <TaxComparison data={simulation} />
+      {simulation && (
+        <div className="space-y-4">
+          <TaxComparison data={simulation} taxRegime={company.taxRegime} />
           <ProjectedImpact
             savings={simulation.delta.absolute.replace("-", "")}
             savingsPercent={simulation.delta.percentual}
           />
-        </TabsContent>
-
-        <TabsContent value="credits" className="mt-4">
-          <div className="rounded-none border border-[#27272a] bg-[#18181b] p-6">
-            <h3 className="text-sm font-medium text-[#fafafa]">Análise de Créditos Presumidos</h3>
-            <p className="mt-2 text-sm text-[#a1a1aa]">
-              Esta visão detalhada será alimentada pelo endpoint{" "}
-              <code className="font-numbers text-xs text-[#34d399]">POST /sales/simulate</code>{" "}
-              e mostrará os créditos acumulados por NCM ao longo da cadeia produtiva.
-            </p>
-            <div className="mt-4 grid grid-cols-3 gap-4 border-t border-[#27272a] pt-4">
-              <div>
-                <p className="text-xs text-[#a1a1aa]">Créditos de IBS</p>
-                <p className="font-numbers text-lg text-[#fafafa]">R$ 21.000,00</p>
-              </div>
-              <div>
-                <p className="text-xs text-[#a1a1aa]">Créditos de CBS</p>
-                <p className="font-numbers text-lg text-[#fafafa]">R$ 8.100,00</p>
-              </div>
-              <div>
-                <p className="text-xs text-[#a1a1aa]">Créditos Totais</p>
-                <p className="font-numbers text-lg text-[#34d399]">R$ 29.100,00</p>
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
     </div>
   )
 }

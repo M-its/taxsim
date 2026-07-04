@@ -378,71 +378,71 @@ export const simulateTax = async (
     },
   })
 
-  const taxRulesMap: Record<string, {
-    pisRate: string
-    cofinsRate: string
-    icmsRate: string
-    issRate: string
-    cClassTrib: string
-    cst: string
-  }> = {}
-
-  for (const rule of taxRules) {
-    taxRulesMap[rule.ncmCode] = {
-      pisRate: rule.pisRate.toFixed(4),
-      cofinsRate: rule.cofinsRate.toFixed(4),
-      icmsRate: rule.icmsRate.toFixed(4),
-      issRate: rule.issRate.toFixed(4),
-      cClassTrib: rule.cClassTrib,
-      cst: rule.cst,
-    }
-  }
-
-  const engineItems = items.map((item) => {
-    const rule = taxRulesMap[item.ncmCode]
-    if (!rule) {
-      throw new TaxRuleNotFoundError(item.ncmCode)
-    }
-    return {
-      ncmCode: item.ncmCode,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      cClassTrib: rule.cClassTrib,
-      cst: rule.cst,
-    }
-  })
-
-  const taxEngineInput = {
-    taxRegime: input.taxRegime,
-    items: engineItems.map(({ ncmCode, quantity, unitPrice }) => ({
-      ncmCode,
-      quantity,
-      unitPrice,
-    })),
-    taxRules: Object.fromEntries(
-      Object.entries(taxRulesMap).map(([ncm, rule]) => [
-        ncm,
-        { pisRate: rule.pisRate, cofinsRate: rule.cofinsRate, icmsRate: rule.icmsRate, issRate: rule.issRate },
-      ]),
-    ),
-  }
-
-  const currentResult = calculateCurrentModel(taxEngineInput)
-
-  // For simulation, use default municipio/uf since there's no authenticated company
-  const operacaoInput = buildOperacaoInput(
-    engineItems.map((item) => ({
-      ncmCode: item.ncmCode,
-      cClassTrib: item.cClassTrib,
-      cst: item.cst,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-    })),
-    4314902, // Porto Alegre
-    'RS',
-  )
-
   try {
+    const taxRulesMap: Record<string, {
+      pisRate: string
+      cofinsRate: string
+      icmsRate: string
+      issRate: string
+      cClassTrib: string
+      cst: string
+    }> = {}
+
+    for (const rule of taxRules) {
+      taxRulesMap[rule.ncmCode] = {
+        pisRate: rule.pisRate.toFixed(4),
+        cofinsRate: rule.cofinsRate.toFixed(4),
+        icmsRate: rule.icmsRate.toFixed(4),
+        issRate: rule.issRate.toFixed(4),
+        cClassTrib: rule.cClassTrib,
+        cst: rule.cst,
+      }
+    }
+
+    const engineItems = items.map((item) => {
+      const rule = taxRulesMap[item.ncmCode]
+      if (!rule) {
+        throw new TaxRuleNotFoundError(item.ncmCode)
+      }
+      return {
+        ncmCode: item.ncmCode,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        cClassTrib: rule.cClassTrib,
+        cst: rule.cst,
+      }
+    })
+
+    const taxEngineInput = {
+      taxRegime: input.taxRegime,
+      items: engineItems.map(({ ncmCode, quantity, unitPrice }) => ({
+        ncmCode,
+        quantity,
+        unitPrice,
+      })),
+      taxRules: Object.fromEntries(
+        Object.entries(taxRulesMap).map(([ncm, rule]) => [
+          ncm,
+          { pisRate: rule.pisRate, cofinsRate: rule.cofinsRate, icmsRate: rule.icmsRate, issRate: rule.issRate },
+        ]),
+      ),
+    }
+
+    const currentResult = calculateCurrentModel(taxEngineInput)
+
+    // For simulation, use default municipio/uf since there's no authenticated company
+    const operacaoInput = buildOperacaoInput(
+      engineItems.map((item) => ({
+        ncmCode: item.ncmCode,
+        cClassTrib: item.cClassTrib,
+        cst: item.cst,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+      })),
+      4314902, // Porto Alegre
+      'RS',
+    )
+
     const reformResult = await calculateReformModel(
       operacaoInput,
       engineItems.map((item) => ({
@@ -476,6 +476,11 @@ export const simulateTax = async (
       breakdown,
     }
   } catch (error) {
+    if (error instanceof TaxRuleNotFoundError) {
+      throw AppError.unprocessable(
+        `Nenhuma regra fiscal encontrada para o NCM ${error.ncmCode}. Cadastre uma regra fiscal para este NCM antes de simular.`,
+      )
+    }
     if (error instanceof TaxCalculatorUnavailableError) {
       throw AppError.unprocessable('Tax calculator service unavailable')
     }

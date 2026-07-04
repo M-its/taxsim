@@ -2,22 +2,12 @@
 // All monetary values are strings with 2 decimal places.
 // All tax rates are strings with 4 decimal places.
 
+import type {
+  CurrentModelSnapshot,
+  ReformModelSnapshot,
+} from './simulation.types'
+
 export type TaxRegime = "SIMPLES_NACIONAL" | "LUCRO_PRESUMIDO" | "LUCRO_REAL"
-
-export interface CurrentModelSnapshot {
-  totalPis: string
-  totalCofins: string
-  totalIcms: string
-  totalIss: string
-  total: string
-}
-
-export interface ReformModelSnapshot {
-  totalIbs: string
-  totalCbs: string
-  totalIs: string
-  total: string
-}
 
 export interface SaleSummary {
   id: string
@@ -47,12 +37,14 @@ export const mockRecentSales: SaleSummary[] = [
       totalIcms: "675.00",
       totalIss: "0.00",
       total: "847.50",
+      effectiveRate: "0.2260",
     },
     reformModel: {
       totalIbs: "262.50",
       totalCbs: "101.25",
       totalIs: "0.00",
       total: "363.75",
+      effectiveRate: "0.0970",
     },
     delta: {
       absolute: "-483.75",
@@ -72,12 +64,14 @@ export const mockRecentSales: SaleSummary[] = [
       totalIcms: "936.00",
       totalIss: "0.00",
       total: "1175.20",
+      effectiveRate: "0.2260",
     },
     reformModel: {
       totalIbs: "364.00",
       totalCbs: "140.40",
       totalIs: "0.00",
       total: "504.40",
+      effectiveRate: "0.0970",
     },
     delta: {
       absolute: "-670.80",
@@ -97,12 +91,14 @@ export const mockRecentSales: SaleSummary[] = [
       totalIcms: "0.00",
       totalIss: "625.00",
       total: "625.00",
+      effectiveRate: "0.0500",
     },
     reformModel: {
       totalIbs: "500.00",
       totalCbs: "250.00",
       totalIs: "0.00",
       total: "750.00",
+      effectiveRate: "0.0600",
     },
     delta: {
       absolute: "125.00",
@@ -122,12 +118,14 @@ export const mockRecentSales: SaleSummary[] = [
       totalIcms: "3402.00",
       totalIss: "0.00",
       total: "4271.40",
+      effectiveRate: "0.2260",
     },
     reformModel: {
       totalIbs: "1323.00",
       totalCbs: "510.30",
       totalIs: "0.00",
       total: "1833.30",
+      effectiveRate: "0.0970",
     },
     delta: {
       absolute: "-2438.10",
@@ -147,12 +145,14 @@ export const mockRecentSales: SaleSummary[] = [
       totalIcms: "1512.00",
       totalIss: "0.00",
       total: "1898.40",
+      effectiveRate: "0.2260",
     },
     reformModel: {
       totalIbs: "588.00",
       totalCbs: "226.80",
       totalIs: "0.00",
       total: "814.80",
+      effectiveRate: "0.0970",
     },
     delta: {
       absolute: "-1083.60",
@@ -188,39 +188,6 @@ export const mockTaxComposition: TaxCompositionItem[] = [
   { name: "CBS", value: 28, color: "#a1a1aa" },
   { name: "IS", value: 0, color: "#27272a" },
 ]
-
-export interface SimulationResponse {
-  totalAmount: string
-  currentModel: CurrentModelSnapshot & { effectiveRate: string }
-  reformModel: ReformModelSnapshot & { effectiveRate: string }
-  delta: {
-    absolute: string
-    percentual: string
-  }
-}
-
-export const mockSimulationResponse: SimulationResponse = {
-  totalAmount: "1000000.00",
-  currentModel: {
-    totalPis: "8200.00",
-    totalCofins: "37800.00",
-    totalIcms: "180000.00",
-    totalIss: "0.00",
-    total: "226000.00",
-    effectiveRate: "0.2260",
-  },
-  reformModel: {
-    totalIbs: "70000.00",
-    totalCbs: "27000.00",
-    totalIs: "0.00",
-    total: "97000.00",
-    effectiveRate: "0.0970",
-  },
-  delta: {
-    absolute: "-129000.00",
-    percentual: "-57.08",
-  },
-}
 
 export interface KpiData {
   estimatedSavings: string
