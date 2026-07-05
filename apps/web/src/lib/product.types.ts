@@ -7,6 +7,13 @@ export type Product = {
   createdAt: string
 }
 
+export type ProductInput = {
+  name: string
+  sku: string
+  ncmCode: string
+  unitPrice: string
+}
+
 export type ProductListResponse = {
   data: Product[]
   pagination: {

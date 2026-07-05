@@ -21,6 +21,7 @@ export async function listProducts(
           OR: [
             { name: { contains: search, mode: 'insensitive' } },
             { sku: { contains: search, mode: 'insensitive' } },
+            { ncmCode: { contains: search, mode: 'insensitive' } },
           ],
         }
       : {}),

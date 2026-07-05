@@ -1,5 +1,5 @@
 import type { LoginInput, RegisterInput, User, Company } from './auth.types'
-import type { ProductListResponse } from './product.types'
+import type { Product, ProductInput, ProductListResponse } from './product.types'
 import type { SimulationRequest, SimulationResponse } from './simulation.types'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333'
@@ -128,6 +128,24 @@ async function apiPost<T>(input: string, body: unknown): Promise<T> {
   return response.json() as Promise<T>
 }
 
+async function apiPut<T>(input: string, body: unknown): Promise<T> {
+  const response = await apiFetch(input, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+  if (!response.ok) {
+    throw await parseError(response)
+  }
+  return response.json() as Promise<T>
+}
+
+async function apiDelete(input: string): Promise<void> {
+  const response = await apiFetch(input, { method: 'DELETE' })
+  if (!response.ok) {
+    throw await parseError(response)
+  }
+}
+
 export async function refreshSession(): Promise<string> {
   return refreshAccessToken()
 }
@@ -161,12 +179,24 @@ export async function logout(): Promise<void> {
   }
 }
 
-export async function getProducts(search?: string): Promise<ProductListResponse> {
-  const query = new URLSearchParams({ limit: '50' })
+export async function getProducts(search?: string, page = 1): Promise<ProductListResponse> {
+  const query = new URLSearchParams({ limit: '20', page: String(page) })
   if (search) {
     query.set('search', search)
   }
   return apiGet<ProductListResponse>(`/products?${query.toString()}`)
+}
+
+export async function createProduct(data: ProductInput): Promise<Product> {
+  return apiPost<Product>('/products', data)
+}
+
+export async function updateProduct(id: string, data: ProductInput): Promise<Product> {
+  return apiPut<Product>(`/products/${id}`, data)
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  return apiDelete(`/products/${id}`)
 }
 
 export async function simulateSales(payload: SimulationRequest): Promise<SimulationResponse> {
