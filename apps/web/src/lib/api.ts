@@ -1,5 +1,6 @@
 import type { LoginInput, RegisterInput, User, Company } from './auth.types'
 import type { Product, ProductInput, ProductListResponse } from './product.types'
+import type { Client, ClientInput, ClientListResponse } from './client.types'
 import type { SimulationRequest, SimulationResponse } from './simulation.types'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333'
@@ -201,4 +202,24 @@ export async function deleteProduct(id: string): Promise<void> {
 
 export async function simulateSales(payload: SimulationRequest): Promise<SimulationResponse> {
   return apiPost<SimulationResponse>('/sales/simulate', payload)
+}
+
+export async function getClients(search?: string, page = 1): Promise<ClientListResponse> {
+  const query = new URLSearchParams({ limit: '20', page: String(page) })
+  if (search) {
+    query.set('search', search)
+  }
+  return apiGet<ClientListResponse>(`/clients?${query.toString()}`)
+}
+
+export async function createClient(data: ClientInput): Promise<Client> {
+  return apiPost<Client>('/clients', data)
+}
+
+export async function updateClient(id: string, data: ClientInput): Promise<Client> {
+  return apiPut<Client>(`/clients/${id}`, data)
+}
+
+export async function deleteClient(id: string): Promise<void> {
+  return apiDelete(`/clients/${id}`)
 }

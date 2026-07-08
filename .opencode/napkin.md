@@ -45,3 +45,9 @@
 **Problem:** Prisma schema has no @map directives, so DB columns are camelCase exactly as written (createdAt, companyId, totalPis, etc.), not snake_case
 **Fix:** Any $queryRaw must use double-quoted camelCase: "createdAt", "companyId"
 **Rule:** Never assume snake_case in raw SQL for this project — check schema.prisma first, columns match TS field names exactly, case-sensitive with required double quotes
+
+## [2026-07] CNPJ alfanumérico — decisão pendente
+**Context:** A partir de julho/2026 novos CNPJs podem ter letras nos primeiros 12 caracteres
+**Impact:** Frontend: máscara numérica atual rejeita letras. Backend: Zod schema aceita string mas regex de validação pode precisar de ajuste
+**Decision needed:** Atualizar máscara e validação para aceitar [A-Z0-9] nos primeiros 12 dígitos, mantendo os 2 verificadores numéricos no final
+**Status:** Pendente — não bloqueante para MVP
