@@ -2,6 +2,7 @@ import type { LoginInput, RegisterInput, User, Company } from './auth.types'
 import type { Product, ProductInput, ProductListResponse } from './product.types'
 import type { Client, ClientInput, ClientListResponse } from './client.types'
 import type { SimulationRequest, SimulationResponse } from './simulation.types'
+import type { Sale, SaleListResponse, SaleStatus, SaleStatusResponse } from './sale.types'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333'
 
@@ -186,6 +187,41 @@ export async function getProducts(search?: string, page = 1): Promise<ProductLis
     query.set('search', search)
   }
   return apiGet<ProductListResponse>(`/products?${query.toString()}`)
+}
+
+async function apiPatch<T>(input: string, body?: unknown): Promise<T> {
+  const init: RequestInit = { method: 'PATCH' }
+  if (body !== undefined) {
+    init.body = JSON.stringify(body)
+  }
+  const response = await apiFetch(input, init)
+  if (!response.ok) {
+    throw await parseError(response)
+  }
+  return response.json() as Promise<T>
+}
+
+export async function getSales(
+  status?: SaleStatus,
+  page = 1,
+): Promise<SaleListResponse> {
+  const query = new URLSearchParams({ limit: '20', page: String(page) })
+  if (status) {
+    query.set('status', status)
+  }
+  return apiGet<SaleListResponse>(`/sales?${query.toString()}`)
+}
+
+export async function getSaleById(id: string): Promise<Sale> {
+  return apiGet<Sale>(`/sales/${id}`)
+}
+
+export async function confirmSale(id: string): Promise<SaleStatusResponse> {
+  return apiPatch<SaleStatusResponse>(`/sales/${id}/confirm`)
+}
+
+export async function cancelSale(id: string): Promise<SaleStatusResponse> {
+  return apiPatch<SaleStatusResponse>(`/sales/${id}/cancel`)
 }
 
 export async function createProduct(data: ProductInput): Promise<Product> {
