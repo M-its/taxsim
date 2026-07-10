@@ -1,47 +1,43 @@
+/**
+ * Prisma seed entrypoint.
+ *
+ * Available seeded NCMs (global tax_rules table — no company_id):
+ *
+ * - 84713012: Notebook
+ * - 85171200: Smartphone
+ * - 84713019: Tablet
+ * - 85285200: Monitor
+ * - 84716052: Teclado
+ * - 84716053: Mouse
+ * - 61091000: Camiseta de algodão
+ * - 62034200: Calça de algodão (masculina)
+ * - 64039900: Calçado de couro
+ * - 22021000: Refrigerante
+ * - 20019000: Conserva de legumes
+ * - 48025610: Papel A4 para impressão
+ * - 96081000: Caneta esferográfica
+ * - 94033000: Móvel de madeira para escritório
+ * - 87032210: Veículo de passageiros (Imposto Seletivo)
+ * - 22030000: Cerveja (Imposto Seletivo)
+ * - 22082000: Destilados — Imposto Seletivo
+ * - 24022000: Cigarros (Imposto Seletivo)
+ * - 85235100: Dispositivo de memória (pendrive)
+ * - 84715000: Computador desktop
+ * - 99999999: Software (serviço) — tributado via ISS
+ *
+ * tax_rules is global: these rows apply to every company/tenant.
+ */
+
 import { PrismaClient } from '@prisma/client'
+import taxRules from './data/tax-rules-data'
+import { seedTaxRules } from '../src/lib/tax-rule-seed.js'
 
 const prisma = new PrismaClient()
 
-const seedNcms = [
-  { ncmCode: '84713012', taxRegime: 'SIMPLES_NACIONAL' as const, pisRate: '0.0082', cofinsRate: '0.0378', icmsRate: '0.1800', issRate: '0.0000' },
-  { ncmCode: '84713012', taxRegime: 'LUCRO_PRESUMIDO' as const, pisRate: '0.0082', cofinsRate: '0.0378', icmsRate: '0.1800', issRate: '0.0000' },
-  { ncmCode: '84713012', taxRegime: 'LUCRO_REAL' as const, pisRate: '0.0065', cofinsRate: '0.0300', icmsRate: '0.1800', issRate: '0.0000' },
-  { ncmCode: '24021000', taxRegime: 'SIMPLES_NACIONAL' as const, pisRate: '0.0082', cofinsRate: '0.0378', icmsRate: '0.1200', issRate: '0.0000' },
-  { ncmCode: '24021000', taxRegime: 'LUCRO_PRESUMIDO' as const, pisRate: '0.0082', cofinsRate: '0.0378', icmsRate: '0.1200', issRate: '0.0000' },
-  { ncmCode: '24021000', taxRegime: 'LUCRO_REAL' as const, pisRate: '0.0065', cofinsRate: '0.0300', icmsRate: '0.1200', issRate: '0.0000' },
-  { ncmCode: '22030000', taxRegime: 'SIMPLES_NACIONAL' as const, pisRate: '0.0082', cofinsRate: '0.0378', icmsRate: '0.1700', issRate: '0.0000' },
-  { ncmCode: '22030000', taxRegime: 'LUCRO_PRESUMIDO' as const, pisRate: '0.0082', cofinsRate: '0.0378', icmsRate: '0.1700', issRate: '0.0000' },
-  { ncmCode: '22030000', taxRegime: 'LUCRO_REAL' as const, pisRate: '0.0065', cofinsRate: '0.0300', icmsRate: '0.1700', issRate: '0.0000' },
-]
-
 async function main() {
-  console.log('Seeding tax_rules...')
-
-  for (const rule of seedNcms) {
-    await prisma.taxRule.upsert({
-      where: {
-        ncmCode_taxRegime_status: {
-          ncmCode: rule.ncmCode,
-          taxRegime: rule.taxRegime,
-          status: 'ACTIVE',
-        },
-      },
-      update: {},
-      create: {
-        ncmCode: rule.ncmCode,
-        taxRegime: rule.taxRegime,
-        status: 'ACTIVE',
-        cClassTrib: '000001',
-        cst: '000',
-        pisRate: Number(rule.pisRate),
-        cofinsRate: Number(rule.cofinsRate),
-        icmsRate: Number(rule.icmsRate),
-        issRate: Number(rule.issRate),
-      },
-    })
-  }
-
-  console.log(`Seeded ${seedNcms.length} tax rules.`)
+  console.log(`Seeding ${taxRules.length} tax rules into the global tax_rules table...`)
+  const count = await seedTaxRules(prisma, taxRules)
+  console.log(`Seeded ${count} tax rules.`)
 }
 
 main()

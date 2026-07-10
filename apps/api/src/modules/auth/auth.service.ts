@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import type { FastifyInstance } from 'fastify'
 import { Prisma } from '@prisma/client'
 import { prisma } from '../../lib/prisma.js'
+import { seedTaxRulesIfEmpty } from '../../lib/tax-rule-seed.js'
 import { AppError } from '../../shared/errors/AppError.js'
 import type { RegisterInput, LoginInput, JwtPayload } from './auth.types.js'
 import type { User, Company, UserRole } from '@prisma/client'
@@ -65,6 +66,12 @@ export const register = async (
           role: 'OWNER',
         },
       })
+
+      // Bootstrap global tax rules on first registration if the table is still empty.
+      const taxRulesSeeded = await seedTaxRulesIfEmpty(tx)
+      if (taxRulesSeeded) {
+        console.log('tax_rules was empty; global rules auto-seeded after company creation')
+      }
 
       return { user, company }
     })
