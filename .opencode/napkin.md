@@ -51,3 +51,15 @@
 **Impact:** Frontend: máscara numérica atual rejeita letras. Backend: Zod schema aceita string mas regex de validação pode precisar de ajuste
 **Decision needed:** Atualizar máscara e validação para aceitar [A-Z0-9] nos primeiros 12 dígitos, mantendo os 2 verificadores numéricos no final
 **Status:** Pendente — não bloqueante para MVP
+
+## [2026-07-10] NCM autocomplete — pendente
+**Context:** Usuário não sabe os códigos NCM ao cadastrar produtos
+**Solution:** Importar tabela NCM oficial da RFB (dados.gov.br, ~11.000 códigos CSV)
+**Steps:**
+1. Baixar CSV da tabela NCM da RFB em dados.gov.br
+2. Criar tabela ncm_catalog no schema Prisma (read-only, sem companyId)
+3. Script de import do CSV
+4. Endpoint GET /ncm/search?q=... com busca por descrição
+5. Autocomplete no formulário de produto (similar ao product search na simulação)
+**Priority:** Medium — melhora UX do cadastro de produtos significativamente
+**References:** Omie, Bling e Conta Azul têm esse fluxo como padrão

@@ -8,22 +8,18 @@ export default function GlobalError({
   reset: () => void
 }) {
   return (
-    <html lang="pt-BR">
-      <body className="min-h-screen bg-[#09090b] text-[#fafafa]">
-        <div className="flex min-h-screen flex-col items-center justify-center p-4 text-center">
-          <h2 className="mb-2 text-2xl font-semibold">Algo deu errado</h2>
-          <p className="mb-6 text-[#a1a1aa]">
-            {error.message || 'Ocorreu um erro inesperado.'}
-          </p>
-          <button
-            type="button"
-            onClick={reset}
-            className="rounded-none bg-[#34d399] px-4 py-2 text-sm font-medium text-[#09090b] hover:bg-[#34d399]/90"
-          >
-            Tentar novamente
-          </button>
-        </div>
-      </body>
-    </html>
+    <div style={{ minHeight: '100vh', backgroundColor: '#09090b', color: '#fafafa', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '1rem', textAlign: 'center' }}>
+      <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '0.5rem' }}>Algo deu errado</h2>
+      <p style={{ color: '#a1a1aa', marginBottom: '1.5rem' }}>
+        {error.message || 'Ocorreu um erro inesperado.'}
+      </p>
+      <button
+        type="button"
+        onClick={reset}
+        style={{ backgroundColor: '#34d399', color: '#09090b', padding: '0.5rem 1rem', fontSize: '0.875rem', fontWeight: '500', border: 'none', cursor: 'pointer' }}
+      >
+        Tentar novamente
+      </button>
+    </div>
   )
 }
