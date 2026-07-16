@@ -63,3 +63,9 @@
 5. Autocomplete no formulário de produto (similar ao product search na simulação)
 **Priority:** Medium — melhora UX do cadastro de produtos significativamente
 **References:** Omie, Bling e Conta Azul têm esse fluxo como padrão
+
+## [2026-07-14] Build /404 error — cache corrompido
+**Context:** Next.js 15 falhando com "<Html> should not be imported outside of pages/_document"
+**Problem:** Cache .next no host estava corrompido após downgrade de Next.js 16 para 15
+**Fix:** rm -rf .next && rm -rf node_modules/.cache && docker compose down && docker volume rm taxsim_web_next_cache
+**Rule:** Ao trocar versão do Next.js, sempre limpar .next local E o volume Docker de cache

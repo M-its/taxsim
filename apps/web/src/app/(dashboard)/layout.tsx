@@ -1,4 +1,3 @@
-export const dynamic = 'force-dynamic'
 
 import { AuthProvider } from "@/components/auth/auth-provider"
 import { DashboardShell } from "@/components/layout/dashboard-shell"

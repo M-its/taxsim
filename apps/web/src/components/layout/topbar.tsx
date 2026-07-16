@@ -138,13 +138,12 @@ export function Topbar({
 
             <DropdownMenuItem
               render={
-                <button
-                  type="button"
+                <div
                   onClick={logout}
-                  className="w-full rounded-none px-3 py-1.5 text-left text-sm text-red-500 focus:bg-red-500/10 focus:text-red-500"
+                  className="w-full cursor-pointer rounded-none px-3 py-1.5 text-left text-sm text-red-500 focus:bg-red-500/10 focus:text-red-500"
                 >
                   Sair
-                </button>
+                </div>
               }
             />
           </DropdownMenuContent>

@@ -186,9 +186,6 @@ services:
       api:
         condition: service_healthy
     environment:
-      NODE_ENV: development
-
-      # Server-side communication (RSC/SSR) → internal Docker hostname
       API_INTERNAL_URL: http://api:3333
 
       # Client-side communication → accessible from the browser outside Docker
