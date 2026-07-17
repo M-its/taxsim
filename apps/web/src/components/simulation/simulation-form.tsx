@@ -260,11 +260,6 @@ export function SimulationForm({
     onSubmit(items.map(mapToSimulationItem))
   }
 
-  const formErrors = items.flatMap((item) =>
-    validateItem(item).map((error) => ({ id: item.id, error }))
-  )
-  const isValid = items.length > 0 && formErrors.length === 0
-
   if (isLoadingCompany) {
     return (
       <div className="space-y-5 rounded-none border border-[#27272a] bg-[#18181b] p-5">

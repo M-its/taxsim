@@ -69,3 +69,10 @@
 **Problem:** Cache .next no host estava corrompido após downgrade de Next.js 16 para 15
 **Fix:** rm -rf .next && rm -rf node_modules/.cache && docker compose down && docker volume rm taxsim_web_next_cache
 **Rule:** Ao trocar versão do Next.js, sempre limpar .next local E o volume Docker de cache
+
+## [2026-07-14] VS Code IntelliSense sem tipos — node_modules só no Docker
+**Context:** VS Code exibindo "Cannot find module X" para @prisma/client, fastify, zod, etc.
+**Problem:** node_modules existe apenas dentro do volume Docker, não no host WSL2
+**Fix:** Rodar pnpm install localmente em apps/api e apps/web (não altera o Docker)
+**Note:** Ignorar ERR_PNPM_IGNORED_BUILDS — install local é só para IntelliSense, não para execução
+**Rule:** Após qualquer clone do projeto em nova máquina ou WSL, sempre rodar pnpm install localmente para restaurar IntelliSense
