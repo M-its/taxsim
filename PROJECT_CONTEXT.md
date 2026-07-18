@@ -489,3 +489,36 @@ Required at registration. Orchestrator reads from authenticated user's company.
 - cbsRate = pAliqEfetRegCBS
 - isRate = pIS
 - All values toFixed(2), all rates toFixed(4)
+
+---
+
+## Split Payment — Fundação Arquitetural
+
+A NT 2025.002 e a NT 2026.001 introduzem o mecanismo de **Split Payment** para
+IBS e CBS: o valor do pagamento será processado pelo PSP (gateway/payment
+service provider), que reterá os tributos da reforma antes de repassar o valor
+líquido ao comerciante.
+
+### O que foi implementado
+
+- Campos arquiteturais adicionados ao modelo `Sale`:
+  - `splitPaymentResourceId` — identificador futuro da plataforma governamental
+  - `ibsRetainedAmount` — valor de IBS retido na fonte
+  - `cbsRetainedAmount` — valor de CBS retido na fonte
+  - `splitPaymentStatus` — `PENDING | RETAINED | SETTLED | N/A`
+- Novo modelo `SplitPaymentEvent` para auditoria futura dos eventos do PSP
+  (`CREATED | RETAINED | CONFIRMED | FAILED`)
+- Seção informativa na tela de simulação exibindo IBS/CBS retidos e o valor
+  líquido estimado ao vendedor
+
+### O que fica no roadmap
+
+- Integração real com PSP/gateway de pagamento
+- Webhooks para receber confirmações de retenção e liquidação
+- Geração de XML/NF-e com indicação de tributação no Split Payment
+- Comunicação com a plataforma governamental via `resourceId`
+
+### Referências
+
+- NT 2025.002 — Split Payment do IVA Dual
+- NT 2026.001 — Regulamentação complementar do Split Payment

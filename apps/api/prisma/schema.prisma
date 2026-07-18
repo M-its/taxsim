@@ -137,14 +137,35 @@ model Sale {
   totalCbs    Decimal    @db.Decimal(12, 2) @default(0)
   totalIs     Decimal    @db.Decimal(12, 2) @default(0)
 
+  // Split Payment (NT 2025.002 / NT 2026.001) — architectural foundation
+  splitPaymentResourceId String?
+  ibsRetainedAmount      Decimal? @db.Decimal(10, 4)
+  cbsRetainedAmount      Decimal? @db.Decimal(10, 4)
+  splitPaymentStatus     String?  @default("PENDING") // PENDING | RETAINED | SETTLED | N/A
+
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
   company  Company    @relation(fields: [companyId], references: [id])
   client   Client     @relation(fields: [clientId], references: [id])
   items    SaleItem[]
+  splitPaymentEvents SplitPaymentEvent[]
 
   @@map("sales")
+}
+
+model SplitPaymentEvent {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  saleId     String   @db.Uuid
+  sale       Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  resourceId String
+  eventType  String   // CREATED | RETAINED | CONFIRMED | FAILED
+  ibsAmount  Decimal? @db.Decimal(10, 4)
+  cbsAmount  Decimal? @db.Decimal(10, 4)
+  payload    Json?
+  createdAt  DateTime @default(now())
+
+  @@map("split_payment_events")
 }
 
 model SaleItem {

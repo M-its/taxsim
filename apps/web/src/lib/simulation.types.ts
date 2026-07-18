@@ -59,4 +59,10 @@ export interface SimulationResponse {
     percentual: string
   }
   breakdown: SimulationBreakdownItem[]
+  splitPayment?: {
+    ibsAmount: string
+    cbsAmount: string
+    netMerchantAmount: string
+    note: string
+  }
 }

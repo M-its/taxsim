@@ -52,6 +52,22 @@ export default function SimulationPage() {
         taxRegime: company.taxRegime,
         items,
       })
+
+      const ibsAmount = result.reformModel.totalIbs
+      const cbsAmount = result.reformModel.totalCbs
+      const net = (
+        parseFloat(result.totalAmount) -
+        parseFloat(ibsAmount) -
+        parseFloat(cbsAmount)
+      ).toFixed(2)
+
+      result.splitPayment = {
+        ibsAmount,
+        cbsAmount,
+        netMerchantAmount: net,
+        note: "Valores sujeitos ao Split Payment conforme NT 2025.002",
+      }
+
       setSimulation(result)
     } catch (err) {
       setSimulation(null)

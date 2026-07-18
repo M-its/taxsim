@@ -1,6 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
+import { Info } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
@@ -125,6 +126,56 @@ export function TaxComparison({ data, taxRegime }: TaxComparisonProps) {
           </CardContent>
         </Card>
       </motion.div>
+
+      {data.splitPayment && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut", delay: 0.3 }}
+          style={{ willChange: "transform, opacity" }}
+          className="lg:col-span-2"
+        >
+          <Card className="rounded-none border-[#27272a] bg-[#09090b]">
+            <CardHeader className="border-b border-[#27272a] pb-4">
+              <div className="flex items-center gap-2">
+                <Info className="h-4 w-4 text-[#71717a]" />
+                <CardTitle className="text-sm font-medium text-[#fafafa]">
+                  Split Payment (NT 2025.002)
+                </CardTitle>
+              </div>
+              <p className="mt-1 text-xs text-[#71717a]">
+                Com a Reforma, IBS e CBS serão retidos automaticamente pelo PSP
+              </p>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div>
+                  <p className="text-xs text-[#71717a]">IBS Retido</p>
+                  <p className="mt-1 font-numbers text-sm text-[#fafafa]">
+                    {formatCurrency(data.splitPayment.ibsAmount)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-[#71717a]">CBS Retido</p>
+                  <p className="mt-1 font-numbers text-sm text-[#fafafa]">
+                    {formatCurrency(data.splitPayment.cbsAmount)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-[#71717a]">Líquido ao Vendedor</p>
+                  <p className="mt-1 font-numbers text-sm font-medium text-[#34d399]">
+                    {formatCurrency(data.splitPayment.netMerchantAmount)}
+                  </p>
+                </div>
+              </div>
+              <Separator className="my-3 bg-[#27272a]" />
+              <p className="text-xs text-[#71717a]">
+                Valores estimados. Sujeito a regulamentação do Banco Central.
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      )}
     </div>
   )
 }
