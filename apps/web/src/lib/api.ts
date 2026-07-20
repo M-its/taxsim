@@ -156,6 +156,20 @@ export async function me(): Promise<{ user: User; company: Company }> {
   return apiGet<{ user: User; company: Company }>('/auth/me')
 }
 
+export type UpdateCompanyInput = {
+  name: string
+  taxRegime: Company['taxRegime']
+  municipioCode: number
+  uf: string
+}
+
+export async function updateCompany(
+  id: string,
+  data: UpdateCompanyInput,
+): Promise<Company> {
+  return apiPatch<Company>(`/companies/${id}`, data)
+}
+
 export async function login(input: LoginInput): Promise<{
   user: User
   accessToken: string

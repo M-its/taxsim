@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Building2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,6 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useAuth } from "@/components/auth/auth-provider"
+import { updateCompany, type UpdateCompanyInput } from "@/lib/api"
+import { ApiError } from "@/lib/api"
 
 interface CompanyFormData {
   name: string
@@ -29,57 +32,77 @@ const TAX_REGIMES: { value: CompanyFormData["taxRegime"]; label: string }[] = [
 ]
 
 const UF_OPTIONS = [
-  "AC",
-  "AL",
-  "AP",
-  "AM",
-  "BA",
-  "CE",
-  "DF",
-  "ES",
-  "GO",
-  "MA",
-  "MT",
-  "MS",
-  "MG",
-  "PA",
-  "PB",
-  "PR",
-  "PE",
-  "PI",
-  "RJ",
-  "RN",
-  "RS",
-  "RO",
-  "RR",
-  "SC",
-  "SP",
-  "SE",
-  "TO",
+  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
+  "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
+  "RS", "RO", "RR", "SC", "SP", "SE", "TO",
 ]
 
 const inputClassName =
   "rounded-none border-[#27272a] bg-[#09090b] text-[#fafafa] placeholder:text-[#71717a] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
 
-export default function SettingsPage() {
-  const [form, setForm] = useState<CompanyFormData>({
-    name: "Acme Ltda",
-    document: "12.345.678/0001-95",
-    taxRegime: "SIMPLES_NACIONAL",
-    municipioCode: "4314902",
-    uf: "RS",
-  })
+function parseCompanyForm(company: ReturnType<typeof useAuth>['company']): CompanyFormData | null {
+  if (!company) return null
+  return {
+    name: company.name,
+    document: company.document,
+    taxRegime: company.taxRegime,
+    municipioCode: company.municipioCode?.toString() ?? "",
+    uf: company.uf ?? "",
+  }
+}
 
-  const [saved, setSaved] = useState(false)
+export default function SettingsPage() {
+  const { company, refreshCompany } = useAuth()
+  const [form, setForm] = useState<CompanyFormData | null>(parseCompanyForm(company))
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setForm((prev) => {
+      const next = parseCompanyForm(company)
+      if (!next) return null
+      if (!prev || prev.document !== next.document) return next
+      return prev
+    })
+  }, [company])
 
   function handleChange(field: keyof CompanyFormData, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }))
+    setForm((prev) => (prev ? { ...prev, [field]: value } : null))
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    if (!form || !company) return
+
+    setIsSubmitting(true)
+    setSuccess(false)
+    setError(null)
+
+    try {
+      const payload: UpdateCompanyInput = {
+        name: form.name,
+        taxRegime: form.taxRegime,
+        municipioCode: Number(form.municipioCode),
+        uf: form.uf,
+      }
+      await updateCompany(company.id, payload)
+      await refreshCompany()
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } catch (err) {
+      let message = "Erro ao atualizar dados. Tente novamente."
+      if (err instanceof ApiError) {
+        message = err.message || message
+      }
+      setError(message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (!form) {
+    return null
   }
 
   return (
@@ -198,6 +221,7 @@ export default function SettingsPage() {
                 </Label>
                 <Input
                   id="municipioCode"
+                  type="number"
                   value={form.municipioCode}
                   inputMode="numeric"
                   pattern="[0-9]*"
@@ -210,14 +234,20 @@ export default function SettingsPage() {
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-2">
-              {saved && (
-                <span className="text-sm text-[#34d399]">Alterações salvas</span>
+              {success && (
+                <span className="text-sm text-[#34d399]">
+                  Dados atualizados com sucesso
+                </span>
+              )}
+              {error && (
+                <span className="text-sm text-red-400">{error}</span>
               )}
               <Button
                 type="submit"
-                className="rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1f2a1f]"
+                disabled={isSubmitting}
+                className="rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1f2a1f] disabled:opacity-60"
               >
-                Salvar Alterações
+                {isSubmitting ? "Salvando..." : "Salvar Alterações"}
               </Button>
             </div>
           </form>

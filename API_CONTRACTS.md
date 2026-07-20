@@ -478,7 +478,48 @@ Confirms a DRAFT sale. Status becomes CONFIRMED and is immutable after this.
 
 ---
 
-## 5. Dashboard
+## 5. Companies
+
+All routes require `Authorization: Bearer <accessToken>`.
+The company is always inferred from the authenticated user's JWT.
+
+### PATCH /companies/:id
+
+Updates the authenticated user's company.
+The `:id` URL parameter is ignored for security; the backend uses the
+`companyId` from the JWT.
+
+**Request:**
+```json
+{
+  "name": "Acme Ltda",
+  "taxRegime": "SIMPLES_NACIONAL",
+  "municipioCode": 4314902,
+  "uf": "RS"
+}
+```
+
+**Response 200:**
+```json
+{
+  "id": "uuid",
+  "name": "Acme Ltda",
+  "document": "12345678000195",
+  "taxRegime": "SIMPLES_NACIONAL",
+  "municipioCode": 4314902,
+  "uf": "RS",
+  "createdAt": "2026-05-26T14:00:00.000Z",
+  "updatedAt": "2026-05-26T14:00:00.000Z"
+}
+```
+
+**Errors:**
+- `401 UNAUTHORIZED` — missing or invalid access token
+- `404 NOT_FOUND` — company not found
+
+---
+
+## 6. Dashboard
 
 ### GET /dashboard/summary
 
