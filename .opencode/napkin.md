@@ -76,3 +76,12 @@
 **Fix:** Rodar pnpm install localmente em apps/api e apps/web (não altera o Docker)
 **Note:** Ignorar ERR_PNPM_IGNORED_BUILDS — install local é só para IntelliSense, não para execução
 **Rule:** Após qualquer clone do projeto em nova máquina ou WSL, sempre rodar pnpm install localmente para restaurar IntelliSense
+
+## [2026-07] Validação de NCM no cadastro de produto — pendente
+**Context:** Produtos podem ser cadastrados com NCMs que não existem no NcmCatalog
+**Options:**
+A) Backend: validar ncmCode contra NcmCatalog em POST/PUT /products → 422 se inválido
+B) Frontend: mostrar badge "NCM não encontrado" na tabela quando descrição não carrega
+**Recommended:** B agora (visual, rápido), A depois (rigor fiscal para produção)
+**Note:** NCM 84713012 do produto de teste não existe na tabela vigente 2026.
+  Correto para notebook: 8471.30.xx | Para mouse: 8471.60.53

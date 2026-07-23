@@ -163,11 +163,31 @@ export type UpdateCompanyInput = {
   uf: string
 }
 
+export type NcmResult = {
+  code: string
+  description: string
+}
+
 export async function updateCompany(
   id: string,
   data: UpdateCompanyInput,
 ): Promise<Company> {
   return apiPatch<Company>(`/companies/${id}`, data)
+}
+
+export async function searchNcm(q: string): Promise<NcmResult[]> {
+  const query = new URLSearchParams({ q })
+  return apiGet<NcmResult[]>(`/ncm/search?${query.toString()}`)
+}
+
+export type Municipality = {
+  code: number
+  name: string
+}
+
+export async function getMunicipalities(uf: string): Promise<Municipality[]> {
+  const query = new URLSearchParams({ uf: uf.toUpperCase() })
+  return apiGet<Municipality[]>(`/municipalities?${query.toString()}`)
 }
 
 export async function login(input: LoginInput): Promise<{

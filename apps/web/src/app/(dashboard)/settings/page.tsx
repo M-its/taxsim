@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Building2 } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { Building2, Search } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useAuth } from "@/components/auth/auth-provider"
-import { updateCompany, type UpdateCompanyInput } from "@/lib/api"
+import { updateCompany, type UpdateCompanyInput, getMunicipalities, type Municipality } from "@/lib/api"
 import { ApiError } from "@/lib/api"
 
 interface CompanyFormData {
@@ -58,6 +58,12 @@ export default function SettingsPage() {
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const [municipios, setMunicipios] = useState<Municipality[]>([])
+  const [municipioSearch, setMunicipioSearch] = useState("")
+  const [isLoadingMunicipios, setIsLoadingMunicipios] = useState(false)
+  const [currentMunicipioName, setCurrentMunicipioName] = useState<string | null>(null)
+  const initialUfLoaded = useRef(false)
+
   useEffect(() => {
     setForm((prev) => {
       const next = parseCompanyForm(company)
@@ -66,6 +72,38 @@ export default function SettingsPage() {
       return prev
     })
   }, [company])
+
+  useEffect(() => {
+    if (!form?.uf) return
+    const currentForm = form
+
+    async function loadMunicipios(): Promise<void> {
+      setIsLoadingMunicipios(true)
+      try {
+        const list = await getMunicipalities(currentForm.uf)
+        setMunicipios(list)
+        const current = list.find((m) => m.code === Number(currentForm.municipioCode))
+        setCurrentMunicipioName(current?.name ?? null)
+      } catch {
+        setMunicipios([])
+        setCurrentMunicipioName(null)
+      } finally {
+        setIsLoadingMunicipios(false)
+      }
+    }
+
+    if (!initialUfLoaded.current) {
+      initialUfLoaded.current = true
+      loadMunicipios()
+    } else {
+      setForm((prev) => (prev ? { ...prev, municipioCode: "" } : null))
+      setMunicipioSearch("")
+      setCurrentMunicipioName(null)
+      loadMunicipios()
+    }
+    // Only UF should trigger a reload/clear; captured form values are used only for the current lookup.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form?.uf])
 
   function handleChange(field: keyof CompanyFormData, value: string) {
     setForm((prev) => (prev ? { ...prev, [field]: value } : null))
@@ -217,19 +255,90 @@ export default function SettingsPage() {
 
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="municipioCode" className="text-xs text-[#a1a1aa]">
-                  Código do Município (IBGE)
+                  Município (IBGE)
                 </Label>
-                <Input
-                  id="municipioCode"
-                  type="number"
-                  value={form.municipioCode}
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  onChange={(event) =>
-                    handleChange("municipioCode", event.target.value.replace(/\D/g, ""))
-                  }
-                  className={inputClassName}
-                />
+                {isLoadingMunicipios ? (
+                  <p className="text-sm text-[#71717a]">Carregando municípios...</p>
+                ) : form.municipioCode ? (
+                  <div className="border border-[#27272a] bg-[#09090b] p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-[#fafafa]">
+                          {currentMunicipioName ?? `Código ${form.municipioCode}`}
+                        </p>
+                        {currentMunicipioName && (
+                          <p className="text-xs text-[#71717a]">IBGE {form.municipioCode}</p>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          handleChange("municipioCode", "")
+                          setMunicipioSearch("")
+                          setCurrentMunicipioName(null)
+                        }}
+                        className="h-auto rounded-none px-2 py-1 text-xs text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#fafafa]"
+                      >
+                        Trocar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71717a]" />
+                      <Input
+                        id="municipioCode"
+                        value={municipioSearch}
+                        onChange={(event) => setMunicipioSearch(event.target.value)}
+                        placeholder="Buscar município..."
+                        disabled={isLoadingMunicipios}
+                        className={`${inputClassName} pl-9`}
+                      />
+                    </div>
+                    {municipioSearch.trim() && (
+                      <ul className="max-h-48 overflow-auto border border-[#27272a] bg-[#09090b]">
+                        {municipios
+                          .filter(
+                            (municipio) =>
+                              municipio.name
+                                .toLowerCase()
+                                .includes(municipioSearch.toLowerCase()) ||
+                              municipio.code.toString().includes(municipioSearch)
+                          )
+                          .map((municipio) => (
+                            <li key={municipio.code}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleChange("municipioCode", String(municipio.code))
+                                  setCurrentMunicipioName(municipio.name)
+                                  setMunicipioSearch("")
+                                }}
+                                className="w-full px-3 py-2 text-left transition-colors hover:bg-[#27272a]"
+                              >
+                                <p className="text-sm text-[#fafafa]">{municipio.name}</p>
+                                <p className="text-xs text-[#71717a]">IBGE {municipio.code}</p>
+                              </button>
+                            </li>
+                          ))}
+                        {municipios.filter(
+                          (municipio) =>
+                            municipio.name
+                              .toLowerCase()
+                              .includes(municipioSearch.toLowerCase()) ||
+                            municipio.code.toString().includes(municipioSearch)
+                        ).length === 0 && (
+                          <li className="px-3 py-2 text-xs text-[#71717a]">
+                            Nenhum município encontrado.
+                          </li>
+                        )}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

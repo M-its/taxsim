@@ -22,7 +22,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { createProduct, deleteProduct, getProducts, updateProduct } from "@/lib/api"
+import { createProduct, deleteProduct, getProducts, updateProduct, searchNcm } from "@/lib/api"
+import type { NcmResult } from "@/lib/api"
 import { formatCurrency } from "@/lib/formatters"
 import type { Product, ProductInput, ProductListResponse } from "@/lib/product.types"
 
@@ -54,6 +55,105 @@ type ProductQuery = {
   search: string
   page: number
   immediate: boolean
+}
+
+interface NcmSearchProps {
+  selectedNcm: NcmResult | null
+  onSelect: (ncm: NcmResult | null) => void
+  onSuggestName?: (ncm: NcmResult) => void
+}
+
+function NcmSearch({ selectedNcm, onSelect, onSuggestName }: NcmSearchProps) {
+  const [query, setQuery] = useState("")
+  const [results, setResults] = useState<NcmResult[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const q = query.trim()
+      if (!q) {
+        setResults([])
+        return
+      }
+      setIsLoading(true)
+      searchNcm(q)
+        .then((data) => setResults(data))
+        .catch(() => setResults([]))
+        .finally(() => setIsLoading(false))
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [query])
+
+  if (selectedNcm) {
+    return (
+      <div className="space-y-1 border border-[#27272a] bg-[#09090b] p-3">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-sm font-medium text-[#fafafa]">{selectedNcm.code}</p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              onSelect(null)
+              setQuery("")
+            }}
+            className="h-auto rounded-none px-2 py-1 text-xs text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#fafafa]"
+          >
+            Trocar
+          </Button>
+        </div>
+        {selectedNcm.description && (
+          <p className="text-xs text-[#71717a]">{selectedNcm.description}</p>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71717a]" />
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Buscar por código ou descrição do NCM..."
+          className="rounded-none border-[#27272a] bg-[#09090b] pl-9 text-[#fafafa] placeholder:text-[#71717a] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
+        />
+        {isLoading && (
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#71717a]">
+            Buscando...
+          </span>
+        )}
+      </div>
+
+      {results.length > 0 && (
+        <ul className="max-h-48 overflow-auto border border-[#27272a] bg-[#09090b]">
+          {results.map((ncm) => (
+            <li key={ncm.code}>
+              <button
+                type="button"
+                onClick={() => {
+                  onSelect(ncm)
+                  onSuggestName?.(ncm)
+                  setQuery("")
+                  setResults([])
+                }}
+                className="w-full px-3 py-2 text-left transition-colors hover:bg-[#27272a]"
+              >
+                <p className="text-sm text-[#fafafa]">{ncm.code}</p>
+                <p className="text-xs text-[#71717a]">{ncm.description}</p>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {!isLoading && query.trim().length > 0 && results.length === 0 && (
+        <p className="text-xs text-[#71717a]">Nenhum NCM encontrado.</p>
+      )}
+    </div>
+  )
 }
 
 function validateProduct(values: ProductInput): FieldErrors {
@@ -93,11 +193,15 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
   const [errors, setErrors] = useState<FieldErrors>({})
   const [apiError, setApiError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedNcm, setSelectedNcm] = useState<NcmResult | null>(null)
+  const [isNcmLoading, setIsNcmLoading] = useState(false)
 
   useEffect(() => {
     if (open) {
       setApiError(null)
       setErrors({})
+      setSelectedNcm(null)
+      setIsNcmLoading(false)
       if (product) {
         setValues({
           name: product.name,
@@ -105,6 +209,28 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
           ncmCode: product.ncmCode,
           unitPrice: product.unitPrice,
         })
+        setSelectedNcm({ code: product.ncmCode, description: "" })
+
+        if (product.ncmCode) {
+          setIsNcmLoading(true)
+          searchNcm(product.ncmCode)
+            .then((results) => {
+              const match = results.find((n) => n.code === product.ncmCode)
+              setSelectedNcm((current) =>
+                current?.code === product.ncmCode
+                  ? { code: product.ncmCode, description: match?.description ?? "" }
+                  : current,
+              )
+            })
+            .catch(() => {
+              setSelectedNcm((current) =>
+                current?.code === product.ncmCode
+                  ? { code: product.ncmCode, description: "" }
+                  : current,
+              )
+            })
+            .finally(() => setIsNcmLoading(false))
+        }
       } else {
         setValues(emptyForm)
       }
@@ -205,16 +331,21 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
               <Label htmlFor="ncmCode" className="text-xs text-[#a1a1aa]">
                 Código NCM
               </Label>
-              <Input
-                id="ncmCode"
-                value={values.ncmCode}
-                onChange={(event) =>
-                  updateField("ncmCode", event.target.value.replace(/\D/g, "").slice(0, 8))
-                }
-                placeholder="8 dígitos"
-                inputMode="numeric"
-                variant={errors.ncmCode ? "error" : "default"}
-                className="font-numbers"
+              {isNcmLoading && (
+                <p className="text-xs text-[#71717a]">Carregando NCM...</p>
+              )}
+              <NcmSearch
+                selectedNcm={selectedNcm}
+                onSelect={(ncm) => {
+                  setSelectedNcm(ncm)
+                  updateField("ncmCode", ncm?.code ?? "")
+                }}
+                onSuggestName={(ncm) => {
+                  if (!values.name.trim()) {
+                    const suggestion = ncm.description.slice(0, 80).trim()
+                    updateField("name", suggestion)
+                  }
+                }}
               />
               {errors.ncmCode && <p className="text-xs text-[#f87171]">{errors.ncmCode}</p>}
             </div>

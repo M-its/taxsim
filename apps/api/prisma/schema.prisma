@@ -224,3 +224,15 @@ model TaxRule {
   @@unique([ncmCode, taxRegime, status])
   @@map("tax_rules")
 }
+
+model NcmCatalog {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String   @unique @db.VarChar(8)
+  description String
+  validFrom   DateTime @db.Date
+  validUntil  DateTime @db.Date
+  createdAt   DateTime @default(now())
+
+  @@index([code])
+  @@map("ncm_catalog")
+}
