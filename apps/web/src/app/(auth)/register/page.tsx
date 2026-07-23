@@ -27,6 +27,7 @@ import { ApiError } from '@/lib/api'
 import { Suspense } from 'react'
 import type { TaxRegime } from '@/lib/auth.types'
 import { AuthLoading } from '@/components/auth/auth-loading'
+import { ComplianceBanner } from '@/components/auth/compliance-banner'
 
 export const dynamic = 'force-dynamic'
 
@@ -115,7 +116,7 @@ function RegisterForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#09090b] p-4 py-8">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#09090b] p-4 py-8">
       <Card className="w-full max-w-lg rounded-none border-[#27272a] bg-[#18181b]">
         <CardHeader className="space-y-1">
           <CardTitle className="text-xl text-[#fafafa]">
@@ -288,6 +289,7 @@ function RegisterForm() {
           </CardFooter>
         </form>
       </Card>
+      <ComplianceBanner className="max-w-lg" />
     </div>
   )
 }

@@ -85,3 +85,14 @@ B) Frontend: mostrar badge "NCM não encontrado" na tabela quando descrição n�
 **Recommended:** B agora (visual, rápido), A depois (rigor fiscal para produção)
 **Note:** NCM 84713012 do produto de teste não existe na tabela vigente 2026.
   Correto para notebook: 8471.30.xx | Para mouse: 8471.60.53
+
+## [2026-07] Badge de NCM inválido — limitação atual
+**Context:** Produtos com NCM fora do catálogo (NcmCatalog) não recebem badge de aviso
+**Problem:** Validação de formato (8 dígitos) passa para NCMs como 84716060 que existem
+  como formato mas não estão na tabela oficial vigente
+**Current behavior:** Badge âmbar só aparece para NCMs malformados (< 8 dígitos ou letras)
+**Full fix:** Backend: validar ncmCode contra NcmCatalog em POST/PUT /products → 422 se inválido
+  Frontend: buscar descrição de cada NCM na listagem e mostrar badge se não encontrado
+**Why deferred:** Requer N+1 queries na listagem ou endpoint batch de validação — over-engineering para MVP
+**Note:** Usuários que usam o autocomplete nunca cadastram NCM inválido — problema só ocorre
+  em cadastros manuais (testes) ou migração de dados legados

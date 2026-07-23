@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label'
 import { Suspense } from 'react'
 import { ApiError } from '@/lib/api'
 import { AuthLoading } from '@/components/auth/auth-loading'
+import { ComplianceBanner } from '@/components/auth/compliance-banner'
 
 export const dynamic = 'force-dynamic'
 
@@ -58,7 +59,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#09090b] p-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#09090b] p-4">
       <Card className="w-full max-w-sm rounded-none border-[#27272a] bg-[#18181b]">
         <CardHeader className="space-y-1">
           <CardTitle className="text-xl text-[#fafafa]">Entrar no TaxSim</CardTitle>
@@ -125,6 +126,7 @@ function LoginForm() {
           </CardFooter>
         </form>
       </Card>
+      <ComplianceBanner className="max-w-sm" />
     </div>
   )
 }
