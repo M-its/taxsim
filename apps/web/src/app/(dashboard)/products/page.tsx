@@ -611,8 +611,13 @@ export default function ProductsPage() {
                     <TableCell className="font-numbers text-sm text-[#a1a1aa]">
                       {product.sku}
                     </TableCell>
-                    <TableCell className="font-numbers text-sm text-[#a1a1aa]">
-                      {product.ncmCode}
+                    <TableCell className="font-numbers text-sm">
+                      <span className={/^\d{8}$/.test(product.ncmCode) ? "text-[#a1a1aa]" : "text-[#facc15]"}>
+                        {product.ncmCode}
+                      </span>
+                      {!/^\d{8}$/.test(product.ncmCode) && (
+                        <span className="ml-1 text-xs text-[#facc15]">⚠ inválido</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right font-numbers text-sm text-[#fafafa]">
                       {formatCurrency(product.unitPrice)}

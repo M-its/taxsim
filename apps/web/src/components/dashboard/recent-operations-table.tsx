@@ -10,18 +10,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { formatCurrency, formatDate } from "@/lib/formatters"
-import type { SaleSummary } from "@/lib/mock-data"
+import { formatCurrency } from "@/lib/formatters"
+import type { Sale, SaleStatus } from "@/lib/sale.types"
 
 interface RecentOperationsTableProps {
-  operations: SaleSummary[]
+  operations: Sale[]
 }
 
-function operationLabel(operation: SaleSummary): string {
-  return operation.status === "CONFIRMED" ? "Venda" : "Simulação"
-}
-
-function StatusBadge({ status }: { status: SaleSummary["status"] }) {
+function StatusBadge({ status }: { status: SaleStatus }) {
   if (status === "CONFIRMED") {
     return (
       <Badge
@@ -36,10 +32,10 @@ function StatusBadge({ status }: { status: SaleSummary["status"] }) {
   if (status === "CANCELLED") {
     return (
       <Badge
-        variant="red"
-        className="rounded-none border-[#f87171]/20 bg-[#f87171]/10 text-[#f87171] hover:bg-[#f87171]/20"
+        variant="outline"
+        className="rounded-none border-[#71717a]/20 bg-[#71717a]/10 text-[#71717a] hover:bg-[#71717a]/20"
       >
-        Rejeitada
+        Cancelada
       </Badge>
     )
   }
@@ -49,9 +45,20 @@ function StatusBadge({ status }: { status: SaleSummary["status"] }) {
       variant="amber"
       className="rounded-none border-[#facc15]/20 bg-[#facc15]/10 text-[#facc15] hover:bg-[#facc15]/20"
     >
-      Pendente
+      Rascunho
     </Badge>
   )
+}
+
+function formatShortDate(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return "-"
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date)
 }
 
 export function RecentOperationsTable({ operations }: RecentOperationsTableProps) {
@@ -83,35 +90,46 @@ export function RecentOperationsTable({ operations }: RecentOperationsTableProps
             </TableRow>
           </TableHeader>
           <TableBody>
-            {operations.map((operation, index) => (
-              <motion.tr
-                key={operation.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, ease: "easeOut", delay: 0.7 + index * 0.05 }}
-                style={{ willChange: "transform, opacity" }}
-                className="border-b border-[#27272a] transition-colors last:border-b-0 hover:bg-[#27272a]/30"
-              >
-                <TableCell className="text-sm text-[#fafafa]">
-                  {operationLabel(operation)}
+            {operations.length === 0 ? (
+              <TableRow className="border-b-0 hover:bg-transparent">
+                <TableCell
+                  colSpan={6}
+                  className="h-24 text-center text-sm text-[#a1a1aa]"
+                >
+                  Nenhuma operação encontrada.
                 </TableCell>
-                <TableCell className="text-sm text-[#a1a1aa]">
-                  {operation.clientName}
-                </TableCell>
-                <TableCell className="font-numbers text-sm text-[#a1a1aa]">
-                  {operation.status === "CONFIRMED" ? `35${index + 1}26${106 + index}` : "-"}
-                </TableCell>
-                <TableCell className="font-numbers text-sm text-[#a1a1aa]">
-                  {formatDate(operation.createdAt)}
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={operation.status} />
-                </TableCell>
-                <TableCell className="text-right font-numbers text-sm text-[#fafafa]">
-                  {formatCurrency(operation.totalAmount)}
-                </TableCell>
-              </motion.tr>
-            ))}
+              </TableRow>
+            ) : (
+              operations.map((operation, index) => (
+                <motion.tr
+                  key={operation.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: "easeOut", delay: 0.7 + index * 0.05 }}
+                  style={{ willChange: "transform, opacity" }}
+                  className="border-b border-[#27272a] transition-colors last:border-b-0 hover:bg-[#27272a]/30"
+                >
+                  <TableCell className="font-numbers text-sm text-[#fafafa]">
+                    {operation.id.slice(0, 8)}
+                  </TableCell>
+                  <TableCell className="font-numbers text-sm text-[#a1a1aa]">
+                    {operation.clientId.slice(0, 8)}
+                  </TableCell>
+                  <TableCell className="font-numbers text-sm text-[#a1a1aa]">
+                    -
+                  </TableCell>
+                  <TableCell className="font-numbers text-sm text-[#a1a1aa]">
+                    {formatShortDate(operation.createdAt)}
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={operation.status} />
+                  </TableCell>
+                  <TableCell className="text-right font-numbers text-sm text-[#fafafa]">
+                    {formatCurrency(operation.totalAmount)}
+                  </TableCell>
+                </motion.tr>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

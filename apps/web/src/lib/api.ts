@@ -238,8 +238,12 @@ async function apiPatch<T>(input: string, body?: unknown): Promise<T> {
 export async function getSales(
   status?: SaleStatus,
   page = 1,
+  limit = 20,
 ): Promise<SaleListResponse> {
-  const query = new URLSearchParams({ limit: '20', page: String(page) })
+  const query = new URLSearchParams({
+    limit: String(limit),
+    page: String(page),
+  })
   if (status) {
     query.set('status', status)
   }

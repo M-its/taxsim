@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { Search, Menu } from "lucide-react"
+import { Menu } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -59,6 +59,7 @@ export function Topbar({
         className
       )}
     >
+      {/* Lado Esquerdo: Botão Menu + Breadcrumbs */}
       <div className="flex items-center gap-2 md:ml-6">
         <button
           type="button"
@@ -76,19 +77,8 @@ export function Topbar({
         </div>
       </div>
 
+      {/* Lado Direito: Menu do Usuário */}
       <div className="flex items-center gap-4">
-        <div className="relative hidden w-64 sm:block">
-          <Search
-            size={14}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none"
-          />
-          <Input
-            type="text"
-            placeholder="Buscar..."
-            className="h-9 rounded-none border-[#27272a] bg-[#18181b] pl-8 text-sm text-[#fafafa] placeholder:text-[#71717a] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
-          />
-        </div>
-
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
@@ -122,7 +112,9 @@ export function Topbar({
                 {company?.name ?? "—"}
               </DropdownMenuLabel>
             </DropdownMenuGroup>
+            
             <DropdownMenuSeparator className="bg-[#27272a]" />
+            
             <DropdownMenuItem
               render={
                 <Link

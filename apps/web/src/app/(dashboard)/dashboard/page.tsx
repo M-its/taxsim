@@ -5,7 +5,7 @@ import { TaxBarChart } from "@/components/dashboard/tax-bar-chart"
 import { TaxDonutChart } from "@/components/dashboard/tax-donut-chart"
 import { RecentOperationsTable } from "@/components/dashboard/recent-operations-table"
 import { useDashboardSummary } from "@/hooks/use-dashboard-summary"
-import { mockRecentSales } from "@/lib/mock-data"
+import { useRecentSales } from "@/hooks/use-recent-sales"
 import type {
   TaxLoadMonth as ApiTaxLoadMonth,
   TaxCompositionItem as ApiTaxCompositionItem,
@@ -106,8 +106,38 @@ function DashboardError({ message }: { message: string }) {
   )
 }
 
+function RecentOperationsSkeleton() {
+  return (
+    <div className="rounded-none border border-[#27272a] bg-[#18181b]">
+      <div className="border-b border-[#27272a] p-5">
+        <div className="h-3 w-40 animate-pulse rounded bg-[#27272a]" />
+        <div className="mt-2 h-2 w-56 animate-pulse rounded bg-[#27272a]" />
+      </div>
+      <div className="p-5 space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-4 animate-pulse rounded bg-[#27272a]" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function RecentOperationsError({ message }: { message: string }) {
+  return (
+    <div className="rounded-none border border-[#27272a] bg-[#18181b] p-5">
+      <p className="text-sm text-[#f87171]">Erro ao carregar operações recentes.</p>
+      <p className="mt-1 text-xs text-[#a1a1aa]">{message}</p>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const { data, isLoading, error } = useDashboardSummary()
+  const {
+    data: recentSales,
+    isLoading: recentSalesLoading,
+    error: recentSalesError,
+  } = useRecentSales()
 
   let summaryContent
 
@@ -128,6 +158,16 @@ export default function DashboardPage() {
     )
   }
 
+  let recentOperationsContent
+
+  if (recentSalesLoading) {
+    recentOperationsContent = <RecentOperationsSkeleton />
+  } else if (recentSalesError) {
+    recentOperationsContent = <RecentOperationsError message={recentSalesError.message} />
+  } else {
+    recentOperationsContent = <RecentOperationsTable operations={recentSales} />
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -139,7 +179,7 @@ export default function DashboardPage() {
 
       {summaryContent}
 
-      <RecentOperationsTable operations={mockRecentSales} />
+      {recentOperationsContent}
     </div>
   )
 }
