@@ -107,7 +107,7 @@ services:
       interval: 20s
       timeout: 10s
       retries: 5
-      start_period: 60s # Java application requires extra startup time
+      start_period: 120s # Java application requires extra startup time
 
   # -------------------------------------------------------------------------
   # API — Fastify + TypeScript
@@ -168,7 +168,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 3
-      start_period: 30s
+      start_period: 60s
 
   # -------------------------------------------------------------------------
   # APP — Next.js 15 (App Router)
