@@ -1,0 +1,96 @@
+name: taxsim-prod
+
+volumes:
+  postgres_data:
+  api_node_modules:
+  web_node_modules:
+
+networks:
+  app_network:
+    driver: bridge
+  db_network:
+    driver: bridge
+    internal: true
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: taxsim-db
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-taxsim_db}
+      POSTGRES_USER: ${POSTGRES_USER:-taxsim_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    networks:
+      - db_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-taxsim_user} -d ${POSTGRES_DB:-taxsim_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.prod
+    container_name: taxsim-api
+    ports:
+      - "3333:3333"
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-taxsim_user}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-taxsim_db}?schema=public
+      TAX_CALCULATOR_STANDARD_URL: ${TAX_CALCULATOR_STANDARD_URL}
+      TAX_CALCULATOR_SPLIT_PAYMENT_URL: ${TAX_CALCULATOR_SPLIT_PAYMENT_URL}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:?Set REFRESH_TOKEN_SECRET in .env}
+      REFRESH_TOKEN_EXPIRES_IN: ${REFRESH_TOKEN_EXPIRES_IN:-7d}
+      API_PORT: 3333
+      API_HOST: 0.0.0.0
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      DEFAULT_TAX_REGIME: ${DEFAULT_TAX_REGIME:-SIMPLES_NACIONAL}
+    networks:
+      - app_network
+      - db_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3333/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  app:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile.prod
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    container_name: taxsim-web
+    ports:
+      - "3000:3000"
+    restart: always
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      API_INTERNAL_URL: http://api:3333
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?Set NEXTAUTH_SECRET in .env}
+      NEXT_TELEMETRY_DISABLED: 1
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 40s

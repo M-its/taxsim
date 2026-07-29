@@ -96,3 +96,26 @@ B) Frontend: mostrar badge "NCM não encontrado" na tabela quando descrição n�
 **Why deferred:** Requer N+1 queries na listagem ou endpoint batch de validação — over-engineering para MVP
 **Note:** Usuários que usam o autocomplete nunca cadastram NCM inválido — problema só ocorre
   em cadastros manuais (testes) ou migração de dados legados
+
+## [2026-07-29] Deploy Oracle Cloud — configurações que funcionaram
+
+**Infraestrutura:**
+- VM ARM (A1.Flex, 2 OCPUs, 12GB): API + Web + PostgreSQL — IP: 168.138.127.91
+- VM AMD (E2.1.Micro, 1GB): Calculadora RFB — IP interno: 10.0.0.98
+- Comunicação entre VMs via VCN interna (sem expor portas externas da calculadora)
+
+**Problemas resolvidos:**
+- bcrypt não compilava: precisou de pnpm-workspace.yaml com onlyBuiltDependencies
+- Next.js standalone não escutava em 0.0.0.0: adicionar ENV HOSTNAME=0.0.0.0 no Dockerfile
+- NEXT_PUBLIC_API_URL embarcado no build: passar como ARG no Dockerfile + args no compose
+- CORS rejeitando porta 3000: CORS_ORIGIN deve incluir a porta (http://IP:3000)
+- Portas bloqueadas: Security List Oracle + iptables na VM
+
+**Comandos para redeployar após mudanças:**
+docker compose -f docker-compose.prod.yml build app --no-cache
+docker compose -f docker-compose.prod.yml up -d --force-recreate
+
+**Seed após recriar banco:**
+docker exec taxsim-api npx prisma migrate deploy
+docker exec taxsim-api npx prisma db seed
+docker exec taxsim-api pnpm run import:ncm
