@@ -124,6 +124,15 @@ export async function calculateReformModel(
   }
 }
 
+function formatRfbDate(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const offset = -date.getTimezoneOffset()
+  const offsetHours = pad(Math.floor(Math.abs(offset) / 60))
+  const offsetMinutes = pad(Math.abs(offset) % 60)
+  const offsetSign = offset >= 0 ? '+' : '-'
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}${offsetSign}${offsetHours}:${offsetMinutes}`
+}
+
 export function buildOperacaoInput(
   items: Array<{
     ncmCode: string
@@ -135,7 +144,7 @@ export function buildOperacaoInput(
   municipio: number,
   uf: string,
 ): TaxCalculatorInput {
-  const dhFatoGerador = new Date().toISOString()
+  const dhFatoGerador = formatRfbDate(new Date())
 
   return {
     id: randomUUID().replace(/-/g, ''),
@@ -144,9 +153,7 @@ export function buildOperacaoInput(
     municipio,
     uf,
     itens: items.map((item, index): TaxCalculatorItemInput => {
-      const baseCalculo = Number(
-        new Decimal(item.unitPrice).mul(item.quantity).toFixed(2),
-      )
+      const baseCalculo = Number(new Decimal(item.unitPrice).mul(item.quantity).toFixed(2))
 
       return {
         numero: index + 1,
