@@ -21,3 +21,4 @@ Thumbs.db
 
 # Lock file conflicts
 apps/api/package-lock.json
+test-*.json
