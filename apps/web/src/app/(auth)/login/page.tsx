@@ -20,6 +20,7 @@ import { Suspense } from 'react'
 import { ApiError } from '@/lib/api'
 import { AuthLoading } from '@/components/auth/auth-loading'
 import { ComplianceBanner } from '@/components/auth/compliance-banner'
+import { safeRedirectPath } from '@/lib/safe-redirect'
 
 export const dynamic = 'force-dynamic'
 
@@ -27,7 +28,7 @@ function LoginForm() {
   const { login } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirectTo') ?? '/dashboard'
+  const redirectTo = safeRedirectPath(searchParams.get('redirectTo'))
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -116,10 +117,7 @@ function LoginForm() {
             </Button>
             <p className="text-sm text-[#a1a1aa]">
               Não tem conta?{' '}
-              <Link
-                href="/register"
-                className="text-[#34d399] hover:underline"
-              >
+              <Link href="/register" className="text-[#34d399] hover:underline">
                 Criar uma
               </Link>
             </p>

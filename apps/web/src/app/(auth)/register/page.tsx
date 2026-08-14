@@ -28,6 +28,7 @@ import { Suspense } from 'react'
 import type { TaxRegime } from '@/lib/auth.types'
 import { AuthLoading } from '@/components/auth/auth-loading'
 import { ComplianceBanner } from '@/components/auth/compliance-banner'
+import { safeRedirectPath } from '@/lib/safe-redirect'
 
 export const dynamic = 'force-dynamic'
 
@@ -41,7 +42,7 @@ function RegisterForm() {
   const { register } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirectTo') ?? '/dashboard'
+  const redirectTo = safeRedirectPath(searchParams.get('redirectTo'))
 
   const [form, setForm] = useState({
     companyName: '',
@@ -62,18 +63,13 @@ function RegisterForm() {
 
   function validate(): string | null {
     if (!form.companyName.trim()) return 'Nome da empresa é obrigatório.'
-    if (form.document.replace(/\D/g, '').length !== 14)
-      return 'CNPJ deve conter 14 dígitos.'
-    if (!form.uf.trim() || form.uf.trim().length !== 2)
-      return 'UF deve conter 2 letras.'
+    if (form.document.replace(/\D/g, '').length !== 14) return 'CNPJ deve conter 14 dígitos.'
+    if (!form.uf.trim() || form.uf.trim().length !== 2) return 'UF deve conter 2 letras.'
     const code = Number(form.municipioCode)
-    if (!Number.isInteger(code) || code <= 0)
-      return 'Código do município (IBGE) é obrigatório.'
+    if (!Number.isInteger(code) || code <= 0) return 'Código do município (IBGE) é obrigatório.'
     if (!form.userName.trim()) return 'Nome do usuário é obrigatório.'
-    if (!form.email.trim() || !form.email.includes('@'))
-      return 'E-mail inválido.'
-    if (form.password.length < 8)
-      return 'Senha deve ter pelo menos 8 caracteres.'
+    if (!form.email.trim() || !form.email.includes('@')) return 'E-mail inválido.'
+    if (form.password.length < 8) return 'Senha deve ter pelo menos 8 caracteres.'
     return null
   }
 
@@ -119,9 +115,7 @@ function RegisterForm() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-[#09090b] p-4 py-8">
       <Card className="w-full max-w-lg rounded-none border-[#27272a] bg-[#18181b]">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-xl text-[#fafafa]">
-            Criar conta no TaxSim
-          </CardTitle>
+          <CardTitle className="text-xl text-[#fafafa]">Criar conta no TaxSim</CardTitle>
           <CardDescription className="text-[#a1a1aa]">
             Cadastre sua empresa e o primeiro usuário.
           </CardDescription>
@@ -170,9 +164,7 @@ function RegisterForm() {
                 </Label>
                 <Select
                   value={form.taxRegime}
-                  onValueChange={(value) =>
-                    updateField('taxRegime', value as TaxRegime)
-                  }
+                  onValueChange={(value) => updateField('taxRegime', value as TaxRegime)}
                 >
                   <SelectTrigger
                     id="taxRegime"
