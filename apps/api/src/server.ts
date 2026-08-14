@@ -14,19 +14,29 @@ import { municipalitiesRoutes } from './modules/municipalities/municipalities.ro
 
 const app = Fastify({ logger: true })
 
+// Fail fast if JWT_SECRET is missing in production — never silently fall
+// back to a publicly known development secret in a real deployment.
+// This must be enforced here (not only in docker-compose.prod.yml) because
+// the standalone Dockerfile.prod entry point has no other safeguard.
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  app.log.fatal('JWT_SECRET must be set in production. Refusing to start.')
+  process.exit(1)
+}
+
+const jwtSecret = process.env.JWT_SECRET ?? 'dev-secret-change-me'
+if (jwtSecret === 'dev-secret-change-me') {
+  app.log.warn('Using default development JWT secret. Never use this in production.')
+}
+
 await app.register(cors, {
   origin: process.env.CORS_ORIGIN ?? true,
   credentials: true,
 })
-
 await app.register(jwt, {
-  secret: process.env.JWT_SECRET ?? 'dev-secret-change-me',
+  secret: jwtSecret,
 })
-
 await app.register(cookie)
-
 await app.register(errorHandlerPlugin)
-
 await app.register(authRoutes, { prefix: '/auth' })
 await app.register(productsRoutes, { prefix: '/products' })
 await app.register(clientsRoutes, { prefix: '/clients' })
@@ -48,7 +58,6 @@ const start = async (): Promise<void> => {
   try {
     const port = Number(process.env.API_PORT) || 3333
     const host = process.env.API_HOST || '0.0.0.0'
-
     await app.listen({ port, host })
     app.log.info(`Server listening on ${host}:${port}`)
   } catch (err) {
