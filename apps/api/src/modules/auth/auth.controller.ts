@@ -11,7 +11,7 @@ const COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'strict' as const,
-  path: '/auth/refresh',
+  path: '/auth',
   maxAge: 604800,
 }
 
@@ -22,9 +22,7 @@ export const registerHandler = async (
   const app = request.server
   const body = registerSchema.parse(request.body)
   const { user, company, tokens } = await register(app, body)
-
   reply.setCookie('refreshToken', tokens.refreshToken, COOKIE_OPTIONS)
-
   return {
     user: {
       id: user.id,
@@ -51,9 +49,7 @@ export const loginHandler = async (
   const app = request.server
   const body = loginSchema.parse(request.body)
   const { user, tokens } = await login(app, body)
-
   reply.setCookie('refreshToken', tokens.refreshToken, COOKIE_OPTIONS)
-
   return {
     user: {
       id: user.id,
@@ -75,11 +71,8 @@ export const refreshHandler = async (
   if (!tokenFromCookie) {
     throw AppError.unauthorized('Missing refresh token')
   }
-
   const tokens = await refresh(app, tokenFromCookie)
-
   reply.setCookie('refreshToken', tokens.refreshToken, COOKIE_OPTIONS)
-
   return { accessToken: tokens.accessToken }
 }
 
@@ -91,8 +84,7 @@ export const logoutHandler = async (
   if (refreshToken) {
     await logout(refreshToken)
   }
-
-  reply.clearCookie('refreshToken', { path: '/auth/refresh' })
+  reply.clearCookie('refreshToken', { path: '/auth' })
   reply.status(204)
 }
 
@@ -105,11 +97,9 @@ export const logoutAllHandler = async (
   } catch {
     throw AppError.unauthorized('Invalid access token')
   }
-
   const payload = request.user as JwtPayload
   await logoutAll(payload.sub)
-
-  reply.clearCookie('refreshToken', { path: '/auth/refresh' })
+  reply.clearCookie('refreshToken', { path: '/auth' })
   reply.status(204)
 }
 
@@ -134,7 +124,6 @@ export const meHandler = async (
 }> => {
   const payload = request.user as JwtPayload
   const { user, company } = await me(payload.sub)
-
   return {
     user: {
       id: user.id,
@@ -153,4 +142,3 @@ export const meHandler = async (
     },
   }
 }
-
