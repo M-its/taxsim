@@ -1,3 +1,4 @@
+import fp from 'fastify-plugin'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
@@ -11,20 +12,15 @@ interface ErrorPayload {
   }
 }
 
-export async function errorHandlerPlugin(app: FastifyInstance): Promise<void> {
+export const errorHandlerPlugin = fp(async (app: FastifyInstance): Promise<void> => {
   app.setErrorHandler(
-    (
-      error: unknown,
-      _request: FastifyRequest,
-      reply: FastifyReply,
-    ): void | Promise<void> => {
+    (error: unknown, _request: FastifyRequest, reply: FastifyReply): void | Promise<void> => {
       if (error instanceof AppError) {
         void reply.status(error.statusCode).send({
           error: { code: error.code, message: error.message },
         } satisfies ErrorPayload)
         return
       }
-
       if (error instanceof ZodError) {
         void reply.status(400).send({
           error: {
@@ -35,7 +31,6 @@ export async function errorHandlerPlugin(app: FastifyInstance): Promise<void> {
         } satisfies ErrorPayload)
         return
       }
-
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           void reply.status(409).send({
@@ -46,7 +41,6 @@ export async function errorHandlerPlugin(app: FastifyInstance): Promise<void> {
           } satisfies ErrorPayload)
           return
         }
-
         if (error.code === 'P2025') {
           void reply.status(404).send({
             error: {
@@ -57,9 +51,7 @@ export async function errorHandlerPlugin(app: FastifyInstance): Promise<void> {
           return
         }
       }
-
       app.log.error(error)
-
       void reply.status(500).send({
         error: {
           code: 'INTERNAL_ERROR',
@@ -68,4 +60,4 @@ export async function errorHandlerPlugin(app: FastifyInstance): Promise<void> {
       } satisfies ErrorPayload)
     },
   )
-}
+})
