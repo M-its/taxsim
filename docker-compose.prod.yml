@@ -4,6 +4,8 @@ volumes:
   postgres_data:
   api_node_modules:
   web_node_modules:
+  caddy_data:
+  caddy_config:
 
 networks:
   app_network:
@@ -96,3 +98,17 @@ services:
       timeout: 5s
       retries: 3
       start_period: 40s
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: taxsim-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - app_network

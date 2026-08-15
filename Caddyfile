@@ -1,0 +1,7 @@
+taxsim-web.duckdns.org {
+    reverse_proxy app:3000
+}
+
+taxsim-api.duckdns.org {
+    reverse_proxy api:3333
+}
