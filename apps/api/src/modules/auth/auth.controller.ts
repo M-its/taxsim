@@ -7,10 +7,12 @@ import { registerSchema, loginSchema } from './auth.schema.js'
 import { register, login, refresh, logout, logoutAll, me } from './auth.service.js'
 import type { AuthResponse, JwtPayload, RegisterResponse } from './auth.types.js'
 
+const isProduction = process.env.NODE_ENV === 'production'
+
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'strict' as const,
+  secure: isProduction,
+  sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
   path: '/auth',
   maxAge: 604800,
 }
