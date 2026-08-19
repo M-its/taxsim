@@ -102,10 +102,10 @@ O projeto passou por uma auditoria automatizada com [Codex Security](https://git
 
 | # | Finding | Severidade | Status |
 |---|---|---|---|
-| 1 | Exponentes decimais (`1e100000000`) em campos monetários podiam exaurir memória da API | Alta | ✅ Corrigido — gramática estrita via regex, limites de array |
+| 1 | Exponentes decimais (`1e100000000`) em campos monetários podiam exaurir memória da API | Alta | 🟡 Parcialmente corrigido — aplicado em `simulateSchema`; `products.schema` ainda não protegido |
 | 2 | `redirectTo` pós-login não validado permitia open redirect / DOM XSS | Alta | ✅ Corrigido — allowlist de caminhos relativos |
 | 3 | Fallback silencioso de `JWT_SECRET` para valor público conhecido | Média | ✅ Corrigido — fail-fast em produção |
-| 5 | Porta da API exposta diretamente, contornando rate limiting centralizado | Média | ✅ Corrigido — Caddy como único ponto de entrada, portas antigas fechadas |
+| 5 | Porta da API exposta diretamente, contornando rate limiting centralizado | Média | 🟡 Parcialmente corrigido — Caddy é o único ponto de entrada público; portas ainda publicadas no compose (defesa em profundidade incompleta) e rate limiting não configurado no Caddy |
 | 6 | Tráfego de autenticação em HTTP puro, sem TLS | Média | ✅ Corrigido — HTTPS via Caddy + Let's Encrypt |
 | 8 | Logout não revogava sessão no servidor (`Path` do cookie divergente) | Baixa | ✅ Corrigido — escopo do cookie alinhado entre set/clear |
 | 4 | Resposta da calculadora RFB confiada sem validação de schema em runtime | Média | 📋 Documentado — ver limitações conhecidas |
@@ -115,6 +115,8 @@ O projeto passou por uma auditoria automatizada com [Codex Security](https://git
 
 - **Validação de proveniência da calculadora RFB:** a resposta do serviço de terceiro (calculadora oficial) é confiada sem verificação de schema em runtime. Mitigação completa exigiria autenticação mútua ou pinning do serviço, infraestrutura que não existe para essa calculadora pública. Risco aceito para escopo de demonstração.
 - **Refresh tokens em texto puro:** o hash de refresh tokens (como já se faz com senhas) exigiria migração de dados e foi adiado — não é uma vulnerabilidade explorável sem acesso prévio ao banco.
+- **Validação monetária incompleta:** o schema de validação contra exponentes decimais (`1e100000000`) foi aplicado em `simulateSchema`, mas o schema de cadastro de produtos ainda aceita o mesmo padrão perigoso — mesma classe de vulnerabilidade, endpoint diferente. Corrigir é rápido; ficou pendente por ter sido descoberto após o encerramento da rodada de correções desta fase.
+- **Defesa em profundidade da API incompleta:** as portas da API/Web continuam publicadas no `docker-compose.prod.yml`, mesmo com o firewall da nuvem já restringindo o acesso externo a elas. Rate limiting no Caddy também não foi configurado. O ponto único de entrada via HTTPS já mitiga o risco principal, mas a defesa em camadas não está completa.
 
 ---
 
