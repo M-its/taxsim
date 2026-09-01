@@ -1,16 +1,15 @@
 import { z } from 'zod'
 
+const monetaryStringSchema = z
+  .string()
+  .regex(/^\d{1,9}(\.\d{1,2})?$/, 'unitPrice must be a plain decimal string (e.g. 1234.56)')
+  .refine((val) => Number(val) > 0, { message: 'unitPrice must be greater than zero' })
+
 export const createProductSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   sku: z.string().min(1, 'SKU is required'),
   ncmCode: z.string().length(8, 'NCM code must be exactly 8 characters'),
-  unitPrice: z.string().refine(
-    (val) => {
-      const num = Number(val)
-      return !Number.isNaN(num) && num > 0
-    },
-    { message: 'unitPrice must be a positive number' },
-  ),
+  unitPrice: monetaryStringSchema,
 })
 
 export const updateProductSchema = createProductSchema
