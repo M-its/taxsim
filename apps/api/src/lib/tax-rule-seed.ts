@@ -36,7 +36,10 @@ export async function seedTaxRules(
           status: rule.status as TaxRuleStatus,
         },
       },
-      update: {},
+      update: {
+        cClassTrib: rule.cClassTrib,
+        cst: rule.cst,
+      },
       create: {
         ncmCode: rule.ncmCode,
         taxRegime: rule.taxRegime as TaxRegime,

@@ -183,6 +183,7 @@ docker compose ps
 # 6. Popule os dados iniciais (NCMs + regras fiscais)
 docker compose exec api npx prisma migrate deploy
 docker compose exec api npx prisma db seed
+# Reexecute o seed após atualizar tax-rules-data.ts; ele sincroniza cClassTrib/cst das regras existentes.
 docker compose exec api pnpm run import:ncm
 
 # 7. Acesse
