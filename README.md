@@ -53,12 +53,43 @@ O projeto roda em **duas VMs separadas** na Oracle Cloud Free Tier — não por 
                         └──────────────────────┘
 ```
 
+### Fluxo de uma simulação fiscal
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Usuario as Usuário
+    participant Web as Next.js 15
+    participant API as Fastify API
+    participant DB as PostgreSQL
+    participant Engine as Tax Engine interno
+    participant RFB as Calculadora RFB<br/>(VM AMD)
+
+    Usuario->>Web: Preenche itens e solicita a simulação
+    Web->>API: POST /sales/simulate
+    API->>API: Autentica JWT e valida o payload com Zod
+    API->>DB: Busca regras fiscais por NCM e regime
+    DB-->>API: Alíquotas, CST e cClassTrib
+
+    Note over API,RFB: Os dois cálculos são executados sequencialmente no código atual
+    API->>Engine: calculateCurrentModel(taxEngineInput)
+    Engine-->>API: PIS, COFINS, ICMS e ISS
+    API->>RFB: POST /calculadora/regime-geral
+    RFB-->>API: IBS, CBS e Imposto Seletivo
+
+    API->>API: mergeResults() calcula totais, delta e breakdown
+    API-->>Web: Resposta combinada dos dois modelos
+    Web-->>Usuario: Comparação tributária lado a lado
+```
+
+No fluxo atual, o Tax Engine síncrono termina primeiro; só depois a API aguarda a calculadora RFB. Não há execução paralela entre os dois motores em `simulateTax`.
+
 **Custo de infraestrutura: R$ 0,00/mês.** Duas VMs no Oracle Cloud Free Tier (permanentemente gratuito, sem cartão), domínio via DuckDNS (gratuito), certificado TLS via Let's Encrypt (gratuito, renovação automática pelo Caddy).
 
 **Stack:**
 - **Backend:** Fastify + TypeScript + Prisma ORM + PostgreSQL 16 + Zod (validação runtime)
-- **Frontend:** Next.js 15.5 (App Router) + Tailwind v4 + shadcn/ui (Base UI) + Recharts
-- **Infra:** Docker Compose (5 serviços), Caddy (reverse proxy + TLS automático), Oracle Cloud (2 VMs)
+- **Frontend:** Next.js 15.5 (App Router) + Tailwind v4 + shadcn/ui (Base UI) + Recharts + driver.js
+- **Infra:** Docker Compose, Caddy (reverse proxy + TLS automático), Oracle Cloud (2 VMs)
 - **Qualidade:** Vitest (testes automatizados), Prettier + Husky + lint-staged (formatação em todo commit)
 - **Gerenciador de pacotes:** pnpm 10.17.1 (pinado)
 
@@ -68,10 +99,11 @@ O projeto roda em **duas VMs separadas** na Oracle Cloud Free Tier — não por 
 
 ### Core
 - **Simulação fiscal real** — itens com NCM → Tax Engine interno → calculadora oficial RFB → comparativo lado a lado
-- **Multi-tenant** — isolamento completo por empresa via JWT (`companyId` em todo `WHERE`)
+- **Multi-tenant** — tenant derivado do JWT; leituras e verificações de propriedade usam `companyId`, e mutações por ID ocorrem somente após esse controle
 - **Autenticação completa** — JWT de 15min em memória + refresh token HttpOnly com rotação a cada uso
 - **Dashboard executivo** — KPIs YTD, gráfico de 6 meses rolantes, donut de composição tributária, todos com dados reais agregados via SQL nativo
 - **Circuit breaker** — proteção contra falhas em cascata na integração com a calculadora RFB (ver [a saga de debugging](#a-saga-do-circuit-breaker) abaixo)
+- **Onboarding interativo** — tour de seis etapas no primeiro acesso, persistido por usuário e reaberto pelo botão “Ajuda / Tour”
 
 ### Gestão
 - **Produtos** — CRUD com NCM autocomplete (10.515 NCMs da tabela oficial RFB 2026)
@@ -82,7 +114,7 @@ O projeto roda em **duas VMs separadas** na Oracle Cloud Free Tier — não por 
 ### Reforma Tributária
 - **Split Payment** — fundação arquitetural implementada, com [roadmap técnico detalhado](./SPLIT_PAYMENT_ROADMAP.md) para fases 1-4
 - **IBS/CBS/IS** — calculados via integração real com a calculadora oficial da RFB
-- **Seed de regras fiscais** — 63 regras cobrindo os NCMs mais comuns, auto-populadas no primeiro registro
+- **Seed de regras fiscais** — 63 regras para 21 NCMs no cenário suportado de venda doméstica comum, auto-populadas no primeiro registro
 
 ---
 
@@ -92,7 +124,7 @@ Um dos bugs mais instrutivos deste projeto: em produção, `/sales/simulate` ret
 
 A causa raiz: `new Date().toISOString()` gera datas no formato `2026-08-08T02:15:16.222Z` (UTC com sufixo `Z`), mas a calculadora da RFB **rejeita** esse formato e exige offset explícito (`2026-08-07T23:15:16-03:00`). Toda chamada retornava HTTP 400, e após 5 falhas o circuit breaker abria — mascarando o erro real atrás de uma resposta rápida e genérica.
 
-**Lição:** circuit breakers escondem a causa raiz. A resposta de 422 em 12ms parecia "infraestrutura quebrada" quando na verdade era um bug de formatação de data de uma linha. [Relatório completo de diagnóstico](./relatorio_diagnostico_taxsim.md).
+**Lição:** circuit breakers escondem a causa raiz. A resposta de 422 em 12ms parecia "infraestrutura quebrada" quando na verdade era um bug de formatação de data de uma linha.
 
 ---
 
@@ -102,10 +134,10 @@ O projeto passou por uma auditoria automatizada com [Codex Security](https://git
 
 | # | Finding | Severidade | Status |
 |---|---|---|---|
-| 1 | Exponentes decimais (`1e100000000`) em campos monetários podiam exaurir memória da API | Alta | 🟡 Parcialmente corrigido — aplicado em `simulateSchema`; `products.schema` ainda não protegido |
+| 1 | Exponentes decimais (`1e100000000`) em campos monetários podiam exaurir memória da API | Alta | ✅ Corrigido em Sales e Products, com validação sintática e testes |
 | 2 | `redirectTo` pós-login não validado permitia open redirect / DOM XSS | Alta | ✅ Corrigido — allowlist de caminhos relativos |
 | 3 | Fallback silencioso de `JWT_SECRET` para valor público conhecido | Média | ✅ Corrigido — fail-fast em produção |
-| 5 | Porta da API exposta diretamente, contornando rate limiting centralizado | Média | 🟡 Parcialmente corrigido — Caddy é o único ponto de entrada público; portas ainda publicadas no compose (defesa em profundidade incompleta) e rate limiting não configurado no Caddy |
+| 5 | Porta da API exposta diretamente, contornando rate limiting centralizado | Média | 🟡 Bypass de autenticação mitigado no Fastify; exposição HTTP direta ainda depende do firewall externo |
 | 6 | Tráfego de autenticação em HTTP puro, sem TLS | Média | ✅ Corrigido — HTTPS via Caddy + Let's Encrypt |
 | 8 | Logout não revogava sessão no servidor (`Path` do cookie divergente) | Baixa | ✅ Corrigido — escopo do cookie alinhado entre set/clear |
 | 4 | Resposta da calculadora RFB confiada sem validação de schema em runtime | Média | 📋 Documentado — ver limitações conhecidas |
@@ -113,10 +145,9 @@ O projeto passou por uma auditoria automatizada com [Codex Security](https://git
 
 ### Limitações conhecidas (decisão consciente de escopo)
 
-- **Validação de proveniência da calculadora RFB:** a resposta do serviço de terceiro (calculadora oficial) é confiada sem verificação de schema em runtime. Mitigação completa exigiria autenticação mútua ou pinning do serviço, infraestrutura que não existe para essa calculadora pública. Risco aceito para escopo de demonstração.
+- **Validação da resposta da calculadora RFB:** a resposta do serviço de terceiro é desserializada sem validação de schema em runtime. Autenticar a origem e validar a estrutura são controles distintos; o cliente ainda precisa de um schema explícito para detectar mudanças ou respostas inesperadas. Risco aceito para o escopo de demonstração.
 - **Refresh tokens em texto puro:** o hash de refresh tokens (como já se faz com senhas) exigiria migração de dados e foi adiado — não é uma vulnerabilidade explorável sem acesso prévio ao banco.
-- **Validação monetária incompleta:** o schema de validação contra exponentes decimais (`1e100000000`) foi aplicado em `simulateSchema`, mas o schema de cadastro de produtos ainda aceita o mesmo padrão perigoso — mesma classe de vulnerabilidade, endpoint diferente. Corrigir é rápido; ficou pendente por ter sido descoberto após o encerramento da rodada de correções desta fase.
-- **Defesa em profundidade da API incompleta:** as portas da API/Web continuam publicadas no `docker-compose.prod.yml`, mesmo com o firewall da nuvem já restringindo o acesso externo a elas. Rate limiting no Caddy também não foi configurado. O ponto único de entrada via HTTPS já mitiga o risco principal, mas a defesa em camadas não está completa.
+- **Defesa em profundidade da API incompleta:** as portas da API/Web continuam publicadas no `docker-compose.prod.yml`, embora vinculadas ao loopback do host e protegidas externamente pelo firewall da nuvem. Login e cadastro têm limite de 5 tentativas por minuto e IP dentro do Fastify; o risco residual é uma configuração externa expor a API HTTP diretamente.
 
 ---
 
@@ -124,16 +155,20 @@ O projeto passou por uma auditoria automatizada com [Codex Security](https://git
 
 Suíte com Vitest cobrindo os pontos de maior risco identificados durante o desenvolvimento e a auditoria de segurança:
 
-- **Tax Engine e formatters** — funções puras, sem I/O, incluindo o formato de data exigido pela calculadora RFB
-- **Validação de schema (Zod)** — proteção contra exponentes decimais, limites de array, quantidade por item
-- **`safeRedirectPath`** — todos os vetores de ataque do finding de open redirect (protocol-relative, `javascript:`, `data:`, backslash)
-- **Circuit breaker / error handler** — propagação correta de erros de validação através do encapsulamento de plugins do Fastify
-- **Fluxo de cookies de autenticação** — escopo correto de `Path` entre emissão e revogação de sessão
+- **Schemas de Sales e Products** — notação científica, `Infinity`, casas decimais e limites de domínio
+- **Integração RFB** — data com offset explícito e contrato do client
+- **Autenticação** — cookies, revogação de sessão e rate limiting de login/cadastro
+- **Error handler** — propagação global de erros Zod através do encapsulamento de plugins
+- **`safeRedirectPath`** — vetores de open redirect como protocol-relative, `javascript:`, `data:` e backslash
+- **Onboarding** — primeiro acesso, conclusão persistida e reabertura manual
+- **Seed fiscal** — sincronização idempotente de `cClassTrib` e `cst`
 
 ```bash
-cd apps/api && pnpm exec vitest run   # 14 testes
-cd apps/web && pnpm exec vitest run   # 9 testes
+cd apps/api && pnpm exec vitest run   # 21 testes
+cd apps/web && pnpm exec vitest run   # 12 testes
 ```
+
+As transições do circuit breaker e a aritmética pura do Tax Engine ainda não possuem testes dedicados. O workflow `.github/workflows/ci.yml` executa as duas suítes e `tsc --noEmit` em todo push e pull request para `main`; deploy permanece manual.
 
 ---
 
@@ -150,6 +185,7 @@ cd apps/web && pnpm exec vitest run   # 9 testes
 | Colunas do banco | camelCase sem `@map` | Aspas duplas obrigatórias em SQL raw |
 | Domínio + TLS | DuckDNS + Let's Encrypt via Caddy | Zero custo, renovação automática, mantém o projeto hospedável gratuitamente |
 | Error handler do Fastify | Registrado com `fastify-plugin` (`fp()`) | Sem isso, fica invisível a plugins-irmãos por encapsulamento padrão do Fastify — descoberto ao validar um fix de segurança em produção |
+| Rate limiting de autenticação | Dentro do Fastify, somente em login/cadastro | Mantém o controle junto às rotas mesmo quando a API é acessada sem passar pelo Caddy |
 
 ---
 
@@ -244,9 +280,11 @@ taxsim/
 │           │   ├── auth/       # AuthProvider, RequireAuth, PublicRoute
 │           │   ├── dashboard/  # KPIs, charts, table
 │           │   ├── layout/     # Sidebar, Topbar, DashboardShell
+│           │   ├── onboarding/ # Tour interativo do fluxo principal
 │           │   └── simulation/ # Form, TaxComparison, ProjectedImpact
 │           ├── hooks/          # useDashboardSummary, useRecentSales
 │           └── lib/            # api.ts, safe-redirect.ts, formatters, types
+├── .github/workflows/ci.yml     # Testes + typecheck em push/PR para main
 ├── docker-compose.yml           # Ambiente de desenvolvimento
 ├── docker-compose.prod.yml      # Produção — inclui Caddy
 ├── Caddyfile                    # Config do reverse proxy / TLS
