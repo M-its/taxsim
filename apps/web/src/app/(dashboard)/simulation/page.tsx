@@ -1,38 +1,35 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { SimulationForm, type SimulationFormItem } from "@/components/simulation/simulation-form"
-import { TaxComparison } from "@/components/simulation/tax-comparison"
-import { ProjectedImpact } from "@/components/simulation/projected-impact"
-import { useAuth } from "@/components/auth/auth-provider"
-import { simulateSales, ApiError } from "@/lib/api"
-import type { SimulationResponse } from "@/lib/simulation.types"
+import { useState } from 'react'
+import { SimulationForm, type SimulationFormItem } from '@/components/simulation/simulation-form'
+import { TaxComparison } from '@/components/simulation/tax-comparison'
+import { ProjectedImpact } from '@/components/simulation/projected-impact'
+import { useAuth } from '@/components/auth/auth-provider'
+import { simulateSales, ApiError } from '@/lib/api'
+import type { SimulationResponse } from '@/lib/simulation.types'
 
 function SkeletonBlock({ className }: { className?: string }) {
-  return <div className={"animate-pulse bg-[#27272a] " + (className ?? "")} />
+  return <div className={'animate-pulse bg-[#27272a] ' + (className ?? '')} />
 }
 
 function getSimulationErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.status === 503) {
-      return "Calculadora tributária indisponível. Tente novamente."
+      return 'Calculadora tributária indisponível. Tente novamente.'
     }
 
     if (err.status === 422) {
       const backendMessage = err.message.toLowerCase()
-      if (
-        backendMessage.includes("calculator") ||
-        backendMessage.includes("calculadora")
-      ) {
-        return "Calculadora tributária indisponível. Tente novamente."
+      if (backendMessage.includes('calculator') || backendMessage.includes('calculadora')) {
+        return 'Calculadora tributária indisponível. Tente novamente.'
       }
-      return "NCM não encontrado nas regras fiscais. Verifique o código NCM."
+      return 'NCM não encontrado nas regras fiscais. Verifique o código NCM.'
     }
 
-    return err.message || "Erro ao calcular simulação. Tente novamente."
+    return err.message || 'Erro ao calcular simulação. Tente novamente.'
   }
 
-  return "Erro ao calcular simulação. Tente novamente."
+  return 'Erro ao calcular simulação. Tente novamente.'
 }
 
 export default function SimulationPage() {
@@ -65,7 +62,7 @@ export default function SimulationPage() {
         ibsAmount,
         cbsAmount,
         netMerchantAmount: net,
-        note: "Valores sujeitos ao Split Payment conforme NT 2025.002",
+        note: 'Valores sujeitos ao Split Payment conforme NT 2025.002',
       }
 
       setSimulation(result)
@@ -121,15 +118,27 @@ export default function SimulationPage() {
         </div>
       )}
 
-      {simulation && (
-        <div className="space-y-4">
-          <TaxComparison data={simulation} taxRegime={company.taxRegime} />
-          <ProjectedImpact
-            savings={simulation.delta.absolute.replace("-", "")}
-            savingsPercent={simulation.delta.percentual}
-          />
-        </div>
-      )}
+      <div data-tour="simulation-results">
+        {simulation ? (
+          <div className="space-y-4">
+            <TaxComparison data={simulation} taxRegime={company.taxRegime} />
+            <ProjectedImpact
+              savings={simulation.delta.absolute.replace('-', '')}
+              savingsPercent={simulation.delta.percentual}
+            />
+          </div>
+        ) : (
+          <div className="rounded-none border border-dashed border-[#27272a] bg-[#18181b]/40 p-5">
+            <p className="text-sm font-medium text-[#a1a1aa]">
+              O comparativo tributário aparecerá aqui.
+            </p>
+            <p className="mt-1 text-xs text-[#71717a]">
+              Preencha os itens acima e calcule a simulação para comparar o regime atual com o IVA
+              Dual.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

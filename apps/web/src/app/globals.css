@@ -35,6 +35,100 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Driver.js — onboarding tour styled with the TaxSim dark design system */
+.driver-popover.taxsim-tour-popover {
+  min-width: 280px;
+  max-width: 340px;
+  border: 1px solid #27272a;
+  border-radius: 0;
+  background: #18181b;
+  color: #fafafa;
+  box-shadow: 0 20px 50px rgb(0 0 0 / 45%);
+}
+
+.driver-popover.taxsim-tour-popover .driver-popover-title {
+  padding-right: 28px;
+  color: #fafafa;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.driver-popover.taxsim-tour-popover .driver-popover-description {
+  color: #a1a1aa;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.driver-popover.taxsim-tour-popover .driver-popover-progress-text {
+  color: #71717a;
+}
+
+.driver-popover.taxsim-tour-popover .driver-popover-close-btn {
+  color: #71717a;
+}
+
+.driver-popover.taxsim-tour-popover .driver-popover-close-btn:hover,
+.driver-popover.taxsim-tour-popover .driver-popover-close-btn:focus {
+  color: #fafafa;
+}
+
+.driver-popover.taxsim-tour-popover .driver-popover-footer-btn {
+  border: 1px solid #3f3f46;
+  border-radius: 0;
+  background: transparent;
+  color: #a1a1aa;
+  padding: 6px 10px;
+  text-shadow: none;
+}
+
+.driver-popover.taxsim-tour-popover .driver-popover-footer-btn:hover,
+.driver-popover.taxsim-tour-popover .driver-popover-footer-btn:focus {
+  border-color: #71717a;
+  background: #27272a;
+  color: #fafafa;
+}
+
+.driver-popover.taxsim-tour-popover .driver-popover-next-btn {
+  border-color: #34d399;
+  background: #34d399;
+  color: #09090b;
+}
+
+.driver-popover.taxsim-tour-popover .driver-popover-next-btn:hover,
+.driver-popover.taxsim-tour-popover .driver-popover-next-btn:focus {
+  border-color: #6ee7b7;
+  background: #6ee7b7;
+  color: #09090b;
+}
+
+.driver-popover.taxsim-tour-popover .driver-popover-arrow {
+  border-color: #18181b;
+}
+
+.driver-popover.taxsim-tour-popover .driver-popover-arrow-side-left {
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+  border-right-color: transparent;
+}
+
+.driver-popover.taxsim-tour-popover .driver-popover-arrow-side-right {
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+}
+
+.driver-popover.taxsim-tour-popover .driver-popover-arrow-side-top {
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+}
+
+.driver-popover.taxsim-tour-popover .driver-popover-arrow-side-bottom {
+  border-top-color: transparent;
+  border-right-color: transparent;
+  border-left-color: transparent;
+}
+
 /* Recharts tooltip polish */
 .recharts-tooltip-wrapper {
   outline: none !important;

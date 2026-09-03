@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import { useEffect, useRef, useState } from "react"
-import { motion } from "framer-motion"
-import { Pencil, Plus, Search, Trash2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useEffect, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
+import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -11,9 +11,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Table,
   TableBody,
@@ -21,32 +21,32 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { createProduct, deleteProduct, getProducts, updateProduct, searchNcm } from "@/lib/api"
-import type { NcmResult } from "@/lib/api"
-import { formatCurrency } from "@/lib/formatters"
-import type { Product, ProductInput, ProductListResponse } from "@/lib/product.types"
+} from '@/components/ui/table'
+import { createProduct, deleteProduct, getProducts, updateProduct, searchNcm } from '@/lib/api'
+import type { NcmResult } from '@/lib/api'
+import { formatCurrency } from '@/lib/formatters'
+import type { Product, ProductInput, ProductListResponse } from '@/lib/product.types'
 
 function currencyToRaw(value: string): string {
-  const digits = value.replace(/\D/g, "")
+  const digits = value.replace(/\D/g, '')
   const numeric = Number(digits) / 100
   return numeric.toFixed(2)
 }
 
 function formatCurrencyInput(value: string): string {
-  const digits = value.replace(/\D/g, "")
+  const digits = value.replace(/\D/g, '')
   const numeric = Number(digits) / 100
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
   }).format(numeric)
 }
 
 const emptyForm: ProductInput = {
-  name: "",
-  sku: "",
-  ncmCode: "",
-  unitPrice: "0.00",
+  name: '',
+  sku: '',
+  ncmCode: '',
+  unitPrice: '0.00',
 }
 
 type FieldErrors = Partial<Record<keyof ProductInput, string>>
@@ -64,7 +64,7 @@ interface NcmSearchProps {
 }
 
 function NcmSearch({ selectedNcm, onSelect, onSuggestName }: NcmSearchProps) {
-  const [query, setQuery] = useState("")
+  const [query, setQuery] = useState('')
   const [results, setResults] = useState<NcmResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
@@ -96,7 +96,7 @@ function NcmSearch({ selectedNcm, onSelect, onSuggestName }: NcmSearchProps) {
             size="sm"
             onClick={() => {
               onSelect(null)
-              setQuery("")
+              setQuery('')
             }}
             className="h-auto rounded-none px-2 py-1 text-xs text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#fafafa]"
           >
@@ -136,7 +136,7 @@ function NcmSearch({ selectedNcm, onSelect, onSuggestName }: NcmSearchProps) {
                 onClick={() => {
                   onSelect(ncm)
                   onSuggestName?.(ncm)
-                  setQuery("")
+                  setQuery('')
                   setResults([])
                 }}
                 className="w-full px-3 py-2 text-left transition-colors hover:bg-[#27272a]"
@@ -160,21 +160,21 @@ function validateProduct(values: ProductInput): FieldErrors {
   const errors: FieldErrors = {}
 
   if (!values.name.trim()) {
-    errors.name = "Nome é obrigatório"
+    errors.name = 'Nome é obrigatório'
   }
 
   if (!values.sku.trim()) {
-    errors.sku = "SKU é obrigatório"
+    errors.sku = 'SKU é obrigatório'
   }
 
   if (!values.ncmCode.trim()) {
-    errors.ncmCode = "NCM é obrigatório"
+    errors.ncmCode = 'NCM é obrigatório'
   } else if (!/^\d{8}$/.test(values.ncmCode)) {
-    errors.ncmCode = "NCM deve conter exatamente 8 dígitos"
+    errors.ncmCode = 'NCM deve conter exatamente 8 dígitos'
   }
 
   if (!values.unitPrice || parseFloat(values.unitPrice) <= 0) {
-    errors.unitPrice = "Preço unitário deve ser maior que zero"
+    errors.unitPrice = 'Preço unitário deve ser maior que zero'
   }
 
   return errors
@@ -209,7 +209,7 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
           ncmCode: product.ncmCode,
           unitPrice: product.unitPrice,
         })
-        setSelectedNcm({ code: product.ncmCode, description: "" })
+        setSelectedNcm({ code: product.ncmCode, description: '' })
 
         if (product.ncmCode) {
           setIsNcmLoading(true)
@@ -218,14 +218,14 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
               const match = results.find((n) => n.code === product.ncmCode)
               setSelectedNcm((current) =>
                 current?.code === product.ncmCode
-                  ? { code: product.ncmCode, description: match?.description ?? "" }
+                  ? { code: product.ncmCode, description: match?.description ?? '' }
                   : current,
               )
             })
             .catch(() => {
               setSelectedNcm((current) =>
                 current?.code === product.ncmCode
-                  ? { code: product.ncmCode, description: "" }
+                  ? { code: product.ncmCode, description: '' }
                   : current,
               )
             })
@@ -267,7 +267,7 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
       if (error instanceof Error) {
         setApiError(error.message)
       } else {
-        setApiError("Ocorreu um erro inesperado. Tente novamente.")
+        setApiError('Ocorreu um erro inesperado. Tente novamente.')
       }
     } finally {
       setIsSubmitting(false)
@@ -283,12 +283,12 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
         <form onSubmit={handleSubmit}>
           <DialogHeader className="border-b border-[#27272a] p-4">
             <DialogTitle className="text-sm font-medium text-[#fafafa]">
-              {isEditing ? "Editar Produto" : "Novo Produto"}
+              {isEditing ? 'Editar Produto' : 'Novo Produto'}
             </DialogTitle>
             <DialogDescription className="text-xs text-[#a1a1aa]">
               {isEditing
-                ? "Atualize os dados do produto selecionado."
-                : "Preencha os dados para cadastrar um novo produto."}
+                ? 'Atualize os dados do produto selecionado.'
+                : 'Preencha os dados para cadastrar um novo produto.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -306,9 +306,9 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
               <Input
                 id="name"
                 value={values.name}
-                onChange={(event) => updateField("name", event.target.value)}
+                onChange={(event) => updateField('name', event.target.value)}
                 placeholder="Ex: Notebook Dell"
-                variant={errors.name ? "error" : "default"}
+                variant={errors.name ? 'error' : 'default'}
               />
               {errors.name && <p className="text-xs text-[#f87171]">{errors.name}</p>}
             </div>
@@ -320,9 +320,9 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
               <Input
                 id="sku"
                 value={values.sku}
-                onChange={(event) => updateField("sku", event.target.value)}
+                onChange={(event) => updateField('sku', event.target.value)}
                 placeholder="Ex: NB-DELL-001"
-                variant={errors.sku ? "error" : "default"}
+                variant={errors.sku ? 'error' : 'default'}
               />
               {errors.sku && <p className="text-xs text-[#f87171]">{errors.sku}</p>}
             </div>
@@ -331,19 +331,17 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
               <Label htmlFor="ncmCode" className="text-xs text-[#a1a1aa]">
                 Código NCM
               </Label>
-              {isNcmLoading && (
-                <p className="text-xs text-[#71717a]">Carregando NCM...</p>
-              )}
+              {isNcmLoading && <p className="text-xs text-[#71717a]">Carregando NCM...</p>}
               <NcmSearch
                 selectedNcm={selectedNcm}
                 onSelect={(ncm) => {
                   setSelectedNcm(ncm)
-                  updateField("ncmCode", ncm?.code ?? "")
+                  updateField('ncmCode', ncm?.code ?? '')
                 }}
                 onSuggestName={(ncm) => {
                   if (!values.name.trim()) {
                     const suggestion = ncm.description.slice(0, 80).trim()
-                    updateField("name", suggestion)
+                    updateField('name', suggestion)
                   }
                 }}
               />
@@ -357,14 +355,12 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
               <Input
                 id="unitPrice"
                 value={formatCurrencyInput(values.unitPrice)}
-                onChange={(event) => updateField("unitPrice", currencyToRaw(event.target.value))}
+                onChange={(event) => updateField('unitPrice', currencyToRaw(event.target.value))}
                 inputMode="decimal"
-                variant={errors.unitPrice ? "error" : "default"}
+                variant={errors.unitPrice ? 'error' : 'default'}
                 className="font-numbers"
               />
-              {errors.unitPrice && (
-                <p className="text-xs text-[#f87171]">{errors.unitPrice}</p>
-              )}
+              {errors.unitPrice && <p className="text-xs text-[#f87171]">{errors.unitPrice}</p>}
             </div>
           </div>
 
@@ -382,7 +378,7 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
               disabled={isSubmitting}
               className="rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1f2a1f] disabled:translate-y-0"
             >
-              {isSubmitting ? "Salvando..." : isEditing ? "Salvar alterações" : "Cadastrar"}
+              {isSubmitting ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Cadastrar'}
             </Button>
           </DialogFooter>
         </form>
@@ -393,10 +389,10 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
-  const [pagination, setPagination] = useState<ProductListResponse["pagination"] | null>(null)
+  const [pagination, setPagination] = useState<ProductListResponse['pagination'] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [listError, setListError] = useState<string | null>(null)
-  const [searchInput, setSearchInput] = useState("")
+  const [searchInput, setSearchInput] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
@@ -404,7 +400,7 @@ export default function ProductsPage() {
   const confirmationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [query, setQuery] = useState<ProductQuery>({
-    search: "",
+    search: '',
     page: 1,
     immediate: false,
   })
@@ -413,19 +409,22 @@ export default function ProductsPage() {
     setIsLoading(true)
     setListError(null)
 
-    const timer = setTimeout(() => {
-      getProducts(query.search.trim() || undefined, query.page)
-        .then((response) => {
-          setProducts(response.data)
-          setPagination(response.pagination)
-        })
-        .catch((error) => {
-          setProducts([])
-          setPagination(null)
-          setListError(error instanceof Error ? error.message : "Erro ao carregar produtos.")
-        })
-        .finally(() => setIsLoading(false))
-    }, query.immediate ? 0 : 300)
+    const timer = setTimeout(
+      () => {
+        getProducts(query.search.trim() || undefined, query.page)
+          .then((response) => {
+            setProducts(response.data)
+            setPagination(response.pagination)
+          })
+          .catch((error) => {
+            setProducts([])
+            setPagination(null)
+            setListError(error instanceof Error ? error.message : 'Erro ao carregar produtos.')
+          })
+          .finally(() => setIsLoading(false))
+      },
+      query.immediate ? 0 : 300,
+    )
 
     return () => clearTimeout(timer)
   }, [query])
@@ -499,7 +498,7 @@ export default function ProductsPage() {
         refreshList()
       }
     } catch (error) {
-      setListError(error instanceof Error ? error.message : "Erro ao excluir produto.")
+      setListError(error instanceof Error ? error.message : 'Erro ao excluir produto.')
     } finally {
       setIsDeletingId(null)
     }
@@ -516,12 +515,12 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div data-tour="products" className="space-y-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        style={{ willChange: "transform, opacity" }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        style={{ willChange: 'transform, opacity' }}
         className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
       >
         <div>
@@ -542,8 +541,8 @@ export default function ProductsPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
-        style={{ willChange: "transform, opacity" }}
+        transition={{ duration: 0.4, ease: 'easeOut', delay: 0.1 }}
+        style={{ willChange: 'transform, opacity' }}
         className="rounded-none border border-[#27272a] bg-[#18181b] p-5"
       >
         <div className="mb-4">
@@ -589,9 +588,7 @@ export default function ProductsPage() {
               ) : products.length === 0 ? (
                 <TableRow className="border-[#27272a] hover:bg-transparent">
                   <TableCell colSpan={5} className="py-12 text-center">
-                    <p className="text-sm text-[#a1a1aa]">
-                      Nenhum produto encontrado.
-                    </p>
+                    <p className="text-sm text-[#a1a1aa]">Nenhum produto encontrado.</p>
                     <p className="mt-1 text-xs text-[#71717a]">
                       Cadastre um novo produto ou ajuste os filtros de busca.
                     </p>
@@ -603,8 +600,8 @@ export default function ProductsPage() {
                     key={product.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, ease: "easeOut", delay: index * 0.05 }}
-                    style={{ willChange: "transform, opacity" }}
+                    transition={{ duration: 0.3, ease: 'easeOut', delay: index * 0.05 }}
+                    style={{ willChange: 'transform, opacity' }}
                     className="border-b border-[#27272a] transition-colors last:border-b-0 hover:bg-[#27272a]/30"
                   >
                     <TableCell className="text-sm text-[#fafafa]">{product.name}</TableCell>
@@ -612,7 +609,11 @@ export default function ProductsPage() {
                       {product.sku}
                     </TableCell>
                     <TableCell className="font-numbers text-sm">
-                      <span className={/^\d{8}$/.test(product.ncmCode) ? "text-[#a1a1aa]" : "text-[#facc15]"}>
+                      <span
+                        className={
+                          /^\d{8}$/.test(product.ncmCode) ? 'text-[#a1a1aa]' : 'text-[#facc15]'
+                        }
+                      >
                         {product.ncmCode}
                       </span>
                       {!/^\d{8}$/.test(product.ncmCode) && (
@@ -643,9 +644,9 @@ export default function ProductsPage() {
                           className="rounded-none border border-transparent px-2 text-xs text-[#f87171] hover:border-[#f87171]/20 hover:bg-[#f87171]/10 hover:text-[#f87171] disabled:opacity-50"
                         >
                           {confirmingDeleteId === product.id ? (
-                            "Confirmar?"
+                            'Confirmar?'
                           ) : isDeletingId === product.id ? (
-                            "Excluindo..."
+                            'Excluindo...'
                           ) : (
                             <>
                               <Trash2 className="h-4 w-4" />

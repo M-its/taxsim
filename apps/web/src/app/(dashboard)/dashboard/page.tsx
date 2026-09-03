@@ -1,44 +1,42 @@
-"use client"
+'use client'
 
-import { KpiGrid } from "@/components/dashboard/kpi-card"
-import { TaxBarChart } from "@/components/dashboard/tax-bar-chart"
-import { TaxDonutChart } from "@/components/dashboard/tax-donut-chart"
-import { RecentOperationsTable } from "@/components/dashboard/recent-operations-table"
-import { useDashboardSummary } from "@/hooks/use-dashboard-summary"
-import { useRecentSales } from "@/hooks/use-recent-sales"
+import { KpiGrid } from '@/components/dashboard/kpi-card'
+import { TaxBarChart } from '@/components/dashboard/tax-bar-chart'
+import { TaxDonutChart } from '@/components/dashboard/tax-donut-chart'
+import { RecentOperationsTable } from '@/components/dashboard/recent-operations-table'
+import { useDashboardSummary } from '@/hooks/use-dashboard-summary'
+import { useRecentSales } from '@/hooks/use-recent-sales'
 import type {
   TaxLoadMonth as ApiTaxLoadMonth,
   TaxCompositionItem as ApiTaxCompositionItem,
-} from "@/lib/dashboard.types"
+} from '@/lib/dashboard.types'
 import type {
   TaxLoadMonth as ChartTaxLoadMonth,
   TaxCompositionItem as ChartTaxCompositionItem,
-} from "@/lib/mock-data"
+} from '@/lib/mock-data'
 
 const MONTH_LABELS = [
-  "Jan",
-  "Fev",
-  "Mar",
-  "Abr",
-  "Mai",
-  "Jun",
-  "Jul",
-  "Ago",
-  "Set",
-  "Out",
-  "Nov",
-  "Dez",
+  'Jan',
+  'Fev',
+  'Mar',
+  'Abr',
+  'Mai',
+  'Jun',
+  'Jul',
+  'Ago',
+  'Set',
+  'Out',
+  'Nov',
+  'Dez',
 ]
 
 const COMPOSITION_COLORS: Record<string, string> = {
-  IBS: "#34d399",
-  CBS: "#a1a1aa",
-  IS: "#27272a",
+  IBS: '#34d399',
+  CBS: '#a1a1aa',
+  IS: '#27272a',
 }
 
-function mapTaxLoadByMonth(
-  data: ApiTaxLoadMonth[],
-): ChartTaxLoadMonth[] {
+function mapTaxLoadByMonth(data: ApiTaxLoadMonth[]): ChartTaxLoadMonth[] {
   return data.map((item) => {
     const monthIndex = parseInt(item.month.slice(5, 7), 10) - 1
     return {
@@ -49,13 +47,11 @@ function mapTaxLoadByMonth(
   })
 }
 
-function mapTaxComposition(
-  data: ApiTaxCompositionItem[],
-): ChartTaxCompositionItem[] {
+function mapTaxComposition(data: ApiTaxCompositionItem[]): ChartTaxCompositionItem[] {
   return data.map((item) => ({
     name: item.name,
     value: parseFloat(item.value),
-    color: COMPOSITION_COLORS[item.name] ?? "#52525b",
+    color: COMPOSITION_COLORS[item.name] ?? '#52525b',
   }))
 }
 
@@ -92,9 +88,7 @@ function DashboardError({ message }: { message: string }) {
   return (
     <div className="space-y-6">
       <div className="rounded-none border border-[#27272a] bg-[#18181b] p-5">
-        <p className="text-sm text-[#f87171]">
-          Erro ao carregar os dados do dashboard.
-        </p>
+        <p className="text-sm text-[#f87171]">Erro ao carregar os dados do dashboard.</p>
         <p className="mt-1 text-xs text-[#a1a1aa]">{message}</p>
       </div>
 
@@ -144,7 +138,9 @@ export default function DashboardPage() {
   if (isLoading) {
     summaryContent = <DashboardSkeleton />
   } else if (error || !data) {
-    summaryContent = <DashboardError message={error?.message ?? "Não foi possível carregar o resumo."} />
+    summaryContent = (
+      <DashboardError message={error?.message ?? 'Não foi possível carregar o resumo.'} />
+    )
   } else {
     summaryContent = (
       <>
@@ -169,7 +165,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div data-tour="dashboard-overview" className="space-y-6">
       <div>
         <h1 className="text-xl font-semibold text-[#fafafa]">Dashboard</h1>
         <p className="mt-1 text-sm text-[#a1a1aa]">

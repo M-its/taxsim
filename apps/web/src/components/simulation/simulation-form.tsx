@@ -1,18 +1,18 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
-import { motion } from "framer-motion"
-import { Calculator, Plus, Search, Trash2 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
-import { formatCurrency } from "@/lib/formatters"
-import { getProducts } from "@/lib/api"
-import type { TaxRegime } from "@/lib/auth.types"
-import type { Product } from "@/lib/product.types"
-import type { SimulationItem } from "@/lib/simulation.types"
+import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
+import { Calculator, Plus, Search, Trash2 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
+import { formatCurrency } from '@/lib/formatters'
+import { getProducts } from '@/lib/api'
+import type { TaxRegime } from '@/lib/auth.types'
+import type { Product } from '@/lib/product.types'
+import type { SimulationItem } from '@/lib/simulation.types'
 
 export type SimulationFormItem = SimulationItem
 
@@ -24,36 +24,36 @@ interface SimulationFormProps {
 }
 
 const REGIME_LABELS: Record<TaxRegime, string> = {
-  SIMPLES_NACIONAL: "Simples Nacional",
-  LUCRO_PRESUMIDO: "Lucro Presumido",
-  LUCRO_REAL: "Lucro Real",
+  SIMPLES_NACIONAL: 'Simples Nacional',
+  LUCRO_PRESUMIDO: 'Lucro Presumido',
+  LUCRO_REAL: 'Lucro Real',
 }
 
 function generateId(): string {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID()
   }
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
 function currencyToRaw(value: string): string {
-  const digits = value.replace(/\D/g, "")
+  const digits = value.replace(/\D/g, '')
   const numeric = Number(digits) / 100
   return numeric.toFixed(2)
 }
 
 function formatCurrencyInput(value: string): string {
-  const digits = value.replace(/\D/g, "")
+  const digits = value.replace(/\D/g, '')
   const numeric = Number(digits) / 100
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
   }).format(numeric)
 }
 
 type CatalogItemDraft = {
   id: string
-  mode: "catalog"
+  mode: 'catalog'
   productId: string | null
   product: Product | null
   quantity: string
@@ -61,7 +61,7 @@ type CatalogItemDraft = {
 
 type ManualItemDraft = {
   id: string
-  mode: "manual"
+  mode: 'manual'
   ncmCode: string
   unitPrice: string
   quantity: string
@@ -69,12 +69,12 @@ type ManualItemDraft = {
 
 type ItemDraft = CatalogItemDraft | ManualItemDraft
 
-function createEmptyItem(mode: ItemDraft["mode"] = "catalog"): ItemDraft {
+function createEmptyItem(mode: ItemDraft['mode'] = 'catalog'): ItemDraft {
   const id = generateId()
-  if (mode === "catalog") {
-    return { id, mode, productId: null, product: null, quantity: "1" }
+  if (mode === 'catalog') {
+    return { id, mode, productId: null, product: null, quantity: '1' }
   }
-  return { id, mode, ncmCode: "", unitPrice: "", quantity: "1" }
+  return { id, mode, ncmCode: '', unitPrice: '', quantity: '1' }
 }
 
 interface ProductSearchProps {
@@ -83,12 +83,12 @@ interface ProductSearchProps {
 }
 
 function ProductSearch({ selectedProduct, onSelect }: ProductSearchProps) {
-  const [query, setQuery] = useState("")
+  const [query, setQuery] = useState('')
   const [results, setResults] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-  const timer = setTimeout(() => {
+    const timer = setTimeout(() => {
       setIsLoading(true)
       getProducts(query.trim() || undefined)
         .then((response) => setResults(response.data))
@@ -120,7 +120,7 @@ function ProductSearch({ selectedProduct, onSelect }: ProductSearchProps) {
           <div>
             <p className="text-sm font-medium text-[#fafafa]">{selectedProduct.name}</p>
             <p className="text-xs text-[#71717a]">
-              SKU {selectedProduct.sku} · NCM {selectedProduct.ncmCode} ·{" "}
+              SKU {selectedProduct.sku} · NCM {selectedProduct.ncmCode} ·{' '}
               {formatCurrency(selectedProduct.unitPrice)}
             </p>
           </div>
@@ -147,8 +147,7 @@ function ProductSearch({ selectedProduct, onSelect }: ProductSearchProps) {
               >
                 <p className="text-sm text-[#fafafa]">{product.name}</p>
                 <p className="text-xs text-[#71717a]">
-                  SKU {product.sku} · NCM {product.ncmCode} ·{" "}
-                  {formatCurrency(product.unitPrice)}
+                  SKU {product.sku} · NCM {product.ncmCode} · {formatCurrency(product.unitPrice)}
                 </p>
               </button>
             </li>
@@ -167,21 +166,21 @@ function validateItem(draft: ItemDraft): string[] {
   const errors: string[] = []
   const quantity = parseInt(draft.quantity, 10)
 
-  if (draft.quantity === "" || Number.isNaN(quantity) || quantity < 1) {
-    errors.push("Quantidade inválida")
+  if (draft.quantity === '' || Number.isNaN(quantity) || quantity < 1) {
+    errors.push('Quantidade inválida')
   }
 
-  if (draft.mode === "catalog") {
+  if (draft.mode === 'catalog') {
     if (!draft.productId || !draft.product) {
-      errors.push("Selecione um produto")
+      errors.push('Selecione um produto')
     }
   } else {
     if (!/^\d{8}$/.test(draft.ncmCode)) {
-      errors.push("NCM deve conter 8 dígitos")
+      errors.push('NCM deve conter 8 dígitos')
     }
     const unitPriceRaw = currencyToRaw(draft.unitPrice)
     if (parseFloat(unitPriceRaw) <= 0) {
-      errors.push("Preço unitário inválido")
+      errors.push('Preço unitário inválido')
     }
   }
 
@@ -191,7 +190,7 @@ function validateItem(draft: ItemDraft): string[] {
 function mapToSimulationItem(draft: ItemDraft): SimulationFormItem {
   const quantity = parseInt(draft.quantity, 10)
 
-  if (draft.mode === "catalog") {
+  if (draft.mode === 'catalog') {
     return {
       ncmCode: draft.product!.ncmCode,
       quantity,
@@ -220,22 +219,26 @@ export function SimulationForm({
       prev.map((item) => {
         if (item.id !== id) return item
         return { ...item, ...patch } as ItemDraft
-      })
+      }),
     )
   }
 
-  function changeMode(id: string, mode: ItemDraft["mode"]) {
-    setValidationErrors((prev) => { const next = { ...prev }; delete next[id]; return next })
+  function changeMode(id: string, mode: ItemDraft['mode']) {
+    setValidationErrors((prev) => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
     const current = items.find((item) => item.id === id)
-    const quantity = current?.quantity ?? "1"
+    const quantity = current?.quantity ?? '1'
     setItems((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item
-        if (mode === "catalog") {
+        if (mode === 'catalog') {
           return { id, mode, productId: null, product: null, quantity }
         }
-        return { id, mode, ncmCode: "", unitPrice: "", quantity }
-      })
+        return { id, mode, ncmCode: '', unitPrice: '', quantity }
+      }),
     )
   }
 
@@ -244,7 +247,7 @@ export function SimulationForm({
   }
 
   function addItem() {
-    const lastMode = items[items.length - 1]?.mode ?? "catalog"
+    const lastMode = items[items.length - 1]?.mode ?? 'catalog'
     setItems((prev) => [...prev, createEmptyItem(lastMode)])
   }
 
@@ -280,8 +283,8 @@ export function SimulationForm({
     <motion.form
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      style={{ willChange: "transform, opacity" }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      style={{ willChange: 'transform, opacity' }}
       onSubmit={handleSubmit}
       className="rounded-none border border-[#27272a] bg-[#18181b] p-5"
     >
@@ -292,7 +295,9 @@ export function SimulationForm({
           </div>
           <div>
             <h3 className="text-sm font-medium text-[#fafafa]">Parâmetros de Simulação</h3>
-            <p className="text-xs text-[#a1a1aa]">Monte a cesta de produtos e calcule o comparativo tributário.</p>
+            <p className="text-xs text-[#a1a1aa]">
+              Monte a cesta de produtos e calcule o comparativo tributário.
+            </p>
           </div>
         </div>
         {taxRegime && (
@@ -325,12 +330,12 @@ export function SimulationForm({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => changeMode(item.id, "catalog")}
+                      onClick={() => changeMode(item.id, 'catalog')}
                       className={cn(
-                        "h-7 rounded-none px-3 text-xs",
-                        item.mode === "catalog"
-                          ? "bg-[#27272a] text-[#fafafa] hover:bg-[#27272a]"
-                          : "text-[#71717a] hover:bg-[#27272a] hover:text-[#fafafa]"
+                        'h-7 rounded-none px-3 text-xs',
+                        item.mode === 'catalog'
+                          ? 'bg-[#27272a] text-[#fafafa] hover:bg-[#27272a]'
+                          : 'text-[#71717a] hover:bg-[#27272a] hover:text-[#fafafa]',
                       )}
                     >
                       Produto do catálogo
@@ -339,12 +344,13 @@ export function SimulationForm({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => changeMode(item.id, "manual")}
+                      data-tour="simulation-manual-mode"
+                      onClick={() => changeMode(item.id, 'manual')}
                       className={cn(
-                        "h-7 rounded-none px-3 text-xs",
-                        item.mode === "manual"
-                          ? "bg-[#27272a] text-[#fafafa] hover:bg-[#27272a]"
-                          : "text-[#71717a] hover:bg-[#27272a] hover:text-[#fafafa]"
+                        'h-7 rounded-none px-3 text-xs',
+                        item.mode === 'manual'
+                          ? 'bg-[#27272a] text-[#fafafa] hover:bg-[#27272a]'
+                          : 'text-[#71717a] hover:bg-[#27272a] hover:text-[#fafafa]',
                       )}
                     >
                       NCM manual
@@ -365,7 +371,7 @@ export function SimulationForm({
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {item.mode === "catalog" ? (
+                {item.mode === 'catalog' ? (
                   <div className="md:col-span-2">
                     <Label className="mb-2 block text-xs text-[#a1a1aa]">Produto</Label>
                     <ProductSearch
@@ -386,10 +392,11 @@ export function SimulationForm({
                       </Label>
                       <Input
                         id={`ncm-${item.id}`}
+                        data-tour="simulation-ncm"
                         value={item.ncmCode}
                         onChange={(event) =>
                           updateItem(item.id, {
-                            ncmCode: event.target.value.replace(/\D/g, "").slice(0, 8),
+                            ncmCode: event.target.value.replace(/\D/g, '').slice(0, 8),
                           })
                         }
                         placeholder="8 dígitos"
@@ -424,7 +431,7 @@ export function SimulationForm({
                     value={item.quantity}
                     onChange={(event) =>
                       updateItem(item.id, {
-                        quantity: event.target.value.replace(/\D/g, ""),
+                        quantity: event.target.value.replace(/\D/g, ''),
                       })
                     }
                     inputMode="numeric"
@@ -432,7 +439,7 @@ export function SimulationForm({
                   />
                 </div>
 
-                {item.mode === "catalog" && item.product && (
+                {item.mode === 'catalog' && item.product && (
                   <div className="flex items-center gap-2 text-xs text-[#71717a]">
                     <span className="font-numbers text-[#a1a1aa]">
                       {formatCurrency(item.product.unitPrice)}
@@ -469,13 +476,14 @@ export function SimulationForm({
 
         <Button
           type="submit"
+          data-tour="simulation-submit"
           disabled={isSubmitting}
           className={cn(
-            "rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1f2a1f]",
-            (isSubmitting) && "cursor-not-allowed opacity-60 hover:translate-y-0"
+            'rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1f2a1f]',
+            isSubmitting && 'cursor-not-allowed opacity-60 hover:translate-y-0',
           )}
         >
-          {isSubmitting ? "Calculando..." : "Calcular simulação"}
+          {isSubmitting ? 'Calculando...' : 'Calcular simulação'}
         </Button>
       </div>
     </motion.form>
