@@ -12,7 +12,13 @@ import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js'
 import { ncmRoutes } from './modules/ncm/ncm.routes.js'
 import { municipalitiesRoutes } from './modules/municipalities/municipalities.routes.js'
 
-const app = Fastify({ logger: true })
+const app = Fastify({
+  logger: true,
+  // Caddy reaches Fastify through Docker's private network. Trust only local
+  // proxy ranges so request.ip uses X-Forwarded-For without allowing public
+  // clients that reach the published API port to spoof their source address.
+  trustProxy: ['127.0.0.1', '::1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'],
+})
 
 // Fail fast if JWT_SECRET is missing in production — never silently fall
 // back to a publicly known development secret in a real deployment.
