@@ -7,13 +7,13 @@ import { authRoutes } from './auth.routes.js'
 vi.mock('./auth.service.js', () => ({
   register: vi.fn(),
   login: vi.fn(),
-  refresh: vi.fn(),
-  logout: vi.fn(),
+  rotateRefreshToken: vi.fn(),
+  revokeRefreshToken: vi.fn(),
   logoutAll: vi.fn(),
   me: vi.fn(),
 }))
 
-import { login, logout, register } from './auth.service.js'
+import { login, register, revokeRefreshToken } from './auth.service.js'
 
 function extractCookiePath(setCookieHeader: string): string | undefined {
   const match = setCookieHeader.match(/Path=([^;]+)/i)
@@ -52,7 +52,7 @@ describe('auth routes', () => {
   })
 
   it('logout revokes the token on the server when the cookie is present', async () => {
-    vi.mocked(logout).mockResolvedValue(undefined)
+    vi.mocked(revokeRefreshToken).mockResolvedValue(undefined)
 
     const response = await app.inject({
       method: 'POST',
@@ -61,11 +61,11 @@ describe('auth routes', () => {
     })
 
     expect(response.statusCode).toBe(204)
-    expect(logout).toHaveBeenCalledWith('refresh-token')
+    expect(revokeRefreshToken).toHaveBeenCalledWith('refresh-token')
   })
 
   it('logout clears the cookie using the same /auth path it was set with', async () => {
-    vi.mocked(logout).mockResolvedValue(undefined)
+    vi.mocked(revokeRefreshToken).mockResolvedValue(undefined)
 
     const response = await app.inject({
       method: 'POST',

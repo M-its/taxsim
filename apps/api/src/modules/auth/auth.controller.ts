@@ -4,7 +4,14 @@ import type { TaxRegime, UserRole } from '@prisma/client'
 import { AppError } from '../../shared/errors/AppError.js'
 import { authenticate } from '../../shared/middlewares/authenticate.js'
 import { registerSchema, loginSchema } from './auth.schema.js'
-import { register, login, refresh, logout, logoutAll, me } from './auth.service.js'
+import {
+  register,
+  login,
+  rotateRefreshToken,
+  revokeRefreshToken,
+  logoutAll,
+  me,
+} from './auth.service.js'
 import type { AuthResponse, JwtPayload, RegisterResponse } from './auth.types.js'
 
 const isProduction = process.env.NODE_ENV === 'production'
@@ -73,7 +80,7 @@ export const refreshHandler = async (
   if (!tokenFromCookie) {
     throw AppError.unauthorized('Missing refresh token')
   }
-  const tokens = await refresh(app, tokenFromCookie)
+  const tokens = await rotateRefreshToken(app, tokenFromCookie)
   reply.setCookie('refreshToken', tokens.refreshToken, COOKIE_OPTIONS)
   return { accessToken: tokens.accessToken }
 }
@@ -84,7 +91,7 @@ export const logoutHandler = async (
 ): Promise<void> => {
   const refreshToken = request.cookies.refreshToken
   if (refreshToken) {
-    await logout(refreshToken)
+    await revokeRefreshToken(refreshToken)
   }
   reply.clearCookie('refreshToken', { path: '/auth' })
   reply.status(204)

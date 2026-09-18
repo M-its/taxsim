@@ -22,35 +22,32 @@ Este projeto foi construído sozinho, do design de banco ao deploy em produção
 
 O projeto roda em **duas VMs separadas** na Oracle Cloud Free Tier — não por escolha, mas por necessidade: a calculadora oficial da RFB é uma imagem Docker `x86_64` (importada via `docker import`, não distribuída em nenhum registry) e não roda em ARM (`exec format error` confirmado). A camada gratuita da Oracle oferece VMs ARM com muito mais recursos do que as x86_64 — daí a divisão.
 
-```
-                              Internet
-                                 │
-                    ┌────────────┴────────────┐
-                    │   Caddy (80/443)         │
-                    │   HTTPS automático via   │
-                    │   Let's Encrypt + DuckDNS │
-                    └────┬──────────────┬──────┘
-                         │              │
-              ┌──────────▼───┐   ┌──────▼────────┐
-              │  Next.js 15.5 │   │  Fastify API   │
-              │  (taxsim-web) │──▶│  (taxsim-api)  │
-              └───────────────┘   └───────┬────────┘
-                                           │
-                                   ┌───────▼────────┐
-                                   │  PostgreSQL 16  │
-                                   └────────────────┘
+```mermaid
+flowchart TB
+    subgraph OCI["☁️ Oracle Cloud Infrastructure (sa-saopaulo-1)"]
+        
+        subgraph VM_ARM["🖥️ VM ARM: taxsim-prod (2 OCPU / 12GB)"]
+            Caddy["🔒 Caddy Reverse Proxy<br/>(Portas 80/443 - DuckDNS + HTTPS)"]
+            Web["📱 Next.js 15.5<br/>(taxsim-web)"]
+            API["⚙️ Fastify API<br/>(taxsim-api)"]
+            DB[("🗄️ PostgreSQL 16")]
+        end
 
-          VM ARM (taxsim-prod, 2 OCPU / 12GB) — sa-saopaulo-1
-──────────────────────────────────────────────────────────────
-                    VCN interna (10.0.0.0/24)
-──────────────────────────────────────────────────────────────
-          VM AMD (calculadora-rfb-taxsim, 1 OCPU / 1GB)
-                                   │
-                        ┌──────────▼──────────┐
-                        │  Calculadora RFB     │
-                        │  (Java/Spring Boot)  │
-                        │  via Nginx :80       │
-                        └──────────────────────┘
+        subgraph VM_AMD["🖥️ VM AMD: calculadora-rfb-taxsim (1 OCPU / 1GB)"]
+            RFB["🧮 Calculadora RFB<br/>(Java / Spring Boot via Nginx :80)"]
+        end
+
+    end
+
+    Internet(("🌐 Internet")) -->|HTTP/HTTPS| Caddy
+    Caddy -->|Proxy| Web
+    Caddy -->|Proxy| API
+    Web -->|Chamadas da interface no navegador| API
+    API -->|Persistência| DB
+    API -.->|VCN Interna 10.0.0.0/24| RFB
+
+    classDef vm fill:#f9f9f9,stroke:#333,stroke-width:1px,color:#000;
+    classDef oci fill:#eef6ff,stroke:#1d63ed,stroke-width:2px,color:#000;
 ```
 
 ### Fluxo de uma simulação fiscal
@@ -141,12 +138,11 @@ O projeto passou por uma auditoria automatizada com [Codex Security](https://git
 | 6 | Tráfego de autenticação em HTTP puro, sem TLS | Média | ✅ Corrigido — HTTPS via Caddy + Let's Encrypt |
 | 8 | Logout não revogava sessão no servidor (`Path` do cookie divergente) | Baixa | ✅ Corrigido — escopo do cookie alinhado entre set/clear |
 | 4 | Resposta da calculadora RFB confiada sem validação de schema em runtime | Média | 📋 Documentado — ver limitações conhecidas |
-| 7 | Refresh tokens armazenados em texto puro no banco (não hasheados) | Baixa | 📋 Documentado — ver limitações conhecidas |
+| 7 | Refresh tokens armazenados em texto puro no banco (não hasheados) | Baixa | ✅ Corrigido — HMAC-SHA-256 com pepper externo e detecção de reuso |
 
 ### Limitações conhecidas (decisão consciente de escopo)
 
 - **Validação da resposta da calculadora RFB:** a resposta do serviço de terceiro é desserializada sem validação de schema em runtime. Autenticar a origem e validar a estrutura são controles distintos; o cliente ainda precisa de um schema explícito para detectar mudanças ou respostas inesperadas. Risco aceito para o escopo de demonstração.
-- **Refresh tokens em texto puro:** o hash de refresh tokens (como já se faz com senhas) exigiria migração de dados e foi adiado — não é uma vulnerabilidade explorável sem acesso prévio ao banco.
 - **Defesa em profundidade da API incompleta:** as portas da API/Web continuam publicadas no `docker-compose.prod.yml`, embora vinculadas ao loopback do host e protegidas externamente pelo firewall da nuvem. Login e cadastro têm limite de 5 tentativas por minuto e IP dentro do Fastify; o risco residual é uma configuração externa expor a API HTTP diretamente.
 
 ---
@@ -157,14 +153,14 @@ Suíte com Vitest cobrindo os pontos de maior risco identificados durante o dese
 
 - **Schemas de Sales e Products** — notação científica, `Infinity`, casas decimais e limites de domínio
 - **Integração RFB** — data com offset explícito e contrato do client
-- **Autenticação** — cookies, revogação de sessão e rate limiting de login/cadastro
+- **Autenticação** — cookies, rotação de refresh token, detecção de reuso, logout idempotente e rate limiting
 - **Error handler** — propagação global de erros Zod através do encapsulamento de plugins
 - **`safeRedirectPath`** — vetores de open redirect como protocol-relative, `javascript:`, `data:` e backslash
 - **Onboarding** — primeiro acesso, conclusão persistida e reabertura manual
 - **Seed fiscal** — sincronização idempotente de `cClassTrib` e `cst`
 
 ```bash
-cd apps/api && pnpm exec vitest run   # 21 testes
+cd apps/api && pnpm exec vitest run   # 26 testes
 cd apps/web && pnpm exec vitest run   # 12 testes
 ```
 
@@ -233,12 +229,19 @@ docker compose exec api pnpm run import:ncm
 # API
 DATABASE_URL=postgresql://taxsim_user:taxsim_pass@db:5432/taxsim_db
 JWT_SECRET=sua-chave-secreta-aqui
-REFRESH_TOKEN_SECRET=outra-chave-secreta-aqui
+REFRESH_TOKEN_PEPPER=gere-com-openssl-rand-base64-32
 CORS_ORIGIN=http://localhost:3000
 
 # Web
 NEXT_PUBLIC_API_URL=http://localhost:3333
 NEXTAUTH_SECRET=mais-uma-chave-secreta
+```
+
+Antes do deploy, gere um pepper exclusivo para os refresh tokens e salve-o
+somente no ambiente de execução (nunca no repositório):
+
+```bash
+openssl rand -base64 32
 ```
 
 ---

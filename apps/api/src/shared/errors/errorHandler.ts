@@ -3,6 +3,10 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
 import { AppError } from './AppError.js'
+import {
+  InvalidRefreshTokenError,
+  RefreshTokenReuseDetectedError,
+} from './refreshTokenErrors.js'
 
 interface ErrorPayload {
   error: {
@@ -15,6 +19,18 @@ interface ErrorPayload {
 export const errorHandlerPlugin = fp(async (app: FastifyInstance): Promise<void> => {
   app.setErrorHandler(
     (error: unknown, _request: FastifyRequest, reply: FastifyReply): void | Promise<void> => {
+      if (
+        error instanceof InvalidRefreshTokenError ||
+        error instanceof RefreshTokenReuseDetectedError
+      ) {
+        void reply.status(401).send({
+          error: {
+            code: 'UNAUTHORIZED',
+            message: 'Invalid or expired refresh token',
+          },
+        } satisfies ErrorPayload)
+        return
+      }
       if (error instanceof AppError) {
         void reply.status(error.statusCode).send({
           error: { code: error.code, message: error.message },

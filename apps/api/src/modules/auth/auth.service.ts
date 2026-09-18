@@ -1,10 +1,14 @@
 import bcrypt from 'bcrypt'
-import { randomUUID } from 'node:crypto'
 import type { FastifyInstance } from 'fastify'
 import { Prisma } from '@prisma/client'
 import { prisma } from '../../lib/prisma.js'
 import { seedTaxRulesIfEmpty } from '../../lib/tax-rule-seed.js'
 import { AppError } from '../../shared/errors/AppError.js'
+import {
+  InvalidRefreshTokenError,
+  RefreshTokenReuseDetectedError,
+} from '../../shared/errors/refreshTokenErrors.js'
+import { generateRawRefreshToken, hashRefreshToken } from './refresh-token.util.js'
 import type { RegisterInput, LoginInput, JwtPayload } from './auth.types.js'
 import type { User, Company, UserRole } from '@prisma/client'
 
@@ -21,17 +25,19 @@ export const generateTokens = async (
   userId: string,
   companyId: string,
   role: UserRole,
+  tokenStore: Pick<Prisma.TransactionClient, 'refreshToken'> = prisma,
 ): Promise<{ accessToken: string; refreshToken: string }> => {
   const payload: JwtPayload = { sub: userId, companyId, role }
 
   const accessToken = await app.jwt.sign(payload, { expiresIn: '15m' })
-  const refreshToken = randomUUID()
+  const refreshToken = generateRawRefreshToken()
+  const tokenHash = hashRefreshToken(refreshToken)
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
-  await prisma.refreshToken.create({
+  await tokenStore.refreshToken.create({
     data: {
       userId,
-      token: refreshToken,
+      tokenHash,
       expiresAt,
     },
   })
@@ -109,26 +115,66 @@ export const login = async (
   return { user, tokens }
 }
 
-export const refresh = async (
+export const rotateRefreshToken = async (
   app: FastifyInstance,
-  token: string,
+  presentedToken: string,
 ): Promise<{ accessToken: string; refreshToken: string }> => {
-  const existing = await prisma.refreshToken.findUnique({
-    where: { token },
-    include: { user: true },
+  const tokenHash = hashRefreshToken(presentedToken)
+  const outcome = await prisma.$transaction(async (tx) => {
+    const existing = await tx.refreshToken.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    })
+
+    if (!existing || existing.expiresAt < new Date()) {
+      return { kind: 'invalid' as const }
+    }
+
+    if (existing.revokedAt) {
+      await tx.refreshToken.deleteMany({ where: { userId: existing.userId } })
+      return { kind: 'reuse' as const, userId: existing.userId }
+    }
+
+    const revoked = await tx.refreshToken.updateMany({
+      where: { id: existing.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    })
+
+    if (revoked.count === 0) {
+      await tx.refreshToken.deleteMany({ where: { userId: existing.userId } })
+      return { kind: 'reuse' as const, userId: existing.userId }
+    }
+
+    const tokens = await generateTokens(
+      app,
+      existing.user.id,
+      existing.user.companyId,
+      existing.user.role,
+      tx,
+    )
+    return { kind: 'success' as const, tokens }
   })
 
-  if (!existing || existing.expiresAt < new Date()) {
-    throw AppError.unauthorized('Invalid or expired refresh token')
+  if (outcome.kind === 'invalid') {
+    throw new InvalidRefreshTokenError()
   }
 
-  await prisma.refreshToken.delete({ where: { id: existing.id } })
+  if (outcome.kind === 'reuse') {
+    console.warn('Refresh token reuse detected; revoking all user sessions', {
+      userId: outcome.userId,
+    })
+    throw new RefreshTokenReuseDetectedError()
+  }
 
-  return generateTokens(app, existing.user.id, existing.user.companyId, existing.user.role)
+  return outcome.tokens
 }
 
-export const logout = async (token: string): Promise<void> => {
-  await prisma.refreshToken.delete({ where: { token } })
+export const revokeRefreshToken = async (presentedToken: string): Promise<void> => {
+  const tokenHash = hashRefreshToken(presentedToken)
+  await prisma.refreshToken.updateMany({
+    where: { tokenHash, revokedAt: null },
+    data: { revokedAt: new Date() },
+  })
 }
 
 export const logoutAll = async (userId: string): Promise<void> => {

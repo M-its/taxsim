@@ -29,6 +29,11 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   process.exit(1)
 }
 
+if (!process.env.REFRESH_TOKEN_PEPPER) {
+  app.log.fatal('REFRESH_TOKEN_PEPPER must be set. Refusing to start.')
+  process.exit(1)
+}
+
 const jwtSecret = process.env.JWT_SECRET ?? 'dev-secret-change-me'
 if (jwtSecret === 'dev-secret-change-me') {
   app.log.warn('Using default development JWT secret. Never use this in production.')
