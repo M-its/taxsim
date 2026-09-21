@@ -15,10 +15,10 @@ Dentro de cada prioridade, os itens estão na ordem recomendada. Um novo risco d
 
 ### 1. Validar em runtime a resposta da calculadora da RFB
 
-- [ ] Criar schema explícito para a resposta externa.
-- [ ] Rejeitar respostas incompatíveis antes do merge fiscal.
-- [ ] Registrar erro sem expor payload fiscal sensível.
-- [ ] Testar mudanças de contrato e respostas malformadas.
+- [x] Criar schema explícito para a resposta externa.
+- [x] Rejeitar respostas incompatíveis antes do merge fiscal.
+- [x] Registrar erro sem expor payload fiscal sensível.
+- [x] Testar mudanças de contrato e respostas malformadas.
 
 ### 2. Armazenar refresh tokens de forma não reversível
 
@@ -26,7 +26,16 @@ Dentro de cada prioridade, os itens estão na ordem recomendada. Um novo risco d
 - [x] Migrar sessões existentes ou revogá-las explicitamente.
 - [x] Ajustar rotação, logout e testes.
 
-### 3. Fechar a exposição residual da API em produção
+### 3. Corrigir elegibilidade e diagnóstico de NCM na simulação
+
+- [ ] Distinguir NCM existente no catálogo de NCM com regra fiscal ativa para o regime selecionado.
+- [ ] Auditar e migrar regras seed obsoletas que não existem na tabela NCM vigente ou na calculadora, começando por 85171200.
+- [ ] Validar todos os itens antes de chamar a calculadora da RFB.
+- [ ] Retornar código de erro estável com índice do item e NCM que bloqueou a simulação.
+- [ ] Não converter ausência de regra fiscal em “calculadora indisponível”.
+- [ ] Cobrir simulações com itens válidos e inválidos misturados.
+
+### 4. Fechar a exposição residual da API em produção
 
 - [ ] Confirmar que somente o Caddy é alcançável externamente.
 - [ ] Remover publicações de porta desnecessárias do compose de produção.
@@ -38,10 +47,18 @@ Dentro de cada prioridade, os itens estão na ordem recomendada. Um novo risco d
 ### 1. Cobrir o núcleo fiscal e o circuit breaker com testes
 
 - [ ] Testar aritmética, arredondamento e limites do Tax Engine.
-- [ ] Testar estados fechado, aberto e half-open do circuit breaker.
+- [x] Testar estados fechado, aberto e half-open do circuit breaker.
 - [ ] Testar timeout, recuperação e propagação de erros da calculadora oficial.
 
-### 2. Atualizar CNPJ alfanumérico
+### 2. Melhorar seleção e diagnóstico de NCM na interface
+
+- [ ] Implementar autocomplete de NCM no modo de preenchimento manual.
+- [ ] Indicar se o NCM possui regra fiscal ativa para o regime da empresa.
+- [ ] Destacar diretamente cada produto ou linha que bloqueia a simulação.
+- [ ] Manter os itens preenchidos após o erro para permitir correção sem retrabalho.
+- [ ] Testar catálogo, modo manual e mensagens com múltiplos itens.
+
+### 3. Atualizar CNPJ alfanumérico
 
 - [ ] Aceitar letras e números nos 12 primeiros caracteres e manter os dois verificadores numéricos.
 - [ ] Atualizar máscara, normalização, schema Zod e mensagens.
@@ -49,7 +66,7 @@ Dentro de cada prioridade, os itens estão na ordem recomendada. Um novo risco d
 
 **Contexto:** mudança vigente desde julho de 2026; deixou de ser apenas uma melhoria futura.
 
-### 3. Estabelecer baseline WCAG 2.2 AA
+### 4. Estabelecer baseline WCAG 2.2 AA
 
 - [ ] Adicionar “Pular para o conteúdo” e destino estável no `<main>`.
 - [ ] Auditar landmarks, headings e títulos de página.
@@ -64,14 +81,14 @@ Dentro de cada prioridade, os itens estão na ordem recomendada. Um novo risco d
 
 **Aceite:** login, cadastro, simulação, produtos, clientes e vendas podem ser concluídos por teclado e leitor de tela, sem violações críticas conhecidas.
 
-### 4. Automatizar regressões de acessibilidade
+### 5. Automatizar regressões de acessibilidade
 
 - [ ] Adicionar axe aos fluxos prioritários.
 - [ ] Testar teclado em menu, dialogs e simulação.
 - [ ] Executar na CI sem substituir auditoria manual.
 - [ ] Fazer violações críticas ou sérias novas bloquearem merge.
 
-### 5. Impedir indexação de rotas privadas
+### 6. Impedir indexação de rotas privadas
 
 - [ ] Definir `robots: { index: false, follow: false }` nos layouts de autenticação e dashboard.
 - [ ] Criar `robots.ts` permitindo apenas superfícies públicas.

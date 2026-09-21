@@ -137,12 +137,11 @@ O projeto passou por uma auditoria automatizada com [Codex Security](https://git
 | 5 | Porta da API exposta diretamente, contornando rate limiting centralizado | Média | 🟡 Bypass de autenticação mitigado no Fastify; exposição HTTP direta ainda depende do firewall externo |
 | 6 | Tráfego de autenticação em HTTP puro, sem TLS | Média | ✅ Corrigido — HTTPS via Caddy + Let's Encrypt |
 | 8 | Logout não revogava sessão no servidor (`Path` do cookie divergente) | Baixa | ✅ Corrigido — escopo do cookie alinhado entre set/clear |
-| 4 | Resposta da calculadora RFB confiada sem validação de schema em runtime | Média | 📋 Documentado — ver limitações conhecidas |
+| 4 | Resposta da calculadora RFB confiada sem validação de schema em runtime | Média | ✅ Corrigido — schema Zod, correlação por item e reconciliação de totais |
 | 7 | Refresh tokens armazenados em texto puro no banco (não hasheados) | Baixa | ✅ Corrigido — HMAC-SHA-256 com pepper externo e detecção de reuso |
 
 ### Limitações conhecidas (decisão consciente de escopo)
 
-- **Validação da resposta da calculadora RFB:** a resposta do serviço de terceiro é desserializada sem validação de schema em runtime. Autenticar a origem e validar a estrutura são controles distintos; o cliente ainda precisa de um schema explícito para detectar mudanças ou respostas inesperadas. Risco aceito para o escopo de demonstração.
 - **Defesa em profundidade da API incompleta:** as portas da API/Web continuam publicadas no `docker-compose.prod.yml`, embora vinculadas ao loopback do host e protegidas externamente pelo firewall da nuvem. Login e cadastro têm limite de 5 tentativas por minuto e IP dentro do Fastify; o risco residual é uma configuração externa expor a API HTTP diretamente.
 
 ---
@@ -152,7 +151,7 @@ O projeto passou por uma auditoria automatizada com [Codex Security](https://git
 Suíte com Vitest cobrindo os pontos de maior risco identificados durante o desenvolvimento e a auditoria de segurança:
 
 - **Schemas de Sales e Products** — notação científica, `Infinity`, casas decimais e limites de domínio
-- **Integração RFB** — data com offset explícito e contrato do client
+- **Integração RFB** — data com offset explícito, schema runtime, correlação `numero`/`nObj`, arredondamento e respostas malformadas
 - **Autenticação** — cookies, rotação de refresh token, detecção de reuso, logout idempotente e rate limiting
 - **Error handler** — propagação global de erros Zod através do encapsulamento de plugins
 - **`safeRedirectPath`** — vetores de open redirect como protocol-relative, `javascript:`, `data:` e backslash
@@ -160,11 +159,11 @@ Suíte com Vitest cobrindo os pontos de maior risco identificados durante o dese
 - **Seed fiscal** — sincronização idempotente de `cClassTrib` e `cst`
 
 ```bash
-cd apps/api && pnpm exec vitest run   # 26 testes
+cd apps/api && pnpm exec vitest run   # 49 testes
 cd apps/web && pnpm exec vitest run   # 12 testes
 ```
 
-As transições do circuit breaker e a aritmética pura do Tax Engine ainda não possuem testes dedicados. O workflow `.github/workflows/ci.yml` executa as duas suítes e `tsc --noEmit` em todo push e pull request para `main`; deploy permanece manual.
+A aritmética pura do Tax Engine ainda não possui testes dedicados; o circuit breaker agora tem cobertura para janela de falhas, estado aberto e falha da tentativa half-open. O workflow `.github/workflows/ci.yml` executa as duas suítes e `tsc --noEmit` em todo push e pull request para `main`; deploy permanece manual.
 
 ---
 
@@ -206,8 +205,9 @@ docker import calculadora.tar.gz calculadora-image
 cp .env.example .env
 # Edite .env com seus valores
 
-# 4. Suba os containers
-docker compose up -d
+# 4. Suba o ambiente de desenvolvimento
+# Recria apenas API/Web; preserva o banco e evita mounts/dependencias obsoletos.
+./scripts/dev-up.sh
 
 # 5. Aguarde todos ficarem healthy (~2 min)
 docker compose ps

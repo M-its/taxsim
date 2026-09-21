@@ -1,88 +1,93 @@
 import { Decimal } from '@prisma/client/runtime/library'
 import type {
+  TaxCalculatorInput,
   ReformTaxCalculatorResult,
   ReformTaxCalculatorItemResult,
   ReformTaxCalculatorTotals,
 } from './tax-calculator.types.js'
+import { TaxCalculatorResponseValidationError } from './tax-calculator.types.js'
+import type { RfbCalculatorResponse } from './tax-calculator.schema.js'
 
-interface RfbGIBSUF {
-  pIBSUF: string
-  vIBSUF: string
-}
-
-interface RfbGIBSMun {
-  pIBSMun: string
-  vIBSMun: string
-}
-
-interface RfbGCBS {
-  pCBS: string
-  vCBS: string
-}
-
-interface RfbGTribRegular {
-  pAliqEfetRegIBSUF: string
-  pAliqEfetRegIBSMun: string
-  pAliqEfetRegCBS: string
-}
-
-interface RfbGIBSCBS {
-  vBC: string
-  gIBSUF: RfbGIBSUF
-  gIBSMun: RfbGIBSMun
-  vIBS: string
-  gCBS: RfbGCBS
-  gTribRegular?: RfbGTribRegular
-}
-
-interface RfbIBSCBS {
-  gIBSCBS: RfbGIBSCBS
-}
-
-interface RfbObjeto {
-  nObj: number
-  tribCalc: {
-    IBSCBS: RfbIBSCBS
-  }
-}
-
-interface RfbIBSTotal {
-  vIBS: string
-}
-
-interface RfbCBSTotal {
-  vCBS: string
-}
-
-interface RfbIBSCBSTot {
-  gIBS: RfbIBSTotal
-  gCBS: RfbCBSTotal
-}
-
-interface RfbTribCalcTotal {
-  IBSCBSTot: RfbIBSCBSTot
-}
-
-interface RfbTotal {
-  tribCalc: RfbTribCalcTotal
-}
-
-interface RfbRocDomain {
-  objetos: RfbObjeto[]
-  total: RfbTotal
-}
-
-function toDecimal(value: number): Decimal {
-  if (Number.isNaN(value)) {
+/**
+ * The official engine rounds every item and the aggregate total independently
+ * using HALF_EVEN. Each rounding can contribute half a cent, so the maximum
+ * observable difference is ceil(itemCount / 2) cents (a single item must match
+ * exactly). This was verified against the live RFB endpoint: three items
+ * produced legitimate deltas of both R$0.01 and R$0.02 depending on the
+ * half-cent boundary, and four items produced R$0.02.
+ */
+export function calculateTotalRoundingTolerance(itemCount: number): Decimal {
+  if (itemCount <= 1) {
     return new Decimal(0)
   }
-  return new Decimal(value)
+
+  return new Decimal(Math.ceil(itemCount / 2)).mul('0.01')
+}
+
+function orderResponseItems(
+  rfbResponse: RfbCalculatorResponse,
+  input: TaxCalculatorInput,
+): RfbCalculatorResponse['objetos'] {
+  const expectedNumbers = new Set(input.itens.map((item) => item.numero))
+  const responseByNumber = new Map<number, RfbCalculatorResponse['objetos'][number]>()
+
+  for (const responseItem of rfbResponse.objetos) {
+    if (responseByNumber.has(responseItem.nObj) || !expectedNumbers.has(responseItem.nObj)) {
+      throw new TaxCalculatorResponseValidationError('tax_calculator_item_identity_mismatch', {
+        reason: responseByNumber.has(responseItem.nObj) ? 'duplicate' : 'unexpected',
+        expectedItemCount: expectedNumbers.size,
+        responseItemCount: rfbResponse.objetos.length,
+      })
+    }
+
+    responseByNumber.set(responseItem.nObj, responseItem)
+  }
+
+  if (
+    responseByNumber.size !== expectedNumbers.size ||
+    input.itens.some((item) => !responseByNumber.has(item.numero))
+  ) {
+    throw new TaxCalculatorResponseValidationError('tax_calculator_item_identity_mismatch', {
+      reason: 'missing',
+      expectedItemCount: expectedNumbers.size,
+      responseItemCount: responseByNumber.size,
+    })
+  }
+
+  return input.itens.map((item) => responseByNumber.get(item.numero)!)
+}
+
+function validateOfficialTotal(
+  component: 'IBS' | 'CBS',
+  itemTotal: Decimal,
+  officialTotal: Decimal,
+  itemCount: number,
+): void {
+  const tolerance = calculateTotalRoundingTolerance(itemCount)
+
+  if (itemTotal.minus(officialTotal).abs().gt(tolerance)) {
+    throw new TaxCalculatorResponseValidationError('tax_calculator_total_mismatch', {
+      component,
+      itemCount,
+      tolerance: tolerance.toFixed(2),
+    })
+  }
 }
 
 export function mapRfbResponseToReformResult(
-  rfbResponse: RfbRocDomain,
+  rfbResponse: RfbCalculatorResponse,
+  input: TaxCalculatorInput,
   inputItems: Array<{ ncmCode: string; quantity: number; unitPrice: string }>,
 ): ReformTaxCalculatorResult {
+  if (input.itens.length !== inputItems.length) {
+    throw new TaxCalculatorResponseValidationError('tax_calculator_item_identity_mismatch', {
+      reason: 'input_mapping',
+      expectedItemCount: input.itens.length,
+      responseItemCount: inputItems.length,
+    })
+  }
+
+  const orderedResponseItems = orderResponseItems(rfbResponse, input)
   const items: ReformTaxCalculatorItemResult[] = []
   let totalIbs = new Decimal(0)
   let totalCbs = new Decimal(0)
@@ -90,13 +95,9 @@ export function mapRfbResponseToReformResult(
   let totalTax = new Decimal(0)
   let totalAmount = new Decimal(0)
 
-  for (let i = 0; i < rfbResponse.objetos.length; i++) {
-    const obj = rfbResponse.objetos[i]
+  for (let i = 0; i < orderedResponseItems.length; i++) {
+    const obj = orderedResponseItems[i]
     const inputItem = inputItems[i]
-
-    if (!inputItem) {
-      throw new Error(`Mismatch: RFB response has ${rfbResponse.objetos.length} items but input has ${inputItems.length}`)
-    }
 
     const unitPrice = new Decimal(inputItem.unitPrice)
     const quantity = new Decimal(inputItem.quantity)
@@ -104,21 +105,24 @@ export function mapRfbResponseToReformResult(
 
     const gIBSCBS = obj.tribCalc.IBSCBS.gIBSCBS
 
-    const vIBS = toDecimal(Number(gIBSCBS.vIBS))
-    const vCBS = toDecimal(Number(gIBSCBS.gCBS.vCBS))
+    const vIBS = new Decimal(gIBSCBS.vIBS)
+    const vCBS = new Decimal(gIBSCBS.gCBS.vCBS)
     const vIS = new Decimal(0)
 
     const gTribRegular = gIBSCBS.gTribRegular
-    const pIBSUF = gTribRegular !== undefined
-      ? toDecimal(Number(gTribRegular.pAliqEfetRegIBSUF))
-      : toDecimal(Number(gIBSCBS.gIBSUF.pIBSUF))
-    const pIBSMun = gTribRegular !== undefined
-      ? toDecimal(Number(gTribRegular.pAliqEfetRegIBSMun))
-      : toDecimal(Number(gIBSCBS.gIBSMun.pIBSMun))
+    const pIBSUF =
+      gTribRegular !== undefined
+        ? new Decimal(gTribRegular.pAliqEfetRegIBSUF)
+        : new Decimal(gIBSCBS.gIBSUF.pIBSUF)
+    const pIBSMun =
+      gTribRegular !== undefined
+        ? new Decimal(gTribRegular.pAliqEfetRegIBSMun)
+        : new Decimal(gIBSCBS.gIBSMun.pIBSMun)
     const ibsRate = pIBSUF.plus(pIBSMun)
-    const cbsRate = gTribRegular !== undefined
-      ? toDecimal(Number(gTribRegular.pAliqEfetRegCBS))
-      : toDecimal(Number(gIBSCBS.gCBS.pCBS))
+    const cbsRate =
+      gTribRegular !== undefined
+        ? new Decimal(gTribRegular.pAliqEfetRegCBS)
+        : new Decimal(gIBSCBS.gCBS.pCBS)
     const isRate = new Decimal(0)
 
     const itemTotalTax = vIBS.plus(vCBS).plus(vIS)
@@ -147,9 +151,17 @@ export function mapRfbResponseToReformResult(
     totalAmount = totalAmount.plus(totalPrice)
   }
 
-  const effectiveRate = totalAmount.eq(0)
-    ? new Decimal(0)
-    : totalTax.div(totalAmount)
+  const officialIbs = new Decimal(rfbResponse.total.tribCalc.IBSCBSTot.gIBS.vIBS)
+  const officialCbs = new Decimal(rfbResponse.total.tribCalc.IBSCBSTot.gCBS.vCBS)
+
+  validateOfficialTotal('IBS', totalIbs, officialIbs, items.length)
+  validateOfficialTotal('CBS', totalCbs, officialCbs, items.length)
+
+  totalIbs = officialIbs
+  totalCbs = officialCbs
+  totalTax = officialIbs.plus(officialCbs).plus(totalIs)
+
+  const effectiveRate = totalAmount.eq(0) ? new Decimal(0) : totalTax.div(totalAmount)
 
   const totals: ReformTaxCalculatorTotals = {
     ibs: totalIbs.toFixed(2),

@@ -3,10 +3,15 @@ import { Decimal } from '@prisma/client/runtime/library'
 import type {
   TaxCalculatorInput,
   TaxCalculatorItemInput,
+  TaxCalculatorLogger,
   ReformTaxCalculatorResult,
 } from './tax-calculator.types.js'
-import { TaxCalculatorUnavailableError } from './tax-calculator.types.js'
+import {
+  TaxCalculatorResponseValidationError,
+  TaxCalculatorUnavailableError,
+} from './tax-calculator.types.js'
 import { mapRfbResponseToReformResult } from './tax-calculator.mapper.js'
+import { rfbCalculatorResponseSchema } from './tax-calculator.schema.js'
 
 const TAX_CALCULATOR_URL =
   process.env.TAX_CALCULATOR_STANDARD_URL ?? 'http://tax-calculator:8080/api'
@@ -50,8 +55,24 @@ function recordSuccess(): void {
 }
 
 function recordFailure(): void {
-  circuitBreaker.failures++
-  circuitBreaker.lastFailureTime = Date.now()
+  const now = Date.now()
+
+  if (circuitBreaker.state === 'HALF_OPEN') {
+    circuitBreaker.state = 'OPEN'
+    circuitBreaker.failures = FAILURE_THRESHOLD
+    circuitBreaker.lastFailureTime = now
+    return
+  }
+
+  if (
+    circuitBreaker.lastFailureTime === null ||
+    now - circuitBreaker.lastFailureTime > FAILURE_WINDOW_MS
+  ) {
+    circuitBreaker.failures = 0
+  }
+
+  circuitBreaker.failures += 1
+  circuitBreaker.lastFailureTime = now
 
   if (circuitBreaker.failures >= FAILURE_THRESHOLD) {
     circuitBreaker.state = 'OPEN'
@@ -61,6 +82,7 @@ function recordFailure(): void {
 export async function calculateReformModel(
   input: TaxCalculatorInput,
   originalItems: Array<{ ncmCode: string; quantity: number; unitPrice: string }>,
+  logger?: TaxCalculatorLogger,
 ): Promise<ReformTaxCalculatorResult> {
   checkCircuitBreaker()
 
@@ -72,55 +94,65 @@ export async function calculateReformModel(
     })
 
     if (!response.ok) {
-      const errorBody = await response.text()
       recordFailure()
-      throw new TaxCalculatorUnavailableError(
-        `RFB calculator returned ${response.status}: ${errorBody}`,
+      logger?.error(
+        {
+          event: 'tax_calculator_http_error',
+          status: response.status,
+          expectedItemCount: input.itens.length,
+        },
+        'Tax calculator request failed',
       )
+      throw new TaxCalculatorUnavailableError()
     }
 
-    const rfbResponse = (await response.json()) as {
-      objetos: Array<{
-        nObj: number
-        tribCalc: {
-          IBSCBS: {
-            gIBSCBS: {
-              vBC: string
-              gIBSUF: { pIBSUF: string; vIBSUF: string }
-              gIBSMun: { pIBSMun: string; vIBSMun: string }
-              vIBS: string
-              gCBS: { pCBS: string; vCBS: string }
-              gTribRegular: {
-                pAliqEfetRegIBSUF: string
-                pAliqEfetRegIBSMun: string
-                pAliqEfetRegCBS: string
-              }
-            }
-          }
-        }
-      }>
-      total: {
-        tribCalc: {
-          IBSCBSTot: {
-            gIBS: { vIBS: string }
-            gCBS: { vCBS: string }
-          }
-        }
-      }
+    const rawResponse: unknown = await response.json()
+    const parseResult = rfbCalculatorResponseSchema.safeParse(rawResponse)
+
+    if (!parseResult.success) {
+      recordFailure()
+      logger?.error(
+        {
+          event: 'tax_calculator_response_schema_invalid',
+          expectedItemCount: input.itens.length,
+          issuePaths: parseResult.error.issues.map((issue) => issue.path.join('.')).slice(0, 20),
+          issueCodes: parseResult.error.issues.map((issue) => issue.code).slice(0, 20),
+        },
+        'Tax calculator returned an incompatible response',
+      )
+      throw new TaxCalculatorUnavailableError()
     }
+
+    const result = mapRfbResponseToReformResult(parseResult.data, input, originalItems)
 
     recordSuccess()
-
-    return mapRfbResponseToReformResult(rfbResponse, originalItems)
+    return result
   } catch (error) {
     if (error instanceof TaxCalculatorUnavailableError) {
       throw error
     }
 
     recordFailure()
-    throw new TaxCalculatorUnavailableError(
-      error instanceof Error ? error.message : 'Unknown error',
-    )
+    if (error instanceof TaxCalculatorResponseValidationError) {
+      logger?.error(
+        {
+          event: error.event,
+          ...error.safeContext,
+        },
+        'Tax calculator returned an incompatible response',
+      )
+    } else {
+      logger?.error(
+        {
+          event: 'tax_calculator_request_failed',
+          expectedItemCount: input.itens.length,
+          errorType: error instanceof Error ? error.name : 'UnknownError',
+        },
+        'Tax calculator request failed',
+      )
+    }
+
+    throw new TaxCalculatorUnavailableError()
   }
 }
 

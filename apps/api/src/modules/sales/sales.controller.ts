@@ -16,14 +16,11 @@ import {
 } from './sales.service.js'
 import type { CreateSaleInput, SimulateInput, ListSalesQuery, SaleIdParam } from './sales.types.js'
 
-export const createSaleHandler = async (
-  request: FastifyRequest,
-  reply: FastifyReply,
-) => {
+export const createSaleHandler = async (request: FastifyRequest, reply: FastifyReply) => {
   const body = createSaleSchema.parse(request.body)
   const companyId = (request.user as { companyId: string }).companyId
 
-  const sale = await createSale(companyId, body as CreateSaleInput)
+  const sale = await createSale(companyId, body as CreateSaleInput, request.log)
 
   reply.status(201)
   return sale
@@ -53,13 +50,10 @@ export const getSaleHandler = async (request: FastifyRequest) => {
 export const simulateHandler = async (request: FastifyRequest) => {
   const body = simulateSchema.parse(request.body)
 
-  return simulateTax(body as SimulateInput)
+  return simulateTax(body as SimulateInput, request.log)
 }
 
-export const confirmSaleHandler = async (
-  request: FastifyRequest,
-  reply: FastifyReply,
-) => {
+export const confirmSaleHandler = async (request: FastifyRequest, reply: FastifyReply) => {
   const params = saleIdParamSchema.parse(request.params)
   const companyId = (request.user as { companyId: string }).companyId
 
@@ -68,10 +62,7 @@ export const confirmSaleHandler = async (
   return result
 }
 
-export const cancelSaleHandler = async (
-  request: FastifyRequest,
-  reply: FastifyReply,
-) => {
+export const cancelSaleHandler = async (request: FastifyRequest, reply: FastifyReply) => {
   const params = saleIdParamSchema.parse(request.params)
   const companyId = (request.user as { companyId: string }).companyId
 

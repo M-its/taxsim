@@ -8,6 +8,7 @@ import {
   calculateReformModel,
 } from '../tax-calculator/tax-calculator.client.js'
 import { TaxCalculatorUnavailableError } from '../tax-calculator/tax-calculator.types.js'
+import type { TaxCalculatorLogger } from '../tax-calculator/tax-calculator.types.js'
 import type {
   CreateSaleInput,
   SimulateInput,
@@ -15,11 +16,7 @@ import type {
   SimulationResponse,
 } from './sales.types.js'
 
-async function getProductsWithRules(
-  productIds: string[],
-  companyId: string,
-  taxRegime: string,
-) {
+async function getProductsWithRules(productIds: string[], companyId: string, taxRegime: string) {
   const products = await prisma.product.findMany({
     where: {
       id: { in: productIds },
@@ -41,14 +38,17 @@ async function getProductsWithRules(
     },
   })
 
-  const taxRulesMap: Record<string, {
-    pisRate: string
-    cofinsRate: string
-    icmsRate: string
-    issRate: string
-    cClassTrib: string
-    cst: string
-  }> = {}
+  const taxRulesMap: Record<
+    string,
+    {
+      pisRate: string
+      cofinsRate: string
+      icmsRate: string
+      issRate: string
+      cClassTrib: string
+      cst: string
+    }
+  > = {}
 
   for (const rule of taxRules) {
     taxRulesMap[rule.ncmCode] = {
@@ -67,7 +67,17 @@ async function getProductsWithRules(
 function buildEngineInput(
   items: Array<{ productId: string; quantity: number }>,
   products: Array<{ id: string; ncmCode: string; unitPrice: Decimal; name: string }>,
-  taxRulesMap: Record<string, { pisRate: string; cofinsRate: string; icmsRate: string; issRate: string; cClassTrib: string; cst: string }>,
+  taxRulesMap: Record<
+    string,
+    {
+      pisRate: string
+      cofinsRate: string
+      icmsRate: string
+      issRate: string
+      cClassTrib: string
+      cst: string
+    }
+  >,
   taxRegime: string,
 ) {
   const engineItems = items.map((item) => {
@@ -90,7 +100,10 @@ function buildEngineInput(
     }
   })
 
-  const taxRulesForEngine: Record<string, { pisRate: string; cofinsRate: string; icmsRate: string; issRate: string }> = {}
+  const taxRulesForEngine: Record<
+    string,
+    { pisRate: string; cofinsRate: string; icmsRate: string; issRate: string }
+  > = {}
   for (const item of engineItems) {
     const rule = taxRulesMap[item.ncmCode]
     if (rule) {
@@ -121,7 +134,10 @@ async function runTaxEngines(
   taxEngineInput: {
     taxRegime: string
     items: Array<{ ncmCode: string; quantity: number; unitPrice: string }>
-    taxRules: Record<string, { pisRate: string; cofinsRate: string; icmsRate: string; issRate: string }>
+    taxRules: Record<
+      string,
+      { pisRate: string; cofinsRate: string; icmsRate: string; issRate: string }
+    >
   },
   enrichedItems: Array<{
     ncmCode: string
@@ -133,6 +149,7 @@ async function runTaxEngines(
     cst: string
   }>,
   company: { municipioCode: number | null; uf: string | null; taxRegime: string },
+  logger?: TaxCalculatorLogger,
 ): Promise<{
   currentResult: ReturnType<typeof calculateCurrentModel>
   reformResult: Awaited<ReturnType<typeof calculateReformModel>>
@@ -164,6 +181,7 @@ async function runTaxEngines(
       quantity: item.quantity,
       unitPrice: item.unitPrice,
     })),
+    logger,
   )
 
   return { currentResult, reformResult }
@@ -214,9 +232,7 @@ function mergeResults(
   const totalCurrent = new Decimal(currentResult.totals.totalTax)
   const totalReform = new Decimal(reformResult.totals.totalTax)
   const absolute = totalReform.minus(totalCurrent)
-  const percentual = totalCurrent.eq(0)
-    ? new Decimal(0)
-    : absolute.div(totalCurrent).times(100)
+  const percentual = totalCurrent.eq(0) ? new Decimal(0) : absolute.div(totalCurrent).times(100)
 
   const breakdown = currentResult.items.map((currentItem, i) => {
     const reformItem = reformResult.items[i]
@@ -266,6 +282,7 @@ function mergeResults(
 export const createSale = async (
   companyId: string,
   input: CreateSaleInput,
+  logger?: TaxCalculatorLogger,
 ): Promise<SaleResponse> => {
   const company = await prisma.company.findUnique({
     where: { id: companyId },
@@ -302,6 +319,7 @@ export const createSale = async (
       taxEngineInput,
       enrichedItems,
       company,
+      logger,
     )
 
     const totalAmount = products.reduce((sum, product) => {
@@ -367,6 +385,7 @@ export const createSale = async (
 
 export const simulateTax = async (
   input: SimulateInput,
+  logger?: TaxCalculatorLogger,
 ): Promise<SimulationResponse> => {
   const { items } = input
 
@@ -379,14 +398,17 @@ export const simulateTax = async (
   })
 
   try {
-    const taxRulesMap: Record<string, {
-      pisRate: string
-      cofinsRate: string
-      icmsRate: string
-      issRate: string
-      cClassTrib: string
-      cst: string
-    }> = {}
+    const taxRulesMap: Record<
+      string,
+      {
+        pisRate: string
+        cofinsRate: string
+        icmsRate: string
+        issRate: string
+        cClassTrib: string
+        cst: string
+      }
+    > = {}
 
     for (const rule of taxRules) {
       taxRulesMap[rule.ncmCode] = {
@@ -423,7 +445,12 @@ export const simulateTax = async (
       taxRules: Object.fromEntries(
         Object.entries(taxRulesMap).map(([ncm, rule]) => [
           ncm,
-          { pisRate: rule.pisRate, cofinsRate: rule.cofinsRate, icmsRate: rule.icmsRate, issRate: rule.issRate },
+          {
+            pisRate: rule.pisRate,
+            cofinsRate: rule.cofinsRate,
+            icmsRate: rule.icmsRate,
+            issRate: rule.issRate,
+          },
         ]),
       ),
     }
@@ -450,6 +477,7 @@ export const simulateTax = async (
         quantity: item.quantity,
         unitPrice: item.unitPrice,
       })),
+      logger,
     )
 
     const totalAmount = items.reduce((sum, item) => {
@@ -615,10 +643,7 @@ function formatSaleResponse(sale: any): SaleResponse {
       totalIbs: sale.totalIbs.toFixed(2),
       totalCbs: sale.totalCbs.toFixed(2),
       totalIs: sale.totalIs.toFixed(2),
-      total: new Decimal(sale.totalIbs)
-        .plus(sale.totalCbs)
-        .plus(sale.totalIs)
-        .toFixed(2),
+      total: new Decimal(sale.totalIbs).plus(sale.totalCbs).plus(sale.totalIs).toFixed(2),
     },
     delta: {
       absolute: new Decimal(sale.totalIbs)
