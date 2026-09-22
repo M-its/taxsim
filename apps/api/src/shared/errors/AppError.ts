@@ -1,11 +1,13 @@
 export class AppError extends Error {
   public readonly code: string
   public readonly statusCode: number
+  public readonly details?: unknown
 
-  constructor(code: string, message: string, statusCode: number) {
+  constructor(code: string, message: string, statusCode: number, details?: unknown) {
     super(message)
     this.code = code
     this.statusCode = statusCode
+    this.details = details
     this.name = 'AppError'
   }
 
@@ -25,8 +27,8 @@ export class AppError extends Error {
     return new AppError('CONFLICT', message, 409)
   }
 
-  static unprocessable(message = 'Unprocessable Entity'): AppError {
-    return new AppError('UNPROCESSABLE_ENTITY', message, 422)
+  static unprocessable(message = 'Unprocessable Entity', details?: unknown): AppError {
+    return new AppError('UNPROCESSABLE_ENTITY', message, 422, details)
   }
 
   static internal(message = 'Internal server error'): AppError {

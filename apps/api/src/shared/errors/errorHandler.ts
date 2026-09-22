@@ -3,10 +3,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
 import { AppError } from './AppError.js'
-import {
-  InvalidRefreshTokenError,
-  RefreshTokenReuseDetectedError,
-} from './refreshTokenErrors.js'
+import { InvalidRefreshTokenError, RefreshTokenReuseDetectedError } from './refreshTokenErrors.js'
 
 interface ErrorPayload {
   error: {
@@ -33,7 +30,7 @@ export const errorHandlerPlugin = fp(async (app: FastifyInstance): Promise<void>
       }
       if (error instanceof AppError) {
         void reply.status(error.statusCode).send({
-          error: { code: error.code, message: error.message },
+          error: { code: error.code, message: error.message, details: error.details },
         } satisfies ErrorPayload)
         return
       }

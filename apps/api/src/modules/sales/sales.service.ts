@@ -9,6 +9,7 @@ import {
 } from '../tax-calculator/tax-calculator.client.js'
 import { TaxCalculatorUnavailableError } from '../tax-calculator/tax-calculator.types.js'
 import type { TaxCalculatorLogger } from '../tax-calculator/tax-calculator.types.js'
+import { assertTaxItemsEligible } from './tax-eligibility.js'
 import type {
   CreateSaleInput,
   SimulateInput,
@@ -16,26 +17,54 @@ import type {
   SimulationResponse,
 } from './sales.types.js'
 
+function ncmValidityDate(): Date {
+  const now = new Date()
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+}
+
 async function getProductsWithRules(productIds: string[], companyId: string, taxRegime: string) {
+  const uniqueProductIds = [...new Set(productIds)]
   const products = await prisma.product.findMany({
     where: {
-      id: { in: productIds },
+      id: { in: uniqueProductIds },
       companyId,
     },
   })
 
-  if (products.length !== productIds.length) {
+  if (products.length !== uniqueProductIds.length) {
     throw AppError.notFound('One or more products not found')
   }
 
   const ncmCodes = [...new Set(products.map((p) => p.ncmCode))]
+  const eligibilityDate = ncmValidityDate()
 
-  const taxRules = await prisma.taxRule.findMany({
-    where: {
-      ncmCode: { in: ncmCodes },
-      taxRegime: taxRegime as 'SIMPLES_NACIONAL' | 'LUCRO_PRESUMIDO' | 'LUCRO_REAL',
-      status: 'ACTIVE',
-    },
+  const [taxRules, currentNcms] = await Promise.all([
+    prisma.taxRule.findMany({
+      where: {
+        ncmCode: { in: ncmCodes },
+        taxRegime: taxRegime as 'SIMPLES_NACIONAL' | 'LUCRO_PRESUMIDO' | 'LUCRO_REAL',
+        status: 'ACTIVE',
+      },
+    }),
+    prisma.ncmCatalog.findMany({
+      where: {
+        code: { in: ncmCodes },
+        validFrom: { lte: eligibilityDate },
+        validUntil: { gte: eligibilityDate },
+      },
+      select: { code: true },
+    }),
+  ])
+
+  assertTaxItemsEligible({
+    items: productIds.map((productId) => {
+      const product = products.find((candidate) => candidate.id === productId)
+      if (!product) throw AppError.notFound('Product not found')
+      return { ncmCode: product.ncmCode }
+    }),
+    currentNcmCodes: currentNcms.map((ncm) => ncm.code),
+    taxRules,
+    taxRegime,
   })
 
   const taxRulesMap: Record<
@@ -389,12 +418,31 @@ export const simulateTax = async (
 ): Promise<SimulationResponse> => {
   const { items } = input
 
-  const taxRules = await prisma.taxRule.findMany({
-    where: {
-      ncmCode: { in: items.map((item) => item.ncmCode) },
-      taxRegime: input.taxRegime as 'SIMPLES_NACIONAL' | 'LUCRO_PRESUMIDO' | 'LUCRO_REAL',
-      status: 'ACTIVE',
-    },
+  const ncmCodes = [...new Set(items.map((item) => item.ncmCode))]
+  const eligibilityDate = ncmValidityDate()
+  const [taxRules, currentNcms] = await Promise.all([
+    prisma.taxRule.findMany({
+      where: {
+        ncmCode: { in: ncmCodes },
+        taxRegime: input.taxRegime as 'SIMPLES_NACIONAL' | 'LUCRO_PRESUMIDO' | 'LUCRO_REAL',
+        status: 'ACTIVE',
+      },
+    }),
+    prisma.ncmCatalog.findMany({
+      where: {
+        code: { in: ncmCodes },
+        validFrom: { lte: eligibilityDate },
+        validUntil: { gte: eligibilityDate },
+      },
+      select: { code: true },
+    }),
+  ])
+
+  assertTaxItemsEligible({
+    items,
+    currentNcmCodes: currentNcms.map((ncm) => ncm.code),
+    taxRules,
+    taxRegime: input.taxRegime,
   })
 
   try {

@@ -28,12 +28,12 @@ Dentro de cada prioridade, os itens estão na ordem recomendada. Um novo risco d
 
 ### 3. Corrigir elegibilidade e diagnóstico de NCM na simulação
 
-- [ ] Distinguir NCM existente no catálogo de NCM com regra fiscal ativa para o regime selecionado.
-- [ ] Auditar e migrar regras seed obsoletas que não existem na tabela NCM vigente ou na calculadora, começando por 85171200.
-- [ ] Validar todos os itens antes de chamar a calculadora da RFB.
-- [ ] Retornar código de erro estável com índice do item e NCM que bloqueou a simulação.
-- [ ] Não converter ausência de regra fiscal em “calculadora indisponível”.
-- [ ] Cobrir simulações com itens válidos e inválidos misturados.
+- [x] Distinguir NCM existente no catálogo de NCM com regra fiscal ativa para o regime selecionado.
+- [x] Auditar e migrar regras seed obsoletas que não existem na tabela NCM vigente ou na calculadora, começando por 85171200.
+- [x] Validar todos os itens antes de chamar a calculadora da RFB.
+- [x] Retornar código de erro estável com índice do item e NCM que bloqueou a simulação.
+- [x] Não converter ausência de regra fiscal em “calculadora indisponível”.
+- [x] Cobrir simulações com itens válidos e inválidos misturados.
 
 ### 4. Fechar a exposição residual da API em produção
 

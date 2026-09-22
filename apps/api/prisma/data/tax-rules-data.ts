@@ -8,10 +8,10 @@
  * para os campos cClassTrib (6 dígitos) e cst (3 dígitos).
  *
  * Observações:
- * - Alíquotas do Simples Nacional são efetivas (proporção do total pago no regime), baseadas no Anexo I (comércio) e Anexo III (serviços).
+ * - Alíquotas do Simples Nacional são efetivas (proporção do total pago no regime), baseadas no Anexo I (comércio).
  * - ICMS médio nacional de 18% para produtos; valores diferenciados para bebidas alcoólicas e cigarros.
  * - Produtos sujeitos ao Imposto Seletivo permanecem na regra geral de IBS/CBS; o IS é tratado separadamente.
- * - Para serviços (software), utiliza-se NCM fictício "99999999" e alíquota de ISS de 5%.
+ * - O seed contém somente mercadorias com NCM terminal vigente; serviços exigem classificação própria e não usam NCM fictício.
  *
  * Formato compatível com Prisma e o schema TaxRule.
  */
@@ -55,10 +55,10 @@ const taxRules = [
   },
 
   // =============================================
-  // 2. NCM 85171200 - Smartphone
+  // 2. NCM 85171300 - Smartphone
   // =============================================
   {
-    ncmCode: '85171200',
+    ncmCode: '85171300',
     taxRegime: 'SIMPLES_NACIONAL',
     pisRate: '0.0011',
     cofinsRate: '0.0051',
@@ -69,7 +69,7 @@ const taxRules = [
     status: 'ACTIVE',
   },
   {
-    ncmCode: '85171200',
+    ncmCode: '85171300',
     taxRegime: 'LUCRO_PRESUMIDO',
     pisRate: '0.0065',
     cofinsRate: '0.0300',
@@ -80,7 +80,7 @@ const taxRules = [
     status: 'ACTIVE',
   },
   {
-    ncmCode: '85171200',
+    ncmCode: '85171300',
     taxRegime: 'LUCRO_REAL',
     pisRate: '0.0165',
     cofinsRate: '0.0760',
@@ -314,10 +314,10 @@ const taxRules = [
   },
 
   // =============================================
-  // 9. NCM 64039900 - Calçado de couro
+  // 9. NCM 64039990 - Outros calçados de couro
   // =============================================
   {
-    ncmCode: '64039900',
+    ncmCode: '64039990',
     taxRegime: 'SIMPLES_NACIONAL',
     pisRate: '0.0011',
     cofinsRate: '0.0051',
@@ -328,7 +328,7 @@ const taxRules = [
     status: 'ACTIVE',
   },
   {
-    ncmCode: '64039900',
+    ncmCode: '64039990',
     taxRegime: 'LUCRO_PRESUMIDO',
     pisRate: '0.0065',
     cofinsRate: '0.0300',
@@ -339,7 +339,7 @@ const taxRules = [
     status: 'ACTIVE',
   },
   {
-    ncmCode: '64039900',
+    ncmCode: '64039990',
     taxRegime: 'LUCRO_REAL',
     pisRate: '0.0165',
     cofinsRate: '0.0760',
@@ -684,10 +684,10 @@ const taxRules = [
   },
 
   // =============================================
-  // 19. NCM 85235100 - Dispositivo de memória (pendrive)
+  // 19. NCM 85235190 - Outros dispositivos de memória (pendrive)
   // =============================================
   {
-    ncmCode: '85235100',
+    ncmCode: '85235190',
     taxRegime: 'SIMPLES_NACIONAL',
     pisRate: '0.0011',
     cofinsRate: '0.0051',
@@ -698,7 +698,7 @@ const taxRules = [
     status: 'ACTIVE',
   },
   {
-    ncmCode: '85235100',
+    ncmCode: '85235190',
     taxRegime: 'LUCRO_PRESUMIDO',
     pisRate: '0.0065',
     cofinsRate: '0.0300',
@@ -709,7 +709,7 @@ const taxRules = [
     status: 'ACTIVE',
   },
   {
-    ncmCode: '85235100',
+    ncmCode: '85235190',
     taxRegime: 'LUCRO_REAL',
     pisRate: '0.0165',
     cofinsRate: '0.0760',
@@ -721,10 +721,11 @@ const taxRules = [
   },
 
   // =============================================
-  // 20. NCM 84715000 - Computador desktop
+  // 20. NCM 84715010 - Computador desktop de pequeno porte
+  // Premissa do produto de demonstração: unidade digital de pequena capacidade, baseada em microprocessador e dentro do limite FOB previsto por este NCM.
   // =============================================
   {
-    ncmCode: '84715000',
+    ncmCode: '84715010',
     taxRegime: 'SIMPLES_NACIONAL',
     pisRate: '0.0011',
     cofinsRate: '0.0051',
@@ -735,7 +736,7 @@ const taxRules = [
     status: 'ACTIVE',
   },
   {
-    ncmCode: '84715000',
+    ncmCode: '84715010',
     taxRegime: 'LUCRO_PRESUMIDO',
     pisRate: '0.0065',
     cofinsRate: '0.0300',
@@ -746,49 +747,12 @@ const taxRules = [
     status: 'ACTIVE',
   },
   {
-    ncmCode: '84715000',
+    ncmCode: '84715010',
     taxRegime: 'LUCRO_REAL',
     pisRate: '0.0165',
     cofinsRate: '0.0760',
     icmsRate: '0.1800',
     issRate: '0.0000',
-    cClassTrib: '000001',
-    cst: '000',
-    status: 'ACTIVE',
-  },
-
-  // =============================================
-  // 21. NCM 99999999 (fictício) - Software (serviço) - tributado via ISS
-  // =============================================
-  {
-    ncmCode: '99999999',
-    taxRegime: 'SIMPLES_NACIONAL',
-    pisRate: '0.0011',
-    cofinsRate: '0.0051',
-    icmsRate: '0.0000',
-    issRate: '0.0500', // ISS 5% (média nacional)
-    cClassTrib: '000001', // regra geral de IBS/CBS para software genérico
-    cst: '000',
-    status: 'ACTIVE',
-  },
-  {
-    ncmCode: '99999999',
-    taxRegime: 'LUCRO_PRESUMIDO',
-    pisRate: '0.0065',
-    cofinsRate: '0.0300',
-    icmsRate: '0.0000',
-    issRate: '0.0500',
-    cClassTrib: '000001',
-    cst: '000',
-    status: 'ACTIVE',
-  },
-  {
-    ncmCode: '99999999',
-    taxRegime: 'LUCRO_REAL',
-    pisRate: '0.0165',
-    cofinsRate: '0.0760',
-    icmsRate: '0.0000',
-    issRate: '0.0500',
     cClassTrib: '000001',
     cst: '000',
     status: 'ACTIVE',
