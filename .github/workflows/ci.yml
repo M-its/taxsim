@@ -56,3 +56,36 @@ jobs:
 
       - name: Typecheck
         run: pnpm exec tsc --noEmit
+
+  accessibility:
+    name: Accessibility (Chromium desktop/mobile)
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run deterministic accessibility suite
+        env:
+          A11Y_KEEP_STACK: "1"
+        run: ./scripts/a11y-test.sh
+
+      - name: Show service logs after failure
+        if: failure()
+        run: docker compose -f docker-compose.a11y.yml logs --no-color
+
+      - name: Upload accessibility report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-report
+          path: |
+            apps/web/playwright-report
+            apps/web/test-results/accessibility
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Stop disposable accessibility environment
+        if: always()
+        run: docker compose -f docker-compose.a11y.yml down --volumes --remove-orphans

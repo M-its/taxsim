@@ -1,0 +1,123 @@
+name: taxsim-a11y
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: taxsim_a11y
+      POSTGRES_USER: taxsim_a11y
+      POSTGRES_PASSWORD: taxsim_a11y_password
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taxsim_a11y -d taxsim_a11y"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  calculator:
+    image: node:22-alpine
+    working_dir: /mock
+    command: ["node", "mock-tax-calculator.mjs"]
+    environment:
+      MOCK_CALCULATOR_PORT: 8080
+    volumes:
+      - ./apps/api/test/a11y/mock-tax-calculator.mjs:/mock/mock-tax-calculator.mjs:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/health"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile.dev
+      target: development
+    command:
+      - sh
+      - -c
+      - >-
+        pnpm exec prisma migrate deploy &&
+        A11Y_SEED_ALLOWED=true pnpm exec tsx prisma/seed-a11y.ts &&
+        pnpm exec tsx src/server.ts
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://taxsim_a11y:taxsim_a11y_password@db:5432/taxsim_a11y?schema=public
+      TAX_CALCULATOR_STANDARD_URL: http://calculator:8080/api
+      TAX_CALCULATOR_TIMEOUT_MS: 2000
+      JWT_SECRET: accessibility-only-jwt-secret
+      REFRESH_TOKEN_PEPPER: accessibility-only-refresh-pepper
+      AUTH_RATE_LIMIT_MAX: 1000
+      API_PORT: 3333
+      API_HOST: 0.0.0.0
+      CORS_ORIGIN: http://host.docker.internal:3100
+    volumes:
+      - ./apps/api/src:/app/src:ro
+      - ./apps/api/prisma:/app/prisma:ro
+    ports:
+      - "127.0.0.1:3334:3333"
+    depends_on:
+      db:
+        condition: service_healthy
+      calculator:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3333/health >/dev/null"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  app:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile.dev
+      target: development
+    command: ["pnpm", "exec", "next", "dev", "-p", "3000"]
+    environment:
+      NODE_ENV: development
+      API_INTERNAL_URL: http://api:3333
+      NEXT_PUBLIC_API_URL: http://host.docker.internal:3334
+      NEXT_TELEMETRY_DISABLED: 1
+    volumes:
+      - ./apps/web/src:/app/src:ro
+      - ./apps/web/public:/app/public:ro
+      - ./apps/web/next.config.ts:/app/next.config.ts:ro
+      - ./apps/web/postcss.config.mjs:/app/postcss.config.mjs:ro
+      - ./apps/web/tsconfig.json:/app/tsconfig.json:ro
+    ports:
+      - "127.0.0.1:3100:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/api/health >/dev/null"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  a11y:
+    image: mcr.microsoft.com/playwright:v1.55.0-noble
+    working_dir: /work
+    command:
+      - sh
+      - -c
+      - >-
+        corepack enable &&
+        corepack prepare pnpm@10.17.1 --activate &&
+        pnpm install --frozen-lockfile &&
+        pnpm test:a11y
+    environment:
+      CI: "true"
+      A11Y_BASE_URL: http://host.docker.internal:3100
+      A11Y_API_URL: http://host.docker.internal:3334
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    volumes:
+      - ./apps/web:/work
+      - /work/node_modules
+    depends_on:
+      app:
+        condition: service_healthy

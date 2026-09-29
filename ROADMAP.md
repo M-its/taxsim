@@ -86,10 +86,10 @@ zoom a 200% e checagem dirigida a 400%.
 
 ### 5. Automatizar regressões de acessibilidade
 
-- [ ] Adicionar axe aos fluxos prioritários.
-- [ ] Testar teclado em menu, dialogs e simulação.
-- [ ] Executar na CI sem substituir auditoria manual.
-- [ ] Fazer violações críticas ou sérias novas bloquearem merge.
+- [x] Adicionar axe aos fluxos prioritários.
+- [x] Testar teclado em menu, dialogs e simulação.
+- [x] Executar na CI sem substituir auditoria manual.
+- [x] Fazer violações críticas ou sérias novas bloquearem merge.
 
 ### 6. Impedir indexação de rotas privadas
 

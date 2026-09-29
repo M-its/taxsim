@@ -335,3 +335,101 @@ O baseline continua com **zero achados críticos conhecidos**. Todos os 13
 achados sérios do relatório receberam correção de código nesta rodada; a
 confirmação manual multiplataforma acima permanece explicitamente pendente sob
 o baseline pragmático, sem ser apresentada como teste aprovado.
+
+## 2026-09-25 — P1 #5: regressões automatizadas de acessibilidade
+
+### Gate e cobertura implementados
+
+- Playwright e `@axe-core/playwright` foram integrados em dois projetos:
+  Chromium desktop (1440 × 900) e Chromium em viewport Pixel 7. Os dois rodam
+  em todo pull request e push para `main`, após testes e typecheck.
+- O gate falha para qualquer ocorrência axe de impacto `serious` ou
+  `critical`. O resultado completo do axe é anexado ao relatório de cada
+  estado, inclusive quando não há bloqueio.
+- Testes explícitos de teclado cobrem sidebar expandida/recolhida, contenção e
+  restauração de foco no drawer móvel, abertura/fechamento de dialog e seleção
+  por teclado nos modos catálogo e NCM manual da simulação. Falhas nesses testes
+  bloqueiam o workflow independentemente da classificação do axe.
+- Os seis fluxos do aceite estão cobertos: login (inicial, erro e sessão
+  autenticada), cadastro (formulário e erros), simulação (catálogo, manual,
+  múltiplos erros e resultado), produtos/clientes (lista, busca, criação e
+  edição), vendas (filtro, detalhes e ações) e estados compartilhados da
+  navegação.
+- Retries permanecem desativados. O timeout por cenário é de 90 segundos para
+  suportar a compilação fria do Next.js no container sem transformar falhas em
+  aprovações intermitentes.
+
+### Ambiente determinístico
+
+- A suíte usa `docker-compose.a11y.yml`, com PostgreSQL em `tmpfs`, API e Web
+  próprias e remoção de volumes ao final.
+- O seed de acessibilidade apaga e recria somente o banco descartável e exige
+  simultaneamente `NODE_ENV=test` e `A11Y_SEED_ALLOWED=true`. Ele inclui
+  empresa, usuário, catálogo NCM, regras, produtos, cliente e vendas com IDs e
+  datas estáveis.
+- A calculadora oficial foi substituída nesse ambiente por um servidor HTTP
+  local determinístico. A suíte não consulta a RFB nem a demo pública para
+  aprovar merge.
+- O limite de autenticação é configurável no ambiente de teste para que a
+  matriz completa não seja afetada por rate limiting, sem mudar o padrão de
+  produção.
+- O comando local oficial é `./scripts/a11y-test.sh`. O CI preserva a stack
+  somente até coletar logs em caso de erro; o passo final sempre remove
+  containers, rede e volumes.
+
+### Allowlist e auditoria manual
+
+- A allowlist está vazia. Não há exclusão global de regra, rota, seletor ou
+  subtree.
+- A estrutura aceita somente exceção exata por regra, rota, projeto e alvo,
+  acompanhada de justificativa e data de expiração. Entradas vencidas deixam de
+  ser aceitas pelo gate.
+- O processo de nova auditoria manual foi documentado em
+  `docs/runbooks/accessibility-regression-tests.md`: deve ocorrer ao concluir
+  o baseline e após mudanças relevantes em componentes compartilhados, usando
+  teclado em Chromium/Firefox, NVDA com Chromium, desktop/móvel e zoom
+  200%/checagem dirigida em 400%. Essa recorrência é um processo humano, não uma
+  automação criada nesta rodada.
+
+### Ajustes encontrados pelo novo baseline
+
+- A execução real do axe revelou contrastes insuficientes em textos auxiliares,
+  erros de autenticação e estados de hover. Os tokens afetados foram elevados,
+  links de autenticação receberam sublinhado persistente e ações de venda
+  preservam contraste no hover.
+- O gráfico de composição, que é visualmente redundante com sua alternativa
+  textual, deixou de expor foco interno; tabelas horizontalmente roláveis
+  passaram a aceitar teclado e nome acessível.
+- As animações de entrada de KPIs, gráficos e operações recentes foram removidas
+  do dashboard. Além de evitar contraste intermediário durante fades, isso
+  garante conteúdo estável desde o primeiro frame e reforça o requisito de
+  redução de movimento.
+- O Vitest ganhou configuração própria para não coletar os arquivos Playwright;
+  os dois runners permanecem independentes.
+
+### Arquivos alterados
+
+- Infraestrutura e CI: `.github/workflows/ci.yml`, `.gitignore`,
+  `docker-compose.a11y.yml`, `scripts/a11y-test.sh`.
+- Ambiente de teste: `apps/api/prisma/seed-a11y.ts`,
+  `apps/api/test/a11y/mock-tax-calculator.mjs`,
+  `apps/api/src/modules/auth/auth.routes.ts`.
+- Runner Web: `apps/web/package.json`, `apps/web/pnpm-lock.yaml`,
+  `apps/web/playwright.a11y.config.ts`, `apps/web/vitest.config.mts` e
+  `apps/web/tests/accessibility/*`.
+- Correções confirmadas pelo baseline: estilos/páginas de autenticação e vendas,
+  `apps/web/src/components/ui/table.tsx` e componentes do dashboard
+  (`kpi-card`, `tax-bar-chart`, `tax-donut-chart` e
+  `recent-operations-table`).
+- Processo: `docs/runbooks/accessibility-regression-tests.md` e este log.
+
+### Validação
+
+- Matriz Playwright/axe: **24 cenários executáveis aprovados** nos projetos
+  desktop e móvel; **2 skips condicionais esperados** (drawer não se aplica ao
+  desktop e sidebar recolhível não se aplica ao móvel). Todos os fluxos foram
+  executados sem allowlist e sem violação séria/crítica remanescente.
+- API Vitest: **25 arquivos e 101 testes aprovados**.
+- Web Vitest: **5 arquivos e 23 testes aprovados**; a pasta Playwright é
+  explicitamente excluída desse runner.
+- TypeScript API e Web: aprovados com `--noEmit --incremental false`.
