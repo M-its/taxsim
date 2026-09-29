@@ -146,9 +146,9 @@ zoom a 200% e checagem dirigida a 400%.
 
 ### 6. Refinar 404 e estados globais
 
-- [ ] Usar design system no lugar de estilos inline.
-- [ ] Oferecer retorno contextual para landing, login ou dashboard.
-- [ ] Garantir título, heading e anúncio acessível nos erros globais.
+- [x] Usar design system no lugar de estilos inline.
+- [x] Oferecer retorno contextual para landing, login ou dashboard.
+- [x] Garantir título, heading e anúncio acessível nos erros globais.
 
 ## P3 — Split Payment e integrações externas
 

@@ -517,7 +517,7 @@ entrega:
 - **P2:** manter uma ação acessível no header móvel e reduzir a extensão ou a
   repetição da página em viewports estreitos.
 
-## 2026-09-26 — P2 #5: NCM vigente em produtos
+## 2026-09-26 — P2 #5 e #6: NCM vigente em produtos e estados globais
 
 ### Validação de NCM em produtos
 
@@ -539,3 +539,33 @@ entrega:
   rodada é **2026-07-10**, correspondente ao arquivo
   **Tabela_NCM_Vigente_20260710.json**; não foi criada atualização externa
   automática.
+
+### 404 e erros globais
+
+- **PageState** e **ErrorState** centralizam estrutura, ações e apresentação dos
+  estados sem alterar o restante do design system.
+- O 404 retorna rotas públicas à landing. Em prefixos autenticados, restaura a
+  sessão e direciona visitantes ao login com **redirectTo**, ou usuários
+  autenticados ao dashboard.
+- Os boundaries raiz e global usam tela cheia. O boundary do segmento
+  **dashboard** fica abaixo de **DashboardShell**, preservando topbar e sidebar.
+- Todos os erros oferecem **Tentar novamente** e um retorno seguro. A mensagem
+  exibida em produção é sempre amigável; mensagem/stack aparecem somente em
+  desenvolvimento, e o digest é exibido isoladamente quando existe para suporte.
+
+### Arquivos principais
+
+- API: schema, service e controller de produtos, teste do service e service de
+  NCM.
+- Web: página/tipos de produtos, status de NCM, PageState, 404 contextual e
+  boundaries raiz, dashboard e global.
+
+### Validação
+
+- API Vitest: **26 arquivos e 107 testes aprovados**.
+- Web Vitest: **5 arquivos e 23 testes aprovados**.
+- TypeScript API e Web: aprovados com **--noEmit**.
+- Build de produção Next.js: aprovado, incluindo geração das 16 páginas. O
+  aviso conhecido do ambiente sobre a dependência ausente
+  **@eslint/eslintrc** permaneceu não bloqueante; compilação, typecheck e
+  geração estática concluíram com código zero.
