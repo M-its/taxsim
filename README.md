@@ -154,16 +154,17 @@ Suíte com Vitest cobrindo os pontos de maior risco identificados durante o dese
 - **Integração RFB** — data com offset explícito, schema runtime, correlação `numero`/`nObj`, arredondamento e respostas malformadas
 - **Autenticação** — cookies, rotação de refresh token, detecção de reuso, logout idempotente e rate limiting
 - **Error handler** — propagação global de erros Zod através do encapsulamento de plugins
+- **Tax Engine** — aritmética decimal, arredondamento `HALF_EVEN`, valores-limite, múltiplos itens e regimes tributários
 - **`safeRedirectPath`** — vetores de open redirect como protocol-relative, `javascript:`, `data:` e backslash
 - **Onboarding** — primeiro acesso, conclusão persistida e reabertura manual
 - **Seed fiscal** — sincronização idempotente de `cClassTrib` e `cst`
 
 ```bash
-cd apps/api && pnpm exec vitest run   # 49 testes
-cd apps/web && pnpm exec vitest run   # 12 testes
+cd apps/api && pnpm exec vitest run
+cd apps/web && pnpm exec vitest run
 ```
 
-A aritmética pura do Tax Engine ainda não possui testes dedicados; o circuit breaker agora tem cobertura para janela de falhas, estado aberto e falha da tentativa half-open. O workflow `.github/workflows/ci.yml` executa as duas suítes e `tsc --noEmit` em todo push e pull request para `main`; deploy permanece manual.
+O Tax Engine possui testes dedicados de aritmética e arredondamento; o circuit breaker tem cobertura para janela de falhas, estado aberto e falha da tentativa half-open. O workflow `.github/workflows/ci.yml` executa as duas suítes e `tsc --noEmit` em todo push e pull request para `main`; deploy permanece manual.
 
 ---
 

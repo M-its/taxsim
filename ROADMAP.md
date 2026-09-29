@@ -46,9 +46,9 @@ Dentro de cada prioridade, os itens estão na ordem recomendada. Um novo risco d
 
 ### 1. Cobrir o núcleo fiscal e o circuit breaker com testes
 
-- [ ] Testar aritmética, arredondamento e limites do Tax Engine.
+- [x] Testar aritmética, arredondamento e limites do Tax Engine.
 - [x] Testar estados fechado, aberto e half-open do circuit breaker.
-- [ ] Testar timeout, recuperação e propagação de erros da calculadora oficial.
+- [x] Testar timeout, recuperação e propagação de erros da calculadora oficial.
 
 ### 2. Melhorar seleção e diagnóstico de NCM na interface
 

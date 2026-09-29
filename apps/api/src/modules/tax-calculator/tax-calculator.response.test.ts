@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { calculateReformModel } from './tax-calculator.client'
 import type { TaxCalculatorInput, TaxCalculatorLogger } from './tax-calculator.types'
-import { TaxCalculatorUnavailableError } from './tax-calculator.types'
 
 const input: TaxCalculatorInput = {
   id: 'safe-request-id',
@@ -48,7 +47,10 @@ describe('calculateReformModel response validation', () => {
         [{ ncmCode: '84713012', quantity: 1, unitPrice: '200.00' }],
         logger,
       ),
-    ).rejects.toEqual(expect.any(TaxCalculatorUnavailableError))
+    ).rejects.toMatchObject({
+      name: 'TaxCalculatorUnavailableError',
+      reason: 'RESPONSE_SCHEMA_INVALID',
+    })
 
     expect(error).toHaveBeenCalledOnce()
     expect(error.mock.calls[0][0]).toEqual(

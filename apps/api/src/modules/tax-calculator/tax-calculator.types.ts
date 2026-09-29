@@ -51,8 +51,20 @@ export interface TaxCalculatorLogger {
   error: (context: Record<string, unknown>, message: string) => void
 }
 
+export type TaxCalculatorFailureReason =
+  | 'CIRCUIT_OPEN'
+  | 'TIMEOUT'
+  | 'NETWORK_ERROR'
+  | 'HTTP_CLIENT_ERROR'
+  | 'HTTP_SERVER_ERROR'
+  | 'RESPONSE_SCHEMA_INVALID'
+  | 'RESPONSE_VALIDATION_FAILED'
+
 export class TaxCalculatorUnavailableError extends Error {
-  constructor(message = 'Tax calculator service unavailable') {
+  constructor(
+    public readonly reason: TaxCalculatorFailureReason = 'NETWORK_ERROR',
+    message = 'Tax calculator service unavailable',
+  ) {
     super(message)
     this.name = 'TaxCalculatorUnavailableError'
   }

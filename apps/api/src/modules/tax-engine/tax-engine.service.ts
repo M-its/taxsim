@@ -13,6 +13,8 @@ const multiply = (a: Decimal, b: Decimal): Decimal => a.mul(b)
 const add = (a: Decimal, b: Decimal): Decimal => a.plus(b)
 const sum = (values: Decimal[]): Decimal =>
   values.reduce((acc, val) => acc.plus(val), new Decimal(0))
+const toFixedHalfEven = (value: Decimal, decimalPlaces: number): string =>
+  value.toFixed(decimalPlaces, Decimal.ROUND_HALF_EVEN)
 
 export function calculateCurrentModel(input: TaxEngineInput): TaxEngineResult {
   const items: TaxEngineItemResult[] = []
@@ -50,17 +52,17 @@ export function calculateCurrentModel(input: TaxEngineInput): TaxEngineResult {
       ncmCode: item.ncmCode,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
-      totalPrice: totalPrice.toFixed(2),
+      totalPrice: toFixedHalfEven(totalPrice, 2),
       taxes: {
-        pisRate: pisRate.toFixed(4),
-        cofinsRate: cofinsRate.toFixed(4),
-        icmsRate: icmsRate.toFixed(4),
-        issRate: issRate.toFixed(4),
-        pis: pis.toFixed(2),
-        cofins: cofins.toFixed(2),
-        icms: icms.toFixed(2),
-        iss: iss.toFixed(2),
-        totalTax: itemTotalTax.toFixed(2),
+        pisRate: toFixedHalfEven(pisRate, 4),
+        cofinsRate: toFixedHalfEven(cofinsRate, 4),
+        icmsRate: toFixedHalfEven(icmsRate, 4),
+        issRate: toFixedHalfEven(issRate, 4),
+        pis: toFixedHalfEven(pis, 2),
+        cofins: toFixedHalfEven(cofins, 2),
+        icms: toFixedHalfEven(icms, 2),
+        iss: toFixedHalfEven(iss, 2),
+        totalTax: toFixedHalfEven(itemTotalTax, 2),
       },
     })
 
@@ -77,12 +79,12 @@ export function calculateCurrentModel(input: TaxEngineInput): TaxEngineResult {
     : totals.totalTax.div(totals.totalAmount)
 
   const resultTotals: TaxEngineTotals = {
-    pis: totals.pis.toFixed(2),
-    cofins: totals.cofins.toFixed(2),
-    icms: totals.icms.toFixed(2),
-    iss: totals.iss.toFixed(2),
-    totalTax: totals.totalTax.toFixed(2),
-    effectiveRate: effectiveRate.toFixed(4),
+    pis: toFixedHalfEven(totals.pis, 2),
+    cofins: toFixedHalfEven(totals.cofins, 2),
+    icms: toFixedHalfEven(totals.icms, 2),
+    iss: toFixedHalfEven(totals.iss, 2),
+    totalTax: toFixedHalfEven(totals.totalTax, 2),
+    effectiveRate: toFixedHalfEven(effectiveRate, 4),
   }
 
   return { items, totals: resultTotals }

@@ -15,6 +15,7 @@ import { rfbCalculatorResponseSchema } from './tax-calculator.schema.js'
 
 const TAX_CALCULATOR_URL =
   process.env.TAX_CALCULATOR_STANDARD_URL ?? 'http://tax-calculator:8080/api'
+const TAX_CALCULATOR_TIMEOUT_MS = Number(process.env.TAX_CALCULATOR_TIMEOUT_MS ?? 10_000)
 
 interface CircuitBreakerState {
   failures: number
@@ -43,7 +44,7 @@ function checkCircuitBreaker(): void {
       circuitBreaker.state = 'HALF_OPEN'
       circuitBreaker.failures = 0
     } else {
-      throw new TaxCalculatorUnavailableError()
+      throw new TaxCalculatorUnavailableError('CIRCUIT_OPEN')
     }
   }
 }
@@ -85,16 +86,22 @@ export async function calculateReformModel(
   logger?: TaxCalculatorLogger,
 ): Promise<ReformTaxCalculatorResult> {
   checkCircuitBreaker()
+  const abortController = new AbortController()
+  const timeout = setTimeout(() => abortController.abort(), TAX_CALCULATOR_TIMEOUT_MS)
 
   try {
     const response = await fetch(`${TAX_CALCULATOR_URL}/calculadora/regime-geral`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),
+      signal: abortController.signal,
     })
 
     if (!response.ok) {
-      recordFailure()
+      const isClientError = response.status >= 400 && response.status < 500
+      if (!isClientError) {
+        recordFailure()
+      }
       logger?.error(
         {
           event: 'tax_calculator_http_error',
@@ -103,7 +110,9 @@ export async function calculateReformModel(
         },
         'Tax calculator request failed',
       )
-      throw new TaxCalculatorUnavailableError()
+      throw new TaxCalculatorUnavailableError(
+        isClientError ? 'HTTP_CLIENT_ERROR' : 'HTTP_SERVER_ERROR',
+      )
     }
 
     const rawResponse: unknown = await response.json()
@@ -120,7 +129,7 @@ export async function calculateReformModel(
         },
         'Tax calculator returned an incompatible response',
       )
-      throw new TaxCalculatorUnavailableError()
+      throw new TaxCalculatorUnavailableError('RESPONSE_SCHEMA_INVALID')
     }
 
     const result = mapRfbResponseToReformResult(parseResult.data, input, originalItems)
@@ -141,6 +150,17 @@ export async function calculateReformModel(
         },
         'Tax calculator returned an incompatible response',
       )
+      throw new TaxCalculatorUnavailableError('RESPONSE_VALIDATION_FAILED')
+    } else if (abortController.signal.aborted) {
+      logger?.error(
+        {
+          event: 'tax_calculator_timeout',
+          expectedItemCount: input.itens.length,
+          timeoutMs: TAX_CALCULATOR_TIMEOUT_MS,
+        },
+        'Tax calculator request timed out',
+      )
+      throw new TaxCalculatorUnavailableError('TIMEOUT')
     } else {
       logger?.error(
         {
@@ -152,7 +172,9 @@ export async function calculateReformModel(
       )
     }
 
-    throw new TaxCalculatorUnavailableError()
+    throw new TaxCalculatorUnavailableError('NETWORK_ERROR')
+  } finally {
+    clearTimeout(timeout)
   }
 }
 
