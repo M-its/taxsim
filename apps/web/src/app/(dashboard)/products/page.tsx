@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AsyncStatus } from '@/components/ui/async-status'
+import { NcmStatus } from '@/components/ncm/ncm-status'
+import { useAuth } from '@/components/auth/auth-provider'
 import {
   Dialog,
   DialogContent,
@@ -22,8 +25,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { createProduct, deleteProduct, getProducts, updateProduct, searchNcm } from '@/lib/api'
-import type { NcmResult } from '@/lib/api'
+import { createProduct, deleteProduct, getProducts, updateProduct } from '@/lib/api'
+import type { NcmDiagnosis, NcmResult } from '@/lib/api'
+import type { TaxRegime } from '@/lib/auth.types'
+import { useComboboxNavigation } from '@/hooks/use-combobox-navigation'
+import { useNcmSearch } from '@/hooks/use-ncm-search'
 import { formatCurrency } from '@/lib/formatters'
 import type { Product, ProductInput, ProductListResponse } from '@/lib/product.types'
 
@@ -58,32 +64,40 @@ type ProductQuery = {
 }
 
 interface NcmSearchProps {
-  selectedNcm: NcmResult | null
-  onSelect: (ncm: NcmResult | null) => void
+  taxRegime: TaxRegime | null
+  selectedNcm: NcmDiagnosis | null
+  invalid?: boolean
+  describedBy?: string
+  onSelect: (ncm: NcmDiagnosis | null) => void
   onSuggestName?: (ncm: NcmResult) => void
 }
 
-function NcmSearch({ selectedNcm, onSelect, onSuggestName }: NcmSearchProps) {
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState<NcmResult[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+function NcmSearch({
+  taxRegime,
+  selectedNcm,
+  invalid,
+  describedBy,
+  onSelect,
+  onSuggestName,
+}: NcmSearchProps) {
+  const { query, setQuery, results, isLoading, error, clear } = useNcmSearch(taxRegime)
+  const [isOpen, setIsOpen] = useState(false)
+  const listboxId = 'product-ncm-options'
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const q = query.trim()
-      if (!q) {
-        setResults([])
-        return
-      }
-      setIsLoading(true)
-      searchNcm(q)
-        .then((data) => setResults(data))
-        .catch(() => setResults([]))
-        .finally(() => setIsLoading(false))
-    }, 300)
+  function chooseNcm(ncm: NcmResult) {
+    onSelect(ncm)
+    onSuggestName?.(ncm)
+    clear()
+    setIsOpen(false)
+  }
 
-    return () => clearTimeout(timer)
-  }, [query])
+  const combobox = useComboboxNavigation({
+    items: results,
+    getOptionId: (_ncm, index) => `${listboxId}-${index}`,
+    onSelect: chooseNcm,
+    onEscape: () => setIsOpen(false),
+  })
+  const showResults = isOpen && results.length > 0
 
   if (selectedNcm) {
     return (
@@ -91,21 +105,26 @@ function NcmSearch({ selectedNcm, onSelect, onSuggestName }: NcmSearchProps) {
         <div className="flex items-start justify-between gap-3">
           <p className="text-sm font-medium text-[#fafafa]">{selectedNcm.code}</p>
           <Button
+            id="ncmCode"
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => {
               onSelect(null)
-              setQuery('')
+              clear()
+              setIsOpen(true)
             }}
+            aria-invalid={invalid || undefined}
+            aria-describedby={describedBy}
             className="h-auto rounded-none px-2 py-1 text-xs text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#fafafa]"
           >
             Trocar
           </Button>
         </div>
         {selectedNcm.description && (
-          <p className="text-xs text-[#71717a]">{selectedNcm.description}</p>
+          <p className="text-xs text-[#a1a1aa]">{selectedNcm.description}</p>
         )}
+        <NcmStatus status={selectedNcm.status} />
       </div>
     )
   }
@@ -113,36 +132,69 @@ function NcmSearch({ selectedNcm, onSelect, onSuggestName }: NcmSearchProps) {
   return (
     <div className="space-y-2">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71717a]" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a1a1aa]" />
         <Input
+          id="ncmCode"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value)
+            setIsOpen(true)
+          }}
+          onFocus={() => setIsOpen(true)}
+          onBlur={() => setIsOpen(false)}
+          onKeyDown={(event) => {
+            if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) setIsOpen(true)
+            combobox.onKeyDown(event)
+          }}
           placeholder="Buscar por código ou descrição do NCM..."
-          className="rounded-none border-[#27272a] bg-[#09090b] pl-9 text-[#fafafa] placeholder:text-[#71717a] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls={listboxId}
+          aria-expanded={showResults}
+          aria-activedescendant={showResults ? combobox.activeOptionId : undefined}
+          aria-invalid={invalid || undefined}
+          aria-describedby={describedBy}
+          className="rounded-none border-[#27272a] bg-[#09090b] pl-9 text-[#fafafa] placeholder:text-[#a1a1aa] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
         />
         {isLoading && (
-          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#71717a]">
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#a1a1aa]">
             Buscando...
           </span>
         )}
       </div>
 
-      {results.length > 0 && (
-        <ul className="max-h-48 overflow-auto border border-[#27272a] bg-[#09090b]">
-          {results.map((ncm) => (
-            <li key={ncm.code}>
+      <span className="sr-only" role="status" aria-live="polite">
+        {isLoading
+          ? 'Buscando NCMs.'
+          : error
+            ? error
+            : `${results.length} ${results.length === 1 ? 'NCM encontrado' : 'NCMs encontrados'}.`}
+      </span>
+
+      {showResults && (
+        <ul
+          id={listboxId}
+          role="listbox"
+          className="max-h-48 overflow-auto border border-[#27272a] bg-[#09090b]"
+        >
+          {results.map((ncm, index) => (
+            <li key={ncm.code} role="none">
               <button
+                id={`${listboxId}-${index}`}
                 type="button"
-                onClick={() => {
-                  onSelect(ncm)
-                  onSuggestName?.(ncm)
-                  setQuery('')
-                  setResults([])
-                }}
-                className="w-full px-3 py-2 text-left transition-colors hover:bg-[#27272a]"
+                role="option"
+                aria-selected={combobox.activeIndex === index}
+                tabIndex={-1}
+                onMouseDown={(event) => event.preventDefault()}
+                onMouseEnter={() => combobox.setActiveIndex(index)}
+                onClick={() => chooseNcm(ncm)}
+                className={`w-full px-3 py-2 text-left transition-colors hover:bg-[#27272a] ${
+                  combobox.activeIndex === index ? 'bg-[#27272a]' : ''
+                }`}
               >
                 <p className="text-sm text-[#fafafa]">{ncm.code}</p>
-                <p className="text-xs text-[#71717a]">{ncm.description}</p>
+                <p className="text-xs text-[#a1a1aa]">{ncm.description}</p>
+                <NcmStatus status={ncm.status} className="mt-1" />
               </button>
             </li>
           ))}
@@ -150,8 +202,9 @@ function NcmSearch({ selectedNcm, onSelect, onSuggestName }: NcmSearchProps) {
       )}
 
       {!isLoading && query.trim().length > 0 && results.length === 0 && (
-        <p className="text-xs text-[#71717a]">Nenhum NCM encontrado.</p>
+        <p className="text-xs text-[#a1a1aa]">Nenhum NCM encontrado.</p>
       )}
+      {error && <p className="text-xs text-[#facc15]">{error}</p>}
     </div>
   )
 }
@@ -181,27 +234,27 @@ function validateProduct(values: ProductInput): FieldErrors {
 }
 
 interface ProductModalProps {
+  taxRegime: TaxRegime | null
   product: Product | null
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
 }
 
-function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalProps) {
+function ProductModal({ taxRegime, product, open, onOpenChange, onSuccess }: ProductModalProps) {
   const isEditing = Boolean(product)
   const [values, setValues] = useState<ProductInput>(emptyForm)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [apiError, setApiError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [selectedNcm, setSelectedNcm] = useState<NcmResult | null>(null)
-  const [isNcmLoading, setIsNcmLoading] = useState(false)
+  const [selectedNcm, setSelectedNcm] = useState<NcmDiagnosis | null>(null)
+  const errorSummaryRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (open) {
       setApiError(null)
       setErrors({})
       setSelectedNcm(null)
-      setIsNcmLoading(false)
       if (product) {
         setValues({
           name: product.name,
@@ -209,33 +262,16 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
           ncmCode: product.ncmCode,
           unitPrice: product.unitPrice,
         })
-        setSelectedNcm({ code: product.ncmCode, description: '' })
-
-        if (product.ncmCode) {
-          setIsNcmLoading(true)
-          searchNcm(product.ncmCode)
-            .then((results) => {
-              const match = results.find((n) => n.code === product.ncmCode)
-              setSelectedNcm((current) =>
-                current?.code === product.ncmCode
-                  ? { code: product.ncmCode, description: match?.description ?? '' }
-                  : current,
-              )
-            })
-            .catch(() => {
-              setSelectedNcm((current) =>
-                current?.code === product.ncmCode
-                  ? { code: product.ncmCode, description: '' }
-                  : current,
-              )
-            })
-            .finally(() => setIsNcmLoading(false))
-        }
+        setSelectedNcm({
+          code: product.ncmCode,
+          description: product.ncmDescription,
+          status: product.ncmStatus,
+        })
       } else {
         setValues(emptyForm)
       }
     }
-  }, [open, product])
+  }, [open, product, taxRegime])
 
   function updateField<K extends keyof ProductInput>(field: K, value: ProductInput[K]) {
     setValues((prev) => ({ ...prev, [field]: value }))
@@ -251,6 +287,12 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
     const validationErrors = validateProduct(values)
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
+      const firstInvalid = (['name', 'sku', 'ncmCode', 'unitPrice'] as const).find(
+        (field) => validationErrors[field],
+      )
+      if (firstInvalid) {
+        requestAnimationFrame(() => document.getElementById(firstInvalid)?.focus())
+      }
       return
     }
 
@@ -269,6 +311,7 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
       } else {
         setApiError('Ocorreu um erro inesperado. Tente novamente.')
       }
+      requestAnimationFrame(() => errorSummaryRef.current?.focus())
     } finally {
       setIsSubmitting(false)
     }
@@ -280,7 +323,8 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
         showCloseButton={false}
         className="rounded-none border border-[#27272a] bg-[#18181b] p-0 text-[#fafafa] sm:max-w-md"
       >
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate aria-busy={isSubmitting}>
+          <AsyncStatus message={isSubmitting ? 'Salvando produto.' : ''} />
           <DialogHeader className="border-b border-[#27272a] p-4">
             <DialogTitle className="text-sm font-medium text-[#fafafa]">
               {isEditing ? 'Editar Produto' : 'Novo Produto'}
@@ -293,10 +337,25 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
           </DialogHeader>
 
           <div className="space-y-4 p-4">
-            {apiError && (
-              <p className="rounded-none border border-[#f87171]/30 bg-[#f87171]/10 p-2 text-xs text-[#f87171]">
-                {apiError}
-              </p>
+            {(apiError || Object.keys(errors).length > 0) && (
+              <div
+                ref={errorSummaryRef}
+                tabIndex={-1}
+                role="alert"
+                className="rounded-none border border-[#f87171]/30 bg-[#f87171]/10 p-3 text-xs text-[#f87171] outline-none focus:ring-2 focus:ring-[#fca5a5]"
+              >
+                <p className="font-medium">Revise os campos do produto:</p>
+                <ul className="mt-1 list-disc pl-5">
+                  {apiError && <li>{apiError}</li>}
+                  {(['name', 'sku', 'ncmCode', 'unitPrice'] as const).map((field) =>
+                    errors[field] ? (
+                      <li key={field}>
+                        <a href={`#${field}`}>{errors[field]}</a>
+                      </li>
+                    ) : null,
+                  )}
+                </ul>
+              </div>
             )}
 
             <div className="space-y-2">
@@ -309,8 +368,14 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
                 onChange={(event) => updateField('name', event.target.value)}
                 placeholder="Ex: Notebook Dell"
                 variant={errors.name ? 'error' : 'default'}
+                aria-invalid={Boolean(errors.name) || undefined}
+                aria-describedby={errors.name ? 'name-error' : undefined}
               />
-              {errors.name && <p className="text-xs text-[#f87171]">{errors.name}</p>}
+              {errors.name && (
+                <p id="name-error" className="text-xs text-[#f87171]">
+                  {errors.name}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -323,17 +388,25 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
                 onChange={(event) => updateField('sku', event.target.value)}
                 placeholder="Ex: NB-DELL-001"
                 variant={errors.sku ? 'error' : 'default'}
+                aria-invalid={Boolean(errors.sku) || undefined}
+                aria-describedby={errors.sku ? 'sku-error' : undefined}
               />
-              {errors.sku && <p className="text-xs text-[#f87171]">{errors.sku}</p>}
+              {errors.sku && (
+                <p id="sku-error" className="text-xs text-[#f87171]">
+                  {errors.sku}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="ncmCode" className="text-xs text-[#a1a1aa]">
                 Código NCM
               </Label>
-              {isNcmLoading && <p className="text-xs text-[#71717a]">Carregando NCM...</p>}
               <NcmSearch
+                taxRegime={taxRegime}
                 selectedNcm={selectedNcm}
+                invalid={Boolean(errors.ncmCode)}
+                describedBy={errors.ncmCode ? 'ncmCode-error' : undefined}
                 onSelect={(ncm) => {
                   setSelectedNcm(ncm)
                   updateField('ncmCode', ncm?.code ?? '')
@@ -345,7 +418,11 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
                   }
                 }}
               />
-              {errors.ncmCode && <p className="text-xs text-[#f87171]">{errors.ncmCode}</p>}
+              {errors.ncmCode && (
+                <p id="ncmCode-error" className="text-xs text-[#f87171]">
+                  {errors.ncmCode}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -358,9 +435,15 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
                 onChange={(event) => updateField('unitPrice', currencyToRaw(event.target.value))}
                 inputMode="decimal"
                 variant={errors.unitPrice ? 'error' : 'default'}
+                aria-invalid={Boolean(errors.unitPrice) || undefined}
+                aria-describedby={errors.unitPrice ? 'unitPrice-error' : undefined}
                 className="font-numbers"
               />
-              {errors.unitPrice && <p className="text-xs text-[#f87171]">{errors.unitPrice}</p>}
+              {errors.unitPrice && (
+                <p id="unitPrice-error" className="text-xs text-[#f87171]">
+                  {errors.unitPrice}
+                </p>
+              )}
             </div>
           </div>
 
@@ -388,8 +471,10 @@ function ProductModal({ product, open, onOpenChange, onSuccess }: ProductModalPr
 }
 
 export default function ProductsPage() {
+  const { company } = useAuth()
   const [products, setProducts] = useState<Product[]>([])
   const [pagination, setPagination] = useState<ProductListResponse['pagination'] | null>(null)
+  const [ncmCatalogVersion, setNcmCatalogVersion] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [listError, setListError] = useState<string | null>(null)
   const [searchInput, setSearchInput] = useState('')
@@ -397,7 +482,8 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null)
-  const confirmationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [statusMessage, setStatusMessage] = useState('')
+  const afterLoadMessageRef = useRef<string | null>(null)
 
   const [query, setQuery] = useState<ProductQuery>({
     search: '',
@@ -415,10 +501,17 @@ export default function ProductsPage() {
           .then((response) => {
             setProducts(response.data)
             setPagination(response.pagination)
+            setNcmCatalogVersion(response.metadata.ncmCatalogVersion)
+            setStatusMessage(
+              afterLoadMessageRef.current ??
+                `${response.data.length} ${response.data.length === 1 ? 'produto carregado' : 'produtos carregados'}.`,
+            )
+            afterLoadMessageRef.current = null
           })
           .catch((error) => {
             setProducts([])
             setPagination(null)
+            setNcmCatalogVersion(null)
             setListError(error instanceof Error ? error.message : 'Erro ao carregar produtos.')
           })
           .finally(() => setIsLoading(false))
@@ -430,12 +523,20 @@ export default function ProductsPage() {
   }, [query])
 
   useEffect(() => {
-    return () => {
-      if (confirmationTimerRef.current) {
-        clearTimeout(confirmationTimerRef.current)
+    if (!confirmingDeleteId) return
+
+    function cancelOnOutsideClick(event: PointerEvent) {
+      const target = event.target
+      if (target instanceof Element && target.closest(`[data-delete-id="${confirmingDeleteId}"]`)) {
+        return
       }
+      setConfirmingDeleteId(null)
+      setStatusMessage('Exclusão de produto cancelada.')
     }
-  }, [])
+
+    document.addEventListener('pointerdown', cancelOnOutsideClick)
+    return () => document.removeEventListener('pointerdown', cancelOnOutsideClick)
+  }, [confirmingDeleteId])
 
   function handleSearchChange(value: string) {
     setSearchInput(value)
@@ -446,7 +547,8 @@ export default function ProductsPage() {
     setQuery((current) => ({ ...current, page: nextPage, immediate: true }))
   }
 
-  function refreshList() {
+  function refreshList(completionMessage?: string) {
+    afterLoadMessageRef.current = completionMessage ?? null
     setQuery((current) => ({ ...current, immediate: true }))
   }
 
@@ -469,33 +571,24 @@ export default function ProductsPage() {
 
   function handleDeleteClick(product: Product) {
     if (confirmingDeleteId === product.id) {
-      performDelete(product.id)
+      performDelete(product)
       return
     }
 
     setConfirmingDeleteId(product.id)
-
-    if (confirmationTimerRef.current) {
-      clearTimeout(confirmationTimerRef.current)
-    }
-
-    confirmationTimerRef.current = setTimeout(() => {
-      setConfirmingDeleteId((current) => (current === product.id ? null : current))
-    }, 2000)
+    setStatusMessage(`Confirme a exclusão do produto ${product.name}.`)
   }
 
-  async function performDelete(id: string) {
-    if (confirmationTimerRef.current) {
-      clearTimeout(confirmationTimerRef.current)
-    }
+  async function performDelete(product: Product) {
     setConfirmingDeleteId(null)
-    setIsDeletingId(id)
+    setIsDeletingId(product.id)
     try {
-      await deleteProduct(id)
+      await deleteProduct(product.id)
       if (products.length === 1 && pagination && pagination.page > 1) {
+        afterLoadMessageRef.current = `Produto ${product.name} excluído.`
         handlePageChange(pagination.page - 1)
       } else {
-        refreshList()
+        refreshList(`Produto ${product.name} excluído.`)
       }
     } catch (error) {
       setListError(error instanceof Error ? error.message : 'Erro ao excluir produto.')
@@ -516,6 +609,9 @@ export default function ProductsPage() {
 
   return (
     <div data-tour="products" className="space-y-4">
+      <AsyncStatus
+        message={isLoading ? 'Carregando produtos.' : statusMessage}
+      />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -528,6 +624,11 @@ export default function ProductsPage() {
           <p className="mt-1 text-sm text-[#a1a1aa]">
             Gerencie o catálogo de produtos e suas informações tributárias.
           </p>
+          {ncmCatalogVersion && (
+            <p className="mt-1 text-xs text-[#71717a]">
+              Catálogo NCM: versão {ncmCatalogVersion.split('-').reverse().join('/')}
+            </p>
+          )}
         </div>
         <Button
           onClick={handleOpenCreate}
@@ -544,19 +645,23 @@ export default function ProductsPage() {
         transition={{ duration: 0.4, ease: 'easeOut', delay: 0.1 }}
         style={{ willChange: 'transform, opacity' }}
         className="rounded-none border border-[#27272a] bg-[#18181b] p-5"
+        aria-busy={isLoading}
       >
         <div className="mb-4">
           <Input
             value={searchInput}
             onChange={(event) => handleSearchChange(event.target.value)}
             placeholder="Buscar por nome ou SKU..."
-            startIcon={<Search className="h-4 w-4 text-[#71717a]" />}
-            className="rounded-none border-[#27272a] bg-[#09090b] text-[#fafafa] placeholder:text-[#71717a] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
+            startIcon={<Search className="h-4 w-4 text-[#a1a1aa]" />}
+            className="rounded-none border-[#27272a] bg-[#09090b] text-[#fafafa] placeholder:text-[#a1a1aa] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
           />
         </div>
 
         {listError && (
-          <div className="mb-4 rounded-none border border-[#f87171]/30 bg-[#f87171]/10 p-3 text-xs text-[#f87171]">
+          <div
+            role="alert"
+            className="mb-4 rounded-none border border-[#f87171]/30 bg-[#f87171]/10 p-3 text-xs text-[#f87171]"
+          >
             {listError}
           </div>
         )}
@@ -589,7 +694,7 @@ export default function ProductsPage() {
                 <TableRow className="border-[#27272a] hover:bg-transparent">
                   <TableCell colSpan={5} className="py-12 text-center">
                     <p className="text-sm text-[#a1a1aa]">Nenhum produto encontrado.</p>
-                    <p className="mt-1 text-xs text-[#71717a]">
+                    <p className="mt-1 text-xs text-[#a1a1aa]">
                       Cadastre um novo produto ou ajuste os filtros de busca.
                     </p>
                   </TableCell>
@@ -609,22 +714,17 @@ export default function ProductsPage() {
                       {product.sku}
                     </TableCell>
                     <TableCell className="font-numbers text-sm">
-                      <span
-                        className={
-                          /^\d{8}$/.test(product.ncmCode) ? 'text-[#a1a1aa]' : 'text-[#facc15]'
-                        }
-                      >
-                        {product.ncmCode}
-                      </span>
-                      {!/^\d{8}$/.test(product.ncmCode) && (
-                        <span className="ml-1 text-xs text-[#facc15]">⚠ inválido</span>
-                      )}
+                      <span className="text-[#a1a1aa]">{product.ncmCode}</span>
+                      <NcmStatus status={product.ncmStatus} className="mt-1 font-sans" />
                     </TableCell>
                     <TableCell className="text-right font-numbers text-sm text-[#fafafa]">
                       {formatCurrency(product.unitPrice)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div
+                        className="flex items-center justify-end gap-2"
+                        data-delete-id={product.id}
+                      >
                         <Button
                           type="button"
                           variant="ghost"
@@ -641,6 +741,11 @@ export default function ProductsPage() {
                           size="sm"
                           disabled={isDeletingId === product.id}
                           onClick={() => handleDeleteClick(product)}
+                          aria-label={
+                            confirmingDeleteId === product.id
+                              ? `Confirmar exclusão do produto ${product.name}`
+                              : `Excluir produto ${product.name}`
+                          }
                           className="rounded-none border border-transparent px-2 text-xs text-[#f87171] hover:border-[#f87171]/20 hover:bg-[#f87171]/10 hover:text-[#f87171] disabled:opacity-50"
                         >
                           {confirmingDeleteId === product.id ? (
@@ -654,6 +759,20 @@ export default function ProductsPage() {
                             </>
                           )}
                         </Button>
+                        {confirmingDeleteId === product.id && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setConfirmingDeleteId(null)
+                              setStatusMessage('Exclusão de produto cancelada.')
+                            }}
+                            className="rounded-none px-2 text-xs text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#fafafa]"
+                          >
+                            Cancelar
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </motion.tr>
@@ -665,7 +784,7 @@ export default function ProductsPage() {
 
         {pagination && pagination.totalPages > 1 && (
           <div className="mt-4 flex items-center justify-between border-t border-[#27272a] pt-4">
-            <p className="text-xs text-[#71717a]">
+            <p className="text-xs text-[#a1a1aa]">
               Página {pagination.page} de {pagination.totalPages}
             </p>
             <div className="flex items-center gap-2">
@@ -693,10 +812,13 @@ export default function ProductsPage() {
       </motion.div>
 
       <ProductModal
+        taxRegime={company?.taxRegime ?? null}
         product={editingProduct}
         open={isModalOpen}
         onOpenChange={handleCloseModal}
-        onSuccess={refreshList}
+        onSuccess={() =>
+          refreshList(editingProduct ? 'Produto atualizado com sucesso.' : 'Produto cadastrado com sucesso.')
+        }
       />
     </div>
   )

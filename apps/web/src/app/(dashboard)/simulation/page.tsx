@@ -5,7 +5,9 @@ import { SimulationForm, type SimulationFormItem } from '@/components/simulation
 import { TaxComparison } from '@/components/simulation/tax-comparison'
 import { ProjectedImpact } from '@/components/simulation/projected-impact'
 import { useAuth } from '@/components/auth/auth-provider'
+import { AsyncStatus } from '@/components/ui/async-status'
 import { simulateSales, ApiError } from '@/lib/api'
+import { extractNcmServerIssues, type NcmServerIssue } from '@/lib/ncm-eligibility'
 import type { SimulationResponse } from '@/lib/simulation.types'
 
 function SkeletonBlock({ className }: { className?: string }) {
@@ -14,6 +16,10 @@ function SkeletonBlock({ className }: { className?: string }) {
 
 function getSimulationErrorMessage(err: unknown): string {
   if (err instanceof ApiError) {
+    if (err.code === 'TAX_CONFIGURATION_UNAVAILABLE') {
+      return 'A configuração fiscal está temporariamente indisponível. Tente novamente mais tarde.'
+    }
+
     if (err.status === 503) {
       return 'Calculadora tributária indisponível. Tente novamente.'
     }
@@ -37,11 +43,13 @@ export default function SimulationPage() {
   const [simulation, setSimulation] = useState<SimulationResponse | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [ncmIssues, setNcmIssues] = useState<NcmServerIssue[]>([])
 
   async function handleSimulate(items: SimulationFormItem[]) {
     if (!company) return
 
     setError(null)
+    setNcmIssues([])
     setIsSubmitting(true)
 
     try {
@@ -68,7 +76,9 @@ export default function SimulationPage() {
       setSimulation(result)
     } catch (err) {
       setSimulation(null)
-      setError(getSimulationErrorMessage(err))
+      const issues = err instanceof ApiError ? extractNcmServerIssues(err.details) : []
+      setNcmIssues(issues)
+      setError(issues.length > 0 ? null : getSimulationErrorMessage(err))
     } finally {
       setIsSubmitting(false)
     }
@@ -76,7 +86,8 @@ export default function SimulationPage() {
 
   if (isLoading || !company) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6" aria-busy="true">
+        <AsyncStatus message="Carregando dados da empresa para a simulação." />
         <div>
           <SkeletonBlock className="h-6 w-40" />
           <SkeletonBlock className="mt-2 h-4 w-72" />
@@ -97,7 +108,16 @@ export default function SimulationPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" aria-busy={isSubmitting}>
+      <AsyncStatus
+        message={
+          isSubmitting
+            ? 'Calculando a simulação.'
+            : simulation
+              ? 'Simulação concluída. O comparativo tributário está disponível.'
+              : ''
+        }
+      />
       <div>
         <h1 className="text-xl font-semibold text-[#fafafa]">Simulação</h1>
         <p className="mt-1 text-sm text-[#a1a1aa]">
@@ -109,11 +129,16 @@ export default function SimulationPage() {
         taxRegime={company.taxRegime}
         isLoadingCompany={isLoading}
         isSubmitting={isSubmitting}
+        serverIssues={ncmIssues}
+        onClearServerIssues={() => setNcmIssues([])}
         onSubmit={handleSimulate}
       />
 
       {error && (
-        <div className="rounded-none border border-red-900/50 bg-red-900/10 p-4 text-sm text-red-400">
+        <div
+          role="alert"
+          className="rounded-none border border-red-900/50 bg-red-900/10 p-4 text-sm text-red-400"
+        >
           {error}
         </div>
       )}
@@ -132,7 +157,7 @@ export default function SimulationPage() {
             <p className="text-sm font-medium text-[#a1a1aa]">
               O comparativo tributário aparecerá aqui.
             </p>
-            <p className="mt-1 text-xs text-[#71717a]">
+            <p className="mt-1 text-xs text-[#a1a1aa]">
               Preencha os itens acima e calcule a simulação para comparar o regime atual com o IVA
               Dual.
             </p>

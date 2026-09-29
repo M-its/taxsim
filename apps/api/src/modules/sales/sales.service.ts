@@ -16,11 +16,7 @@ import type {
   SaleResponse,
   SimulationResponse,
 } from './sales.types.js'
-
-function ncmValidityDate(): Date {
-  const now = new Date()
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
-}
+import { ncmValidityDate } from './ncm-validity-date.js'
 
 async function getProductsWithRules(productIds: string[], companyId: string, taxRegime: string) {
   const uniqueProductIds = [...new Set(productIds)]
@@ -38,13 +34,17 @@ async function getProductsWithRules(productIds: string[], companyId: string, tax
   const ncmCodes = [...new Set(products.map((p) => p.ncmCode))]
   const eligibilityDate = ncmValidityDate()
 
-  const [taxRules, currentNcms] = await Promise.all([
+  const [taxRules, catalogNcms, currentNcms] = await Promise.all([
     prisma.taxRule.findMany({
       where: {
         ncmCode: { in: ncmCodes },
         taxRegime: taxRegime as 'SIMPLES_NACIONAL' | 'LUCRO_PRESUMIDO' | 'LUCRO_REAL',
         status: 'ACTIVE',
       },
+    }),
+    prisma.ncmCatalog.findMany({
+      where: { code: { in: ncmCodes } },
+      select: { code: true },
     }),
     prisma.ncmCatalog.findMany({
       where: {
@@ -62,6 +62,7 @@ async function getProductsWithRules(productIds: string[], companyId: string, tax
       if (!product) throw AppError.notFound('Product not found')
       return { ncmCode: product.ncmCode }
     }),
+    catalogNcmCodes: catalogNcms.map((ncm) => ncm.code),
     currentNcmCodes: currentNcms.map((ncm) => ncm.code),
     taxRules,
     taxRegime,
@@ -351,9 +352,8 @@ export const createSale = async (
       logger,
     )
 
-    const totalAmount = products.reduce((sum, product) => {
-      const item = input.items.find((i) => i.productId === product.id)
-      return sum.plus(product.unitPrice.mul(item?.quantity ?? 0))
+    const totalAmount = enrichedItems.reduce((sum, item) => {
+      return sum.plus(new Decimal(item.unitPrice).mul(item.quantity))
     }, new Decimal(0))
 
     const { currentModel, reformModel, delta, breakdown } = mergeResults(
@@ -376,9 +376,9 @@ export const createSale = async (
         totalIs: new Decimal(reformModel.totalIs),
         items: {
           create: breakdown.map((b, i) => {
-            const product = products.find((p) => p.ncmCode === b.ncmCode)
+            const sourceItem = enrichedItems[i]
             return {
-              productId: product?.id ?? '',
+              productId: sourceItem.productId,
               quantity: b.quantity,
               unitPrice: new Decimal(b.unitPrice),
               ncmCode: b.ncmCode,
@@ -406,7 +406,9 @@ export const createSale = async (
       throw AppError.unprocessable(`No active tax rule for NCM ${error.ncmCode}`)
     }
     if (error instanceof TaxCalculatorUnavailableError) {
-      throw AppError.unprocessable('Tax calculator service unavailable')
+      throw AppError.unprocessable('Tax calculator service unavailable', {
+        reason: error.reason,
+      })
     }
     throw error
   }
@@ -420,13 +422,17 @@ export const simulateTax = async (
 
   const ncmCodes = [...new Set(items.map((item) => item.ncmCode))]
   const eligibilityDate = ncmValidityDate()
-  const [taxRules, currentNcms] = await Promise.all([
+  const [taxRules, catalogNcms, currentNcms] = await Promise.all([
     prisma.taxRule.findMany({
       where: {
         ncmCode: { in: ncmCodes },
         taxRegime: input.taxRegime as 'SIMPLES_NACIONAL' | 'LUCRO_PRESUMIDO' | 'LUCRO_REAL',
         status: 'ACTIVE',
       },
+    }),
+    prisma.ncmCatalog.findMany({
+      where: { code: { in: ncmCodes } },
+      select: { code: true },
     }),
     prisma.ncmCatalog.findMany({
       where: {
@@ -440,6 +446,7 @@ export const simulateTax = async (
 
   assertTaxItemsEligible({
     items,
+    catalogNcmCodes: catalogNcms.map((ncm) => ncm.code),
     currentNcmCodes: currentNcms.map((ncm) => ncm.code),
     taxRules,
     taxRegime: input.taxRegime,
@@ -558,7 +565,9 @@ export const simulateTax = async (
       )
     }
     if (error instanceof TaxCalculatorUnavailableError) {
-      throw AppError.unprocessable('Tax calculator service unavailable')
+      throw AppError.unprocessable('Tax calculator service unavailable', {
+        reason: error.reason,
+      })
     }
     throw error
   }

@@ -14,6 +14,7 @@ describe('assertTaxItemsEligible', () => {
     expect(() =>
       assertTaxItemsEligible({
         items: [{ ncmCode: '85171300' }],
+        catalogNcmCodes: ['85171300'],
         currentNcmCodes: ['85171300'],
         taxRules: [activeRule],
         taxRegime: 'LUCRO_REAL',
@@ -25,6 +26,7 @@ describe('assertTaxItemsEligible', () => {
     try {
       assertTaxItemsEligible({
         items: [{ ncmCode: '85171300' }, { ncmCode: '85171200' }, { ncmCode: '99999999' }],
+        catalogNcmCodes: ['85171300', '85171200'],
         currentNcmCodes: ['85171300'],
         taxRules: [activeRule],
         taxRegime: 'LUCRO_REAL',
@@ -40,14 +42,14 @@ describe('assertTaxItemsEligible', () => {
             {
               itemIndex: 1,
               ncmCode: '85171200',
-              reason: 'NCM_NOT_ELIGIBLE',
+              reason: 'NCM_NOT_CURRENT',
               details: 'NCM não é terminal vigente',
             },
             {
               itemIndex: 2,
               ncmCode: '99999999',
-              reason: 'NCM_NOT_ELIGIBLE',
-              details: 'NCM não é terminal vigente',
+              reason: 'NCM_NOT_FOUND',
+              details: 'NCM não encontrado no catálogo',
             },
           ],
         },
@@ -59,6 +61,7 @@ describe('assertTaxItemsEligible', () => {
     expect(() =>
       assertTaxItemsEligible({
         items: [{ ncmCode: '84715000' }],
+        catalogNcmCodes: ['84715000', '84715010'],
         currentNcmCodes: ['84715010'],
         taxRules: [],
         taxRegime: 'LUCRO_REAL',
@@ -70,7 +73,7 @@ describe('assertTaxItemsEligible', () => {
             {
               itemIndex: 0,
               ncmCode: '84715000',
-              reason: 'NCM_NOT_ELIGIBLE',
+              reason: 'NCM_NOT_CURRENT',
               details: 'NCM não é terminal vigente',
             },
           ],
@@ -83,6 +86,7 @@ describe('assertTaxItemsEligible', () => {
     expect(() =>
       assertTaxItemsEligible({
         items: [{ ncmCode: '00000000' }],
+        catalogNcmCodes: [],
         currentNcmCodes: [],
         taxRules: [],
         taxRegime: 'LUCRO_REAL',
@@ -94,7 +98,8 @@ describe('assertTaxItemsEligible', () => {
             expect.objectContaining({
               itemIndex: 0,
               ncmCode: '00000000',
-              details: 'NCM não é terminal vigente',
+              reason: 'NCM_NOT_FOUND',
+              details: 'NCM não encontrado no catálogo',
             }),
           ],
         },
@@ -106,6 +111,7 @@ describe('assertTaxItemsEligible', () => {
     expect(() =>
       assertTaxItemsEligible({
         items: [{ ncmCode: '85171300' }],
+        catalogNcmCodes: ['85171300'],
         currentNcmCodes: ['85171300'],
         taxRules: [],
         taxRegime: 'LUCRO_PRESUMIDO',
@@ -128,6 +134,7 @@ describe('assertTaxItemsEligible', () => {
     expect(() =>
       assertTaxItemsEligible({
         items: [{ ncmCode: '85171300' }],
+        catalogNcmCodes: ['85171300'],
         currentNcmCodes: ['85171300'],
         taxRules: [{ ...activeRule, status: 'ARCHIVED' }],
         taxRegime: 'LUCRO_REAL',
@@ -151,20 +158,16 @@ describe('assertTaxItemsEligible', () => {
     expect(() =>
       assertTaxItemsEligible({
         items: [{ ncmCode: '85171300' }],
+        catalogNcmCodes: ['85171300'],
         currentNcmCodes: ['85171300'],
         taxRules: [{ ...activeRule, cClassTrib: '' }],
         taxRegime: 'LUCRO_REAL',
       }),
     ).toThrowError(
       expect.objectContaining({
-        code: 'NCM_NOT_ELIGIBLE',
-        details: {
-          issues: [
-            expect.objectContaining({
-              details: 'Regra fiscal ativa sem CST ou cClassTrib válido para a calculadora externa',
-            }),
-          ],
-        },
+        code: 'TAX_CONFIGURATION_UNAVAILABLE',
+        statusCode: 503,
+        message: 'A configuração fiscal está temporariamente indisponível',
       }),
     )
   })
@@ -172,21 +175,16 @@ describe('assertTaxItemsEligible', () => {
     expect(() =>
       assertTaxItemsEligible({
         items: [{ ncmCode: '85171300' }],
+        catalogNcmCodes: ['85171300'],
         currentNcmCodes: ['85171300'],
         taxRules: [{ ...activeRule, cst: '' }],
         taxRegime: 'LUCRO_REAL',
       }),
     ).toThrowError(
       expect.objectContaining({
-        code: 'NCM_NOT_ELIGIBLE',
-        details: {
-          issues: [
-            expect.objectContaining({
-              itemIndex: 0,
-              details: 'Regra fiscal ativa sem CST ou cClassTrib válido para a calculadora externa',
-            }),
-          ],
-        },
+        code: 'TAX_CONFIGURATION_UNAVAILABLE',
+        statusCode: 503,
+        message: 'A configuração fiscal está temporariamente indisponível',
       }),
     )
   })

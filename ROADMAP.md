@@ -52,11 +52,11 @@ Dentro de cada prioridade, os itens estão na ordem recomendada. Um novo risco d
 
 ### 2. Melhorar seleção e diagnóstico de NCM na interface
 
-- [ ] Implementar autocomplete de NCM no modo de preenchimento manual.
-- [ ] Indicar se o NCM possui regra fiscal ativa para o regime da empresa.
-- [ ] Destacar diretamente cada produto ou linha que bloqueia a simulação.
-- [ ] Manter os itens preenchidos após o erro para permitir correção sem retrabalho.
-- [ ] Testar catálogo, modo manual e mensagens com múltiplos itens.
+- [x] Implementar autocomplete de NCM no modo de preenchimento manual.
+- [x] Indicar se o NCM possui regra fiscal ativa para o regime da empresa.
+- [x] Destacar diretamente cada produto ou linha que bloqueia a simulação.
+- [x] Manter os itens preenchidos após o erro para permitir correção sem retrabalho.
+- [x] Testar catálogo, modo manual e mensagens com múltiplos itens.
 
 ### 3. Atualizar CNPJ alfanumérico
 

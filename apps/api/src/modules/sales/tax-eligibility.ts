@@ -14,12 +14,13 @@ export interface TaxEligibilityRule {
 export interface TaxEligibilityIssue {
   itemIndex: number
   ncmCode: string
-  reason: 'NCM_NOT_ELIGIBLE'
+  reason: 'INVALID_FORMAT' | 'NCM_NOT_FOUND' | 'NCM_NOT_CURRENT' | 'NO_ACTIVE_RULE'
   details: string
 }
 
 interface AssertTaxItemsEligibleInput {
   items: TaxEligibilityItem[]
+  catalogNcmCodes: Iterable<string>
   currentNcmCodes: Iterable<string>
   taxRules: TaxEligibilityRule[]
   taxRegime: string
@@ -34,10 +35,12 @@ interface AssertTaxItemsEligibleInput {
  */
 export function assertTaxItemsEligible({
   items,
+  catalogNcmCodes,
   currentNcmCodes,
   taxRules,
   taxRegime,
 }: AssertTaxItemsEligibleInput): void {
+  const catalogCodes = new Set(catalogNcmCodes)
   const currentCodes = new Set(currentNcmCodes)
   const activeRules = new Map(
     taxRules
@@ -46,13 +49,34 @@ export function assertTaxItemsEligible({
   )
 
   const issues: TaxEligibilityIssue[] = []
+  let hasConfigurationFailure = false
 
   items.forEach((item, itemIndex) => {
+    if (!/^\d{8}$/.test(item.ncmCode)) {
+      issues.push({
+        itemIndex,
+        ncmCode: item.ncmCode,
+        reason: 'INVALID_FORMAT',
+        details: 'NCM deve conter exatamente 8 dígitos',
+      })
+      return
+    }
+
+    if (!catalogCodes.has(item.ncmCode)) {
+      issues.push({
+        itemIndex,
+        ncmCode: item.ncmCode,
+        reason: 'NCM_NOT_FOUND',
+        details: 'NCM não encontrado no catálogo',
+      })
+      return
+    }
+
     if (!currentCodes.has(item.ncmCode)) {
       issues.push({
         itemIndex,
         ncmCode: item.ncmCode,
-        reason: 'NCM_NOT_ELIGIBLE',
+        reason: 'NCM_NOT_CURRENT',
         details: 'NCM não é terminal vigente',
       })
       return
@@ -63,21 +87,24 @@ export function assertTaxItemsEligible({
       issues.push({
         itemIndex,
         ncmCode: item.ncmCode,
-        reason: 'NCM_NOT_ELIGIBLE',
+        reason: 'NO_ACTIVE_RULE',
         details: `Não existe regra fiscal ativa para o regime ${taxRegime}`,
       })
       return
     }
 
     if (!/^\d{3}$/.test(rule.cst) || !/^\d{6}$/.test(rule.cClassTrib)) {
-      issues.push({
-        itemIndex,
-        ncmCode: item.ncmCode,
-        reason: 'NCM_NOT_ELIGIBLE',
-        details: 'Regra fiscal ativa sem CST ou cClassTrib válido para a calculadora externa',
-      })
+      hasConfigurationFailure = true
     }
   })
+
+  if (hasConfigurationFailure) {
+    throw new AppError(
+      'TAX_CONFIGURATION_UNAVAILABLE',
+      'A configuração fiscal está temporariamente indisponível',
+      503,
+    )
+  }
 
   if (issues.length > 0) {
     const message =

@@ -3,6 +3,8 @@ export type Product = {
   name: string
   sku: string
   ncmCode: string
+  ncmStatus: import('./api').NcmEligibilityStatus
+  ncmDescription: string | null
   unitPrice: string
   createdAt: string
 }
@@ -21,5 +23,8 @@ export type ProductListResponse = {
     limit: number
     total: number
     totalPages: number
+  }
+  metadata: {
+    ncmCatalogVersion: string
   }
 }

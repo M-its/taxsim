@@ -6,6 +6,12 @@ const mocks = vi.hoisted(() => ({
   calculateCurrentModel: vi.fn(),
   buildOperacaoInput: vi.fn(),
   calculateReformModel: vi.fn(),
+  TaxCalculatorUnavailableError: class TaxCalculatorUnavailableError extends Error {
+    constructor(public readonly reason: string) {
+      super('Tax calculator service unavailable')
+      this.name = 'TaxCalculatorUnavailableError'
+    }
+  },
 }))
 
 vi.mock('../../lib/prisma.js', () => ({
@@ -22,6 +28,10 @@ vi.mock('../tax-engine/tax-engine.service.js', () => ({
 vi.mock('../tax-calculator/tax-calculator.client.js', () => ({
   buildOperacaoInput: mocks.buildOperacaoInput,
   calculateReformModel: mocks.calculateReformModel,
+}))
+
+vi.mock('../tax-calculator/tax-calculator.types.js', () => ({
+  TaxCalculatorUnavailableError: mocks.TaxCalculatorUnavailableError,
 }))
 
 import { simulateTax } from './sales.service.js'
@@ -108,5 +118,48 @@ describe('simulateTax - pre-calculator NCM eligibility', () => {
     })
     expect(mocks.calculateCurrentModel).not.toHaveBeenCalled()
     expect(mocks.calculateReformModel).not.toHaveBeenCalled()
+  })
+
+  it('propagates a technical timeout reason without reclassifying it as NCM_NOT_ELIGIBLE', async () => {
+    const decimal = (value: string) => ({ toFixed: () => value })
+    mocks.taxRuleFindMany.mockResolvedValue([
+      {
+        ncmCode: '84713012',
+        status: 'ACTIVE',
+        cst: '000',
+        cClassTrib: '000001',
+        pisRate: decimal('0.0165'),
+        cofinsRate: decimal('0.0760'),
+        icmsRate: decimal('0.1800'),
+        issRate: decimal('0.0000'),
+      },
+    ])
+    mocks.ncmCatalogFindMany.mockResolvedValue([{ code: '84713012' }])
+    mocks.calculateCurrentModel.mockReturnValue({
+      items: [],
+      totals: {
+        pis: '0.00',
+        cofins: '0.00',
+        icms: '0.00',
+        iss: '0.00',
+        totalTax: '0.00',
+        effectiveRate: '0.0000',
+      },
+    })
+    mocks.buildOperacaoInput.mockReturnValue({ itens: [] })
+    mocks.calculateReformModel.mockRejectedValue(
+      new mocks.TaxCalculatorUnavailableError('TIMEOUT'),
+    )
+
+    await expect(
+      simulateTax({
+        taxRegime: 'LUCRO_REAL',
+        items: [{ ncmCode: '84713012', quantity: 1, unitPrice: '100.00' }],
+      }),
+    ).rejects.toMatchObject({
+      code: 'UNPROCESSABLE_ENTITY',
+      message: 'Tax calculator service unavailable',
+      details: { reason: 'TIMEOUT' },
+    })
   })
 })

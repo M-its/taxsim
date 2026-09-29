@@ -26,7 +26,7 @@ export const simulateSchema = z.object({
   items: z
     .array(
       z.object({
-        ncmCode: z.string().length(8, 'NCM code must be exactly 8 characters'),
+        ncmCode: z.string().regex(/^\d{8}$/, 'NCM code must contain exactly 8 digits'),
         quantity: z.number().int().min(1, 'Quantity must be at least 1').max(MAX_QUANTITY_PER_ITEM),
         unitPrice: monetaryStringSchema,
       }),

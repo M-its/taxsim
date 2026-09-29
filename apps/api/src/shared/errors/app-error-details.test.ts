@@ -14,7 +14,7 @@ describe('errorHandlerPlugin - structured AppError details', () => {
             {
               itemIndex: 2,
               ncmCode: '85171200',
-              reason: 'NCM_NOT_ELIGIBLE',
+              reason: 'NCM_NOT_CURRENT',
               details: 'NCM não é terminal vigente',
             },
           ],
@@ -35,7 +35,7 @@ describe('errorHandlerPlugin - structured AppError details', () => {
             {
               itemIndex: 2,
               ncmCode: '85171200',
-              reason: 'NCM_NOT_ELIGIBLE',
+              reason: 'NCM_NOT_CURRENT',
               details: 'NCM não é terminal vigente',
             },
           ],

@@ -28,6 +28,22 @@ describe('simulateSchema - proteção contra exponentes e amplificação (Findin
     expect(result.success).toBe(false)
   })
 
+  it.each(['0', '0.00', '-1.00'])('rejeita preço zero ou negativo: %s', (unitPrice) => {
+    const result = simulateSchema.safeParse({
+      taxRegime: 'LUCRO_REAL',
+      items: [{ ...baseItem, unitPrice }],
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it('aceita os limites máximos de quantidade, valor e duas casas decimais', () => {
+    const result = simulateSchema.safeParse({
+      taxRegime: 'LUCRO_REAL',
+      items: [{ ...baseItem, quantity: 10_000, unitPrice: '999999999.99' }],
+    })
+    expect(result.success).toBe(true)
+  })
+
   it('rejeita mais de 100 itens no array', () => {
     const items = Array.from({ length: 101 }, () => ({ ...baseItem, unitPrice: '10.00' }))
     const result = simulateSchema.safeParse({ taxRegime: 'LUCRO_REAL', items })

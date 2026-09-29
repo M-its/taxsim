@@ -1,4 +1,4 @@
-import type { LoginInput, RegisterInput, User, Company } from './auth.types'
+import type { LoginInput, RegisterInput, User, Company, TaxRegime } from './auth.types'
 import type { Product, ProductInput, ProductListResponse } from './product.types'
 import type { Client, ClientInput, ClientListResponse } from './client.types'
 import type { SimulationRequest, SimulationResponse } from './simulation.types'
@@ -25,23 +25,26 @@ export function onAuthFailure(callback: () => void): void {
 export class ApiError extends Error {
   code: string
   status: number
+  details?: unknown
 
-  constructor(status: number, code: string, message: string) {
+  constructor(status: number, code: string, message: string, details?: unknown) {
     super(message)
     this.status = status
     this.code = code
+    this.details = details
   }
 }
 
 async function parseError(response: Response): Promise<ApiError> {
   try {
     const body = (await response.json()) as {
-      error?: { code?: string; message?: string }
+      error?: { code?: string; message?: string; details?: unknown }
     }
     return new ApiError(
       response.status,
       body.error?.code ?? 'UNKNOWN_ERROR',
       body.error?.message ?? response.statusText,
+      body.error?.details,
     )
   } catch {
     return new ApiError(response.status, 'UNKNOWN_ERROR', response.statusText)
@@ -72,10 +75,7 @@ async function refreshAccessToken(): Promise<string> {
   return refreshPromise
 }
 
-export async function apiFetch(
-  input: string,
-  init?: RequestInit,
-): Promise<Response> {
+export async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
   const url = `${API_BASE_URL}${input}`
   const headers = new Headers(init?.headers)
 
@@ -166,18 +166,35 @@ export type UpdateCompanyInput = {
 export type NcmResult = {
   code: string
   description: string
+  status: Extract<NcmEligibilityStatus, 'ELIGIBLE' | 'NO_ACTIVE_RULE' | 'CONFIGURATION_UNAVAILABLE'>
 }
 
-export async function updateCompany(
-  id: string,
-  data: UpdateCompanyInput,
-): Promise<Company> {
+export type NcmEligibilityStatus =
+  | 'ELIGIBLE'
+  | 'INVALID_FORMAT'
+  | 'NOT_FOUND'
+  | 'NOT_CURRENT'
+  | 'NO_ACTIVE_RULE'
+  | 'CONFIGURATION_UNAVAILABLE'
+  | 'UNVERIFIED'
+
+export type NcmDiagnosis = {
+  code: string
+  description: string | null
+  status: NcmEligibilityStatus
+}
+
+export async function updateCompany(id: string, data: UpdateCompanyInput): Promise<Company> {
   return apiPatch<Company>(`/companies/${id}`, data)
 }
 
-export async function searchNcm(q: string): Promise<NcmResult[]> {
-  const query = new URLSearchParams({ q })
+export async function searchNcm(q: string, taxRegime: TaxRegime): Promise<NcmResult[]> {
+  const query = new URLSearchParams({ q, taxRegime })
   return apiGet<NcmResult[]>(`/ncm/search?${query.toString()}`)
+}
+
+export async function diagnoseNcms(codes: string[], taxRegime: TaxRegime): Promise<NcmDiagnosis[]> {
+  return apiPost<NcmDiagnosis[]>('/ncm/diagnose', { codes, taxRegime })
 }
 
 export type Municipality = {
@@ -202,10 +219,7 @@ export async function register(input: RegisterInput): Promise<{
   company: Company
   accessToken: string
 }> {
-  return apiPost<{ user: User; company: Company; accessToken: string }>(
-    '/auth/register',
-    input,
-  )
+  return apiPost<{ user: User; company: Company; accessToken: string }>('/auth/register', input)
 }
 
 export async function logout(): Promise<void> {
