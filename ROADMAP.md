@@ -68,16 +68,19 @@ Dentro de cada prioridade, os itens estão na ordem recomendada. Um novo risco d
 
 ### 4. Estabelecer baseline WCAG 2.2 AA
 
-- [ ] Adicionar “Pular para o conteúdo” e destino estável no `<main>`.
-- [ ] Auditar landmarks, headings e títulos de página.
-- [ ] Garantir nome acessível em botões de ícone e controles compactos.
-- [ ] Associar erros e ajuda aos campos com `aria-describedby` e `aria-invalid`.
-- [ ] Anunciar falhas, confirmações e carregamentos relevantes com `aria-live`, sem duplicidade.
+- [x] Adicionar “Pular para o conteúdo” e destino estável no `<main>`.
+- [x] Auditar landmarks, headings e títulos de página.
+- [x] Garantir nome acessível em botões de ícone e controles compactos.
+- [x] Associar erros e ajuda aos campos com `aria-describedby` e `aria-invalid`.
+- [x] Anunciar falhas, confirmações e carregamentos relevantes com `aria-live`, sem duplicidade.
 - [ ] Garantir teclado em sidebar, menu, selects, dialogs e tour.
-- [ ] Manter foco visível e restaurá-lo ao fechar overlays.
-- [ ] Não comunicar status fiscal somente por cor.
-- [ ] Oferecer alternativa textual aos gráficos.
-- [ ] Respeitar `prefers-reduced-motion` em transições, gráficos e onboarding.
+- [x] Manter foco visível e restaurá-lo ao fechar overlays.
+- [x] Não comunicar status fiscal somente por cor.
+- [x] Oferecer alternativa textual aos gráficos.
+- [x] Respeitar `prefers-reduced-motion` em transições, gráficos e onboarding.
+
+**Validação manual ainda aberta:** teclado em Firefox, NVDA com Chromium,
+zoom a 200% e checagem dirigida a 400%.
 
 **Aceite:** login, cadastro, simulação, produtos, clientes e vendas podem ser concluídos por teclado e leitor de tela, sem violações críticas conhecidas.
 

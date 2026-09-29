@@ -123,3 +123,215 @@
 - Testes específicos cobrem CNPJ numérico, exemplos alfanuméricos oficiais,
   cálculo de DV, máscara progressiva, CPF numérico, busca canônica, mensagem
   pública genérica e preservação de documento legado inalterado.
+
+## 2026-09-25 — P1 #4: baseline WCAG 2.2 AA
+
+### 1. Sidebar recolhida e skip link — concluído
+
+- Foi adicionado o link **Pular para o conteúdo** como primeiro controle do
+  shell autenticado. Ele permanece visualmente oculto até receber foco e então
+  aparece com contraste e indicador de foco explícitos.
+- O `main` agora possui destino estável `main-content` e aceita foco
+  programático, permitindo ultrapassar topbar e navegação repetida.
+- Todos os links da sidebar mantêm nome acessível por `aria-label` quando o
+  texto visual é removido no estado recolhido.
+- A rota ativa passou a expor `aria-current="page"`; o link de Configurações foi
+  normalizado para `/settings`.
+
+Arquivos: `apps/web/src/components/layout/dashboard-shell.tsx`,
+`apps/web/src/components/layout/sidebar.tsx`.
+
+Validação: TypeScript e suíte Web serão executados cumulativamente ao final do
+próximo subitem e novamente no fechamento da rodada.
+
+### 2. Erros de formulários — concluído
+
+- Login e cadastro agora validam todos os campos de uma vez, exibem resumo no
+  topo com links para os controles, mantêm mensagens junto aos campos e usam
+  `aria-invalid`/`aria-describedby`.
+- Produtos e clientes receberam o mesmo padrão dentro dos dialogs, incluindo
+  anúncio de falhas da API e associação programática de cada mensagem.
+- A simulação mantém o resumo por quantidade de itens e agora também lista cada
+  erro com link para o controle correspondente; mensagens de produto, NCM,
+  preço e quantidade ficam junto ao respectivo campo.
+- No envio inválido, o foco é movido para o primeiro controle com erro segundo
+  a ordem visual. Falhas gerais da API levam o foco ao resumo; falhas de
+  documento retornam diretamente ao campo de documento.
+- Os formulários usam `noValidate` para evitar competição entre mensagens
+  nativas inconsistentes do navegador e o padrão acessível do produto.
+
+Arquivos: `apps/web/src/app/(auth)/login/page.tsx`,
+`apps/web/src/app/(auth)/register/page.tsx`,
+`apps/web/src/app/(dashboard)/products/page.tsx`,
+`apps/web/src/app/(dashboard)/customers/page.tsx`,
+`apps/web/src/components/simulation/simulation-form.tsx`.
+
+Validação: `tsc --noEmit` Web aprovado após as correções.
+
+### 3. Autocompletes — concluído
+
+- Os autocompletes de NCM no cadastro de produtos e no modo manual da
+  simulação, além da busca de produtos do catálogo na simulação, agora seguem
+  o padrão de `combobox` com `listbox` e opções identificadas.
+- Setas percorrem todas as opções com retorno circular; `Home` e `End` saltam
+  para os extremos, `Enter` seleciona e `Escape` fecha a lista. O foco permanece
+  no campo e a opção ativa é comunicada por `aria-activedescendant`.
+- As listas só são expostas como abertas enquanto estão disponíveis e o campo
+  está ativo. Clique nas opções não dispara indevidamente a validação de `blur`.
+- Quantidade de resultados, carregamento e falha de busca são anunciados por
+  região de status sem adicionar ruído visual. A elegibilidade continua visível
+  em cada opção de NCM e produto.
+- A lógica de teclado foi centralizada no hook compartilhado
+  `use-combobox-navigation`, evitando divergência entre os três usos.
+
+Arquivos: `apps/web/src/hooks/use-combobox-navigation.ts`,
+`apps/web/src/hooks/use-combobox-navigation.test.ts`,
+`apps/web/src/app/(dashboard)/products/page.tsx`,
+`apps/web/src/components/simulation/simulation-form.tsx`.
+
+Validação: `tsc --noEmit --incremental false` Web aprovado. O runner do host não
+iniciou porque o binding nativo opcional do Rolldown não corresponde ao WSL;
+na validação cumulativa pelo container Linux, o teste do hook e toda a suíte Web
+foram aprovados.
+
+### 4. Títulos, landmarks e headings — concluído
+
+- Cada rota auditada passou a ter título de documento próprio por metadata do
+  App Router, usando o padrão “Página | TaxSim” para login, cadastro, dashboard,
+  simulação, produtos, clientes, vendas e configurações.
+- Login e cadastro agora usam `main` e um `h1`; os estados globais 404/erro
+  também possuem landmark principal e hierarquia iniciada em `h1`.
+- Os blocos secundários da simulação, dashboard e configurações foram
+  normalizados para `h2`, removendo saltos de `h1` diretamente para `h3`.
+  `CardTitle` ganhou nível semântico configurável, mantendo `h3` como padrão
+  compatível para os demais usos.
+- Os dois gráficos do dashboard expõem alternativa textual acionável: tabela
+  mensal para carga tributária e lista percentual para composição. Os SVGs
+  puramente visuais foram ocultados da árvore de acessibilidade para evitar
+  duplicação e ruído.
+
+Arquivos: `apps/web/src/app/layout.tsx`, layouts de rota em
+`apps/web/src/app/(auth)/*/layout.tsx` e
+`apps/web/src/app/(dashboard)/*/layout.tsx`, páginas de login/cadastro,
+`apps/web/src/app/global-error.tsx`, `apps/web/src/app/not-found.tsx`,
+`apps/web/src/components/ui/card.tsx`, componentes de simulação e componentes
+de dashboard.
+
+Validação: `tsc --noEmit --incremental false` Web aprovado e varredura estática
+da hierarquia confirmou `h1` por página seguido de seções em `h2`.
+
+### 5. Estados assíncronos — concluído
+
+- Foi criado `AsyncStatus`, uma região compartilhada `role="status"` com
+  anúncio atômico, aplicada a login, cadastro, simulação, dashboard,
+  configurações, produtos, clientes e vendas. Carregamentos curtos são
+  anunciados sem inserir indicadores visuais adicionais.
+- Conclusão da simulação, carregamento de listas e detalhes, cadastro, edição,
+  exclusão, confirmação e cancelamento passam a produzir mensagens de status.
+  Contêineres relevantes também expõem `aria-busy` durante processamento.
+- Falhas visíveis de simulação, dashboard e listas foram marcadas como
+  `role="alert"`; os resumos de erro dos formulários já mantêm essa semântica.
+- As confirmações “Confirmar?” de produto, cliente e venda não possuem mais
+  timeout. Permanecem ativas até clique fora ou acionamento do botão explícito
+  de cancelamento, com anúncio e nome acessível contextual contendo o item ou a
+  operação afetada.
+- A mensagem de sucesso de Configurações também deixa de desaparecer por tempo:
+  permanece visível até nova edição ou novo envio.
+
+Arquivos: `apps/web/src/components/ui/async-status.tsx`, páginas de login,
+cadastro, simulação, dashboard, configurações, produtos, clientes e vendas,
+além de `apps/web/src/components/simulation/simulation-form.tsx`.
+
+Validação: `tsc --noEmit --incremental false` Web aprovado. Varredura estática
+confirmou a remoção dos timers de confirmação; os únicos textos
+“Confirmar?” restantes pertencem ao estado persistente deliberado dos botões.
+
+### 6. Drawer e foco — concluído
+
+- Em viewport móvel, a sidebar passa a ser exposta como dialog modal nomeado,
+  com backdrop visual aprovado e bloqueio de rolagem da página ao fundo.
+- Ao abrir, o restante do shell recebe `inert` e `aria-hidden`; o foco inicial é
+  movido para “Fechar menu” e `Tab`/`Shift+Tab` ficam contidos nos controles
+  visíveis do drawer.
+- `Escape`, o botão de fechar, o backdrop e a navegação para uma rota fecham o
+  drawer. Ao fechar sem navegar, o foco é restaurado ao botão “Abrir menu”.
+- O acionador expõe `aria-controls="app-sidebar"` e `aria-expanded`; o conteúdo
+  ao fundo deixa de participar da sequência de foco enquanto o drawer está
+  aberto.
+- A mudança entre breakpoints usa `matchMedia`, mantendo o comportamento de
+  sidebar expandida/recolhida no desktop separado do drawer móvel.
+
+Arquivos: `apps/web/src/components/layout/dashboard-shell.tsx`,
+`apps/web/src/components/layout/sidebar.tsx`,
+`apps/web/src/components/layout/topbar.tsx`.
+
+Validação automatizada: `tsc --noEmit --incremental false` Web aprovado. A
+validação de interação por teclado nos navegadores integra a matriz manual do
+fechamento da rodada.
+
+### 7. Movimento reduzido e moderados restantes — concluído
+
+- O app inteiro foi envolvido em `MotionConfig reducedMotion="user"`, fazendo
+  os componentes Framer Motion respeitarem a preferência do sistema.
+- A folha global reduz animações, transições e rolagem suave sob
+  `prefers-reduced-motion: reduce`, incluindo a pulsação dos skeletons. O tour
+  também desativa explicitamente animação e `smoothScroll` quando a preferência
+  está ativa.
+- O indicador global de `focus-visible` foi reforçado para controles
+  interativos com contorno esmeralda de 3 px e afastamento de 3 px, sem depender
+  somente de mudança sutil de borda ou cor.
+- O seletor “Produto do catálogo”/“NCM manual” está agrupado e cada botão expõe
+  `aria-pressed`; o grupo recebe nome por item.
+- O filtro de vendas ganhou label visual persistente, associado ao trigger por
+  `htmlFor`/`id`.
+- Os demais moderados do relatório foram absorvidos nos subitens anteriores:
+  landmarks/headings, estados de autenticação, operações de listas e
+  confirmações contextualizadas sem timeout.
+
+Arquivos: `apps/web/src/components/accessibility/motion-preferences.tsx`,
+`apps/web/src/app/layout.tsx`, `apps/web/src/app/globals.css`,
+`apps/web/src/components/onboarding/taxsim-tour.tsx`,
+`apps/web/src/components/simulation/simulation-form.tsx`,
+`apps/web/src/app/(dashboard)/sales/page.tsx`.
+
+Validação automatizada: `tsc --noEmit --incremental false` Web aprovado. A
+matriz manual de teclado, leitor de tela, viewport e zoom é registrada abaixo.
+
+### Validação cumulativa
+
+- TypeScript Web no container: aprovado, sem emissão de arquivos.
+- Vitest Web no container: **5 arquivos e 23 testes aprovados**, incluindo o
+  novo teste de navegação do autocomplete.
+- Build Next.js de produção: aprovado; 15 páginas geradas. Os artefatos
+  confirmam títulos próprios para as oito rotas auditadas.
+- `git diff --check` nos arquivos Web e neste log: aprovado.
+- Checagens estáticas mandatórias: zero ocorrências críticas no baseline, nenhum
+  timer de confirmação remanescente, implementação de movimento reduzido em
+  CSS/Framer/Driver.js e alternativa textual presente nos dois gráficos.
+- ESLint: não iniciou porque a instalação existente não contém
+  `@eslint/eslintrc`, embora `eslint.config.mjs` importe o pacote. O build
+  registrou o mesmo aviso e concluiu com sucesso; não houve diagnóstico de lint
+  contra o código desta rodada.
+
+### Matriz de validação manual
+
+- **Teclado — Chromium, desktop e móvel:** conhecido, não bloqueante; pendente.
+  A automação de navegador falhou ao inicializar duas vezes com
+  `failed to write kernel assets`, antes de abrir qualquer janela.
+- **Teclado — Firefox, desktop e móvel:** conhecido, não bloqueante; pendente.
+  Não há Firefox instalado ou sessão automatizável disponível neste ambiente.
+- **NVDA com Chromium:** conhecido, não bloqueante; pendente. A falha do canal
+  Windows impediu abrir/controlar Chromium e observar a navegação com NVDA.
+- **Zoom 200% e checagem dirigida em 400%:** conhecido, não bloqueante;
+  pendente pelo mesmo bloqueio da automação visual.
+- **Plano de correção/fechamento futuro:** repetir a matriz em uma estação
+  Windows com Chromium, Firefox e NVDA disponíveis; percorrer login, cadastro,
+  simulação, produtos, clientes, vendas e dashboard, verificando skip link,
+  resumos de erro, autocompletes, drawer, regiões de status, gráficos e reflow.
+  Qualquer regressão encontrada deve ser registrada por critério WCAG e
+  corrigida antes de transformar os sérios em gate absoluto.
+
+O baseline continua com **zero achados críticos conhecidos**. Todos os 13
+achados sérios do relatório receberam correção de código nesta rodada; a
+confirmação manual multiplataforma acima permanece explicitamente pendente sob
+o baseline pragmático, sem ser apresentada como teste aprovado.

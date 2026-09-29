@@ -184,10 +184,12 @@ export function TaxSimTour() {
           router.push(nextStep.route)
         }
 
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
         tourDriver = driver({
           steps: TOUR_STEPS,
-          animate: true,
-          smoothScroll: true,
+          animate: !reduceMotion,
+          smoothScroll: !reduceMotion,
           allowClose: true,
           allowScroll: true,
           overlayColor: '#09090b',

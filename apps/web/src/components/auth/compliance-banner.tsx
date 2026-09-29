@@ -5,10 +5,10 @@ import { Info } from 'lucide-react'
 export function ComplianceBanner({ className = '' }: { className?: string }) {
   return (
     <div
-      className={`mx-auto flex w-full items-start justify-center gap-2 px-4 pt-4 text-xs text-[#71717a] ${className}`}
+      className={`mx-auto flex w-full items-start justify-center gap-2 px-4 pt-4 text-xs text-[#a1a1aa] ${className}`}
     >
       <Info
-        className="mt-0.5 h-3 w-3 shrink-0 text-[#71717a]"
+        className="mt-0.5 h-3 w-3 shrink-0 text-[#a1a1aa]"
         aria-hidden="true"
       />
       <span>

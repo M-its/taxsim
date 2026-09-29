@@ -23,9 +23,9 @@ export function ProjectedImpact({ savings, savingsPercent }: ProjectedImpactProp
           <p className="text-xs font-medium uppercase tracking-wide text-[#a1a1aa]">
             Impacto Projetado
           </p>
-          <h3 className="mt-2 text-lg font-medium text-[#fafafa]">
+          <h2 className="mt-2 text-lg font-medium text-[#fafafa]">
             Economia projetada com a reforma
-          </h3>
+          </h2>
         </div>
 
         <div className="flex items-center gap-6">

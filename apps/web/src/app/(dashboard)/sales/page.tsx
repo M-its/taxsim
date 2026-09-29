@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
 import { Check, Eye, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { AsyncStatus } from "@/components/ui/async-status"
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Label } from "@/components/ui/label"
 import { cancelSale, confirmSale, getSaleById, getSales } from "@/lib/api"
 import { formatCurrency, formatDate, formatPercent } from "@/lib/formatters"
 import type { Sale, SaleListItem, SaleListResponse, SaleStatus } from "@/lib/sale.types"
@@ -52,7 +54,7 @@ const statusBadgeMap: Record<
   },
   CANCELLED: {
     label: "Cancelada",
-    className: "bg-[#71717a]/10 text-[#71717a] border-[#71717a]/20",
+    className: "bg-[#a1a1aa]/10 text-[#a1a1aa] border-[#a1a1aa]/20",
   },
 }
 
@@ -130,15 +132,15 @@ function SaleDetailModal({ sale, open, onOpenChange }: SaleDetailModalProps) {
         <div className="space-y-6 p-4">
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1">
-              <p className="text-xs text-[#71717a]">Data</p>
+              <p className="text-xs text-[#a1a1aa]">Data</p>
               <p className="font-numbers text-sm text-[#fafafa]">{formatDate(sale.createdAt)}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs text-[#71717a]">Cliente</p>
+              <p className="text-xs text-[#a1a1aa]">Cliente</p>
               <p className="font-numbers text-sm text-[#fafafa]">{truncateId(sale.clientId)}</p>
             </div>
             <div className="space-y-1">
-              <p className="text-xs text-[#71717a]">Valor Total</p>
+              <p className="text-xs text-[#a1a1aa]">Valor Total</p>
               <p className="font-numbers text-sm text-[#fafafa]">{formatCurrency(sale.totalAmount)}</p>
             </div>
           </div>
@@ -169,7 +171,7 @@ function SaleDetailModal({ sale, open, onOpenChange }: SaleDetailModalProps) {
                     <span className="font-numbers text-[#fafafa]">{formatCurrency(currentTotal)}</span>
                   </div>
                   <div className="mt-1 flex justify-between text-xs">
-                    <span className="text-[#71717a]">Alíquota efetiva</span>
+                    <span className="text-[#a1a1aa]">Alíquota efetiva</span>
                     <span className="font-numbers text-[#a1a1aa]">{formatPercent(currentEffectiveRate)}</span>
                   </div>
                 </div>
@@ -197,7 +199,7 @@ function SaleDetailModal({ sale, open, onOpenChange }: SaleDetailModalProps) {
                     <span className="font-numbers text-[#fafafa]">{formatCurrency(reformTotal)}</span>
                   </div>
                   <div className="mt-1 flex justify-between text-xs">
-                    <span className="text-[#71717a]">Alíquota efetiva</span>
+                    <span className="text-[#a1a1aa]">Alíquota efetiva</span>
                     <span className="font-numbers text-[#a1a1aa]">{formatPercent(reformEffectiveRate)}</span>
                   </div>
                 </div>
@@ -208,13 +210,13 @@ function SaleDetailModal({ sale, open, onOpenChange }: SaleDetailModalProps) {
           <div className="border border-[#27272a] p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-[#71717a]">Economia estimada</p>
+                <p className="text-xs text-[#a1a1aa]">Economia estimada</p>
                 <p className={`font-numbers text-lg font-semibold ${savingsClass}`}>
                   {formatCurrency(sale.delta.absolute)}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-xs text-[#71717a]">Variação percentual</p>
+                <p className="text-xs text-[#a1a1aa]">Variação percentual</p>
                 <p className={`font-numbers text-sm font-medium ${savingsClass}`}>
                   {formatPercent(sale.delta.percentual)}
                 </p>
@@ -289,7 +291,8 @@ export default function SalesPage() {
   const [isDetailLoading, setIsDetailLoading] = useState(false)
   const [confirmingCancelId, setConfirmingCancelId] = useState<string | null>(null)
   const [isActionId, setIsActionId] = useState<string | null>(null)
-  const cancelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [statusMessage, setStatusMessage] = useState("")
+  const afterLoadMessageRef = useRef<string | null>(null)
 
   useEffect(() => {
     loadSales()
@@ -297,12 +300,20 @@ export default function SalesPage() {
   }, [statusFilter, page])
 
   useEffect(() => {
-    return () => {
-      if (cancelTimerRef.current) {
-        clearTimeout(cancelTimerRef.current)
+    if (!confirmingCancelId) return
+
+    function cancelOnOutsideClick(event: PointerEvent) {
+      const target = event.target
+      if (target instanceof Element && target.closest(`[data-cancel-id="${confirmingCancelId}"]`)) {
+        return
       }
+      setConfirmingCancelId(null)
+      setStatusMessage("Cancelamento da venda interrompido.")
     }
-  }, [])
+
+    document.addEventListener("pointerdown", cancelOnOutsideClick)
+    return () => document.removeEventListener("pointerdown", cancelOnOutsideClick)
+  }, [confirmingCancelId])
 
   function loadSales() {
     setIsLoading(true)
@@ -313,6 +324,11 @@ export default function SalesPage() {
       .then((response) => {
         setSales(response.data)
         setPagination(response.pagination)
+        setStatusMessage(
+          afterLoadMessageRef.current ??
+            `${response.data.length} ${response.data.length === 1 ? "venda carregada" : "vendas carregadas"}.`,
+        )
+        afterLoadMessageRef.current = null
       })
       .catch((error) => {
         setSales([])
@@ -346,9 +362,11 @@ export default function SalesPage() {
   async function handleViewDetails(saleId: string) {
     setIsDetailLoading(true)
     setIsDetailOpen(true)
+    setDetailSale(null)
     try {
       const sale = await getSaleById(saleId)
       setDetailSale(sale)
+      setStatusMessage(`Detalhes da operação ${truncateId(saleId)} carregados.`)
     } catch (error) {
       setListError(error instanceof Error ? error.message : "Erro ao carregar detalhes da venda.")
       setIsDetailOpen(false)
@@ -361,6 +379,7 @@ export default function SalesPage() {
     setIsActionId(saleId)
     try {
       await confirmSale(saleId)
+      afterLoadMessageRef.current = `Venda ${truncateId(saleId)} confirmada.`
       loadSales()
     } catch (error) {
       setListError(error instanceof Error ? error.message : "Erro ao confirmar venda.")
@@ -376,24 +395,15 @@ export default function SalesPage() {
     }
 
     setConfirmingCancelId(saleId)
-
-    if (cancelTimerRef.current) {
-      clearTimeout(cancelTimerRef.current)
-    }
-
-    cancelTimerRef.current = setTimeout(() => {
-      setConfirmingCancelId((current) => (current === saleId ? null : current))
-    }, 2000)
+    setStatusMessage(`Confirme o cancelamento da venda ${truncateId(saleId)}.`)
   }
 
   async function performCancel(saleId: string) {
-    if (cancelTimerRef.current) {
-      clearTimeout(cancelTimerRef.current)
-    }
     setConfirmingCancelId(null)
     setIsActionId(saleId)
     try {
       await cancelSale(saleId)
+      afterLoadMessageRef.current = `Venda ${truncateId(saleId)} cancelada.`
       loadSales()
     } catch (error) {
       setListError(error instanceof Error ? error.message : "Erro ao cancelar venda.")
@@ -406,6 +416,17 @@ export default function SalesPage() {
 
   return (
     <div className="space-y-4">
+      <AsyncStatus
+        message={
+          isDetailLoading
+            ? "Carregando detalhes da venda."
+            : isActionId
+              ? "Processando a venda."
+              : isLoading
+                ? "Carregando vendas."
+                : statusMessage
+        }
+      />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -425,10 +446,17 @@ export default function SalesPage() {
         transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
         style={{ willChange: "transform, opacity" }}
         className="rounded-none border border-[#27272a] bg-[#18181b] p-5"
+        aria-busy={isLoading || Boolean(isActionId)}
       >
-        <div className="mb-4 sm:w-64">
+        <div className="mb-4 space-y-2 sm:w-64">
+          <Label htmlFor="status-filter" className="text-xs font-medium text-[#a1a1aa]">
+            Filtrar por status
+          </Label>
           <Select value={statusFilter} onValueChange={handleStatusChange}>
-            <SelectTrigger className="rounded-none border-[#27272a] bg-[#09090b] text-[#fafafa] focus:ring-[#34d399]/20">
+            <SelectTrigger
+              id="status-filter"
+              className="rounded-none border-[#27272a] bg-[#09090b] text-[#fafafa] focus:ring-[#34d399]/20"
+            >
               <SelectValue placeholder="Filtrar por status" />
             </SelectTrigger>
             <SelectContent className="rounded-none border-[#27272a] bg-[#18181b] text-[#fafafa]">
@@ -446,7 +474,10 @@ export default function SalesPage() {
         </div>
 
         {listError && (
-          <div className="mb-4 rounded-none border border-[#f87171]/30 bg-[#f87171]/10 p-3 text-xs text-[#f87171]">
+          <div
+            role="alert"
+            className="mb-4 rounded-none border border-[#f87171]/30 bg-[#f87171]/10 p-3 text-xs text-[#f87171]"
+          >
             {listError}
           </div>
         )}
@@ -480,7 +511,7 @@ export default function SalesPage() {
                 <TableRow className="border-[#27272a] hover:bg-transparent">
                   <TableCell colSpan={6} className="py-12 text-center">
                     <p className="text-sm text-[#a1a1aa]">{emptyMessage.title}</p>
-                    <p className="mt-1 text-xs text-[#71717a]">{emptyMessage.description}</p>
+                    <p className="mt-1 text-xs text-[#a1a1aa]">{emptyMessage.description}</p>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -515,6 +546,7 @@ export default function SalesPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleViewDetails(sale.id)}
+                          aria-label={`Ver detalhes da venda ${truncateId(sale.id)}`}
                           className="rounded-none border border-transparent px-2 text-xs text-[#a1a1aa] hover:border-[#27272a] hover:bg-[#27272a]/50 hover:text-[#fafafa]"
                         >
                           <Eye className="mr-1 h-3.5 w-3.5" />
@@ -528,7 +560,8 @@ export default function SalesPage() {
                               size="sm"
                               disabled={isActionId === sale.id}
                               onClick={() => handleConfirm(sale.id)}
-                              className="rounded-none border border-transparent px-2 text-xs text-[#34d399] hover:border-[#34d399]/20 hover:bg-[#34d399]/10 hover:text-[#34d399] disabled:opacity-50"
+                              aria-label={`Confirmar venda ${truncateId(sale.id)}`}
+                              className="rounded-none border border-transparent px-2 text-xs text-[#34d399] hover:border-[#34d399]/20 hover:bg-[#34d399]/10 hover:text-[#34d399] dark:hover:bg-[#34d399]/10 dark:hover:text-[#34d399] disabled:opacity-50"
                             >
                               {isActionId === sale.id ? (
                                 "Processando..."
@@ -539,25 +572,46 @@ export default function SalesPage() {
                                 </>
                               )}
                             </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              disabled={isActionId === sale.id}
-                              onClick={() => handleCancelClick(sale.id)}
-                              className="rounded-none border border-transparent px-2 text-xs text-[#f87171] hover:border-[#f87171]/20 hover:bg-[#f87171]/10 hover:text-[#f87171] disabled:opacity-50"
-                            >
-                              {confirmingCancelId === sale.id ? (
-                                "Confirmar?"
-                              ) : isActionId === sale.id ? (
-                                "Processando..."
-                              ) : (
-                                <>
-                                  <X className="mr-1 h-3.5 w-3.5" />
-                                  Cancelar
-                                </>
+                            <span className="inline-flex gap-2" data-cancel-id={sale.id}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={isActionId === sale.id}
+                                onClick={() => handleCancelClick(sale.id)}
+                                aria-label={
+                                  confirmingCancelId === sale.id
+                                    ? `Confirmar cancelamento da venda ${truncateId(sale.id)}`
+                                    : `Cancelar venda ${truncateId(sale.id)}`
+                                }
+                                className="rounded-none border border-transparent px-2 text-xs text-[#f87171] hover:border-[#f87171]/20 hover:bg-[#f87171]/10 hover:text-[#f87171] disabled:opacity-50"
+                              >
+                                {confirmingCancelId === sale.id ? (
+                                  "Confirmar?"
+                                ) : isActionId === sale.id ? (
+                                  "Processando..."
+                                ) : (
+                                  <>
+                                    <X className="mr-1 h-3.5 w-3.5" />
+                                    Cancelar
+                                  </>
+                                )}
+                              </Button>
+                              {confirmingCancelId === sale.id && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setConfirmingCancelId(null)
+                                    setStatusMessage("Cancelamento da venda interrompido.")
+                                  }}
+                                  className="rounded-none px-2 text-xs text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#fafafa]"
+                                >
+                                  Não cancelar
+                                </Button>
                               )}
-                            </Button>
+                            </span>
                           </>
                         )}
                       </div>
@@ -571,7 +625,7 @@ export default function SalesPage() {
 
         {pagination && pagination.totalPages > 1 && (
           <div className="mt-4 flex items-center justify-between border-t border-[#27272a] pt-4">
-            <p className="text-xs text-[#71717a]">
+            <p className="text-xs text-[#a1a1aa]">
               Página {pagination.page} de {pagination.totalPages}
             </p>
             <div className="flex items-center gap-2">

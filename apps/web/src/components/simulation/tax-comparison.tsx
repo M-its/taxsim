@@ -63,7 +63,9 @@ export function TaxComparison({ data, taxRegime }: TaxComparisonProps) {
         <Card className="rounded-none border-[#27272a] bg-[#18181b]">
           <CardHeader className="border-b border-[#27272a] pb-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-[#fafafa]">Regime Atual</CardTitle>
+              <CardTitle as="h2" className="text-sm font-medium text-[#fafafa]">
+                Regime Atual
+              </CardTitle>
               <div className="flex items-center gap-2">
                 <Badge
                   variant="secondary"
@@ -73,7 +75,7 @@ export function TaxComparison({ data, taxRegime }: TaxComparisonProps) {
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="rounded-none border-[#27272a] bg-transparent text-xs text-[#71717a]"
+                  className="rounded-none border-[#27272a] bg-transparent text-xs text-[#a1a1aa]"
                 >
                   {formatPercent(data.currentModel.effectiveRate)}
                 </Badge>
@@ -100,7 +102,9 @@ export function TaxComparison({ data, taxRegime }: TaxComparisonProps) {
         <Card className="rounded-none border-[#34d399]/30 bg-gradient-to-br from-[#34d399]/5 to-[#18181b]">
           <CardHeader className="border-b border-[#27272a] pb-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium text-[#fafafa]">IVA Dual (Reforma)</CardTitle>
+              <CardTitle as="h2" className="text-sm font-medium text-[#fafafa]">
+                IVA Dual (Reforma)
+              </CardTitle>
               <div className="flex items-center gap-2">
                 <Badge
                   variant="emerald"
@@ -138,38 +142,38 @@ export function TaxComparison({ data, taxRegime }: TaxComparisonProps) {
           <Card className="rounded-none border-[#27272a] bg-[#09090b]">
             <CardHeader className="border-b border-[#27272a] pb-4">
               <div className="flex items-center gap-2">
-                <Info className="h-4 w-4 text-[#71717a]" />
-                <CardTitle className="text-sm font-medium text-[#fafafa]">
+                <Info className="h-4 w-4 text-[#a1a1aa]" />
+                <CardTitle as="h2" className="text-sm font-medium text-[#fafafa]">
                   Split Payment (NT 2025.002)
                 </CardTitle>
               </div>
-              <p className="mt-1 text-xs text-[#71717a]">
+              <p className="mt-1 text-xs text-[#a1a1aa]">
                 Com a Reforma, IBS e CBS serão retidos automaticamente pelo PSP
               </p>
             </CardHeader>
             <CardContent className="pt-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
-                  <p className="text-xs text-[#71717a]">IBS Retido</p>
+                  <p className="text-xs text-[#a1a1aa]">IBS Retido</p>
                   <p className="mt-1 font-numbers text-sm text-[#fafafa]">
                     {formatCurrency(data.splitPayment.ibsAmount)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-[#71717a]">CBS Retido</p>
+                  <p className="text-xs text-[#a1a1aa]">CBS Retido</p>
                   <p className="mt-1 font-numbers text-sm text-[#fafafa]">
                     {formatCurrency(data.splitPayment.cbsAmount)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-[#71717a]">Líquido ao Vendedor</p>
+                  <p className="text-xs text-[#a1a1aa]">Líquido ao Vendedor</p>
                   <p className="mt-1 font-numbers text-sm font-medium text-[#34d399]">
                     {formatCurrency(data.splitPayment.netMerchantAmount)}
                   </p>
                 </div>
               </div>
               <Separator className="my-3 bg-[#27272a]" />
-              <p className="text-xs text-[#71717a]">
+              <p className="text-xs text-[#a1a1aa]">
                 Valores estimados. Sujeito a regulamentação do Banco Central.
               </p>
             </CardContent>

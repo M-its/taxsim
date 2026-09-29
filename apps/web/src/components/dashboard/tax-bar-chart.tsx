@@ -1,6 +1,5 @@
 "use client"
 
-import { motion } from "framer-motion"
 import {
   BarChart,
   Bar,
@@ -11,7 +10,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts"
-import { formatCurrencyCompact } from "@/lib/formatters"
+import { formatCurrency, formatCurrencyCompact } from "@/lib/formatters"
 import type { TaxLoadMonth } from "@/lib/mock-data"
 
 interface TaxBarChartProps {
@@ -20,23 +19,17 @@ interface TaxBarChartProps {
 
 export function TaxBarChart({ data }: TaxBarChartProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut", delay: 0.4 }}
-      style={{ willChange: "transform, opacity" }}
-      className="h-full rounded-none border border-[#27272a] bg-[#18181b] p-5"
-    >
+    <div className="h-full rounded-none border border-[#27272a] bg-[#18181b] p-5">
       <div className="mb-6">
-        <h3 className="text-sm font-medium text-[#fafafa]">
+        <h2 id="tax-load-title" className="text-sm font-medium text-[#fafafa]">
           Carga Tributária: Atual vs Reforma
-        </h3>
+        </h2>
         <p className="mt-1 text-xs text-[#a1a1aa]">
           Valores acumulados em milhares de R$
         </p>
       </div>
 
-      <div className="h-[300px] w-full">
+      <div className="h-[300px] w-full" aria-hidden="true">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 8, right: 8, bottom: 8, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
@@ -89,6 +82,34 @@ export function TaxBarChart({ data }: TaxBarChartProps) {
           </BarChart>
         </ResponsiveContainer>
       </div>
-    </motion.div>
+
+      <details className="mt-4 border-t border-[#27272a] pt-4 text-xs text-[#a1a1aa]">
+        <summary className="cursor-pointer font-medium text-[#fafafa] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#34d399]">
+          Ver dados do gráfico em texto
+        </summary>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full text-left" aria-labelledby="tax-load-title">
+            <thead>
+              <tr className="border-b border-[#27272a]">
+                <th className="py-2 pr-3">Mês</th>
+                <th className="py-2 pr-3">Sistema atual</th>
+                <th className="py-2">IVA Dual</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((item) => (
+                <tr key={item.month} className="border-b border-[#27272a] last:border-0">
+                  <th scope="row" className="py-2 pr-3 font-normal">
+                    {item.month}
+                  </th>
+                  <td className="py-2 pr-3 font-numbers">{formatCurrency(item.current)}</td>
+                  <td className="py-2 font-numbers">{formatCurrency(item.reform)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </div>
   )
 }

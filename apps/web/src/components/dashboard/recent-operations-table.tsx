@@ -1,6 +1,5 @@
 "use client"
 
-import { motion } from "framer-motion"
 import { Badge } from "@/components/ui/badge"
 import {
   Table,
@@ -33,7 +32,7 @@ function StatusBadge({ status }: { status: SaleStatus }) {
     return (
       <Badge
         variant="outline"
-        className="rounded-none border-[#71717a]/20 bg-[#71717a]/10 text-[#71717a] hover:bg-[#71717a]/20"
+        className="rounded-none border-[#a1a1aa]/20 bg-[#a1a1aa]/10 text-[#a1a1aa] hover:bg-[#a1a1aa]/20"
       >
         Cancelada
       </Badge>
@@ -63,15 +62,9 @@ function formatShortDate(value: string): string {
 
 export function RecentOperationsTable({ operations }: RecentOperationsTableProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut", delay: 0.6 }}
-      style={{ willChange: "transform, opacity" }}
-      className="rounded-none border border-[#27272a] bg-[#18181b]"
-    >
+    <div className="rounded-none border border-[#27272a] bg-[#18181b]">
       <div className="border-b border-[#27272a] p-5">
-        <h3 className="text-sm font-medium text-[#fafafa]">Operações Recentes</h3>
+        <h2 className="text-sm font-medium text-[#fafafa]">Operações Recentes</h2>
         <p className="mt-1 text-xs text-[#a1a1aa]">
           Últimas vendas e simulações processadas
         </p>
@@ -100,13 +93,9 @@ export function RecentOperationsTable({ operations }: RecentOperationsTableProps
                 </TableCell>
               </TableRow>
             ) : (
-              operations.map((operation, index) => (
-                <motion.tr
+              operations.map((operation) => (
+                <TableRow
                   key={operation.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, ease: "easeOut", delay: 0.7 + index * 0.05 }}
-                  style={{ willChange: "transform, opacity" }}
                   className="border-b border-[#27272a] transition-colors last:border-b-0 hover:bg-[#27272a]/30"
                 >
                   <TableCell className="font-numbers text-sm text-[#fafafa]">
@@ -127,12 +116,12 @@ export function RecentOperationsTable({ operations }: RecentOperationsTableProps
                   <TableCell className="text-right font-numbers text-sm text-[#fafafa]">
                     {formatCurrency(operation.totalAmount)}
                   </TableCell>
-                </motion.tr>
+                </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </div>
-    </motion.div>
+    </div>
   )
 }

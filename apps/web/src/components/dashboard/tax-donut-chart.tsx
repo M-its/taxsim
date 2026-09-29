@@ -1,6 +1,5 @@
 "use client"
 
-import { motion } from "framer-motion"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 import { formatPercent } from "@/lib/formatters"
 import type { TaxCompositionItem } from "@/lib/mock-data"
@@ -50,23 +49,20 @@ export function TaxDonutChart({ data }: TaxDonutChartProps) {
   const total = data.reduce((sum, item) => sum + item.value, 0)
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut", delay: 0.5 }}
-      style={{ willChange: "transform, opacity" }}
-      className="h-full rounded-none border border-[#27272a] bg-[#18181b] p-5"
-    >
+    <div className="h-full rounded-none border border-[#27272a] bg-[#18181b] p-5">
       <div className="mb-6">
-        <h3 className="text-sm font-medium text-[#fafafa]">Composição Tributária</h3>
+        <h2 id="tax-composition-title" className="text-sm font-medium text-[#fafafa]">
+          Composição Tributária
+        </h2>
         <p className="mt-1 text-xs text-[#a1a1aa]">Distribuição IBS / CBS / IS</p>
       </div>
 
-      <div className="h-[220px] w-full">
+      <div className="h-[220px] w-full" aria-hidden="true">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
+              rootTabIndex={-1}
               dataKey="value"
               nameKey="name"
               cx="50%"
@@ -111,6 +107,23 @@ export function TaxDonutChart({ data }: TaxDonutChartProps) {
           )
         })}
       </div>
-    </motion.div>
+
+      <details className="mt-4 border-t border-[#27272a] pt-4 text-xs text-[#a1a1aa]">
+        <summary className="cursor-pointer font-medium text-[#fafafa] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#34d399]">
+          Ver dados do gráfico em texto
+        </summary>
+        <ul className="mt-3 space-y-2" aria-labelledby="tax-composition-title">
+          {data.map((item) => {
+            const percentage = total > 0 ? item.value / total : 0
+            return (
+              <li key={item.name} className="flex justify-between gap-4">
+                <span>{item.name}</span>
+                <span className="font-numbers text-[#fafafa]">{formatPercent(percentage)}</span>
+              </li>
+            )
+          })}
+        </ul>
+      </details>
+    </div>
   )
 }

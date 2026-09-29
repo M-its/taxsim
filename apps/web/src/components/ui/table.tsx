@@ -3,7 +3,12 @@ import * as React from "react"
 
 function Table({ className, ...props }: React.HTMLAttributes<HTMLTableElement>) {
   return (
-    <div data-slot="table-container" className="relative w-full overflow-auto">
+    <div
+      data-slot="table-container"
+      className="relative w-full overflow-auto"
+      tabIndex={0}
+      aria-label="Tabela rolável"
+    >
       <table
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}

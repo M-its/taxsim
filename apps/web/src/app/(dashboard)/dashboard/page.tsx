@@ -4,6 +4,7 @@ import { KpiGrid } from '@/components/dashboard/kpi-card'
 import { TaxBarChart } from '@/components/dashboard/tax-bar-chart'
 import { TaxDonutChart } from '@/components/dashboard/tax-donut-chart'
 import { RecentOperationsTable } from '@/components/dashboard/recent-operations-table'
+import { AsyncStatus } from '@/components/ui/async-status'
 import { useDashboardSummary } from '@/hooks/use-dashboard-summary'
 import { useRecentSales } from '@/hooks/use-recent-sales'
 import type {
@@ -86,7 +87,7 @@ function DashboardSkeleton() {
 
 function DashboardError({ message }: { message: string }) {
   return (
-    <div className="space-y-6">
+    <div role="alert" className="space-y-6">
       <div className="rounded-none border border-[#27272a] bg-[#18181b] p-5">
         <p className="text-sm text-[#f87171]">Erro ao carregar os dados do dashboard.</p>
         <p className="mt-1 text-xs text-[#a1a1aa]">{message}</p>
@@ -118,7 +119,7 @@ function RecentOperationsSkeleton() {
 
 function RecentOperationsError({ message }: { message: string }) {
   return (
-    <div className="rounded-none border border-[#27272a] bg-[#18181b] p-5">
+    <div role="alert" className="rounded-none border border-[#27272a] bg-[#18181b] p-5">
       <p className="text-sm text-[#f87171]">Erro ao carregar operações recentes.</p>
       <p className="mt-1 text-xs text-[#a1a1aa]">{message}</p>
     </div>
@@ -165,7 +166,18 @@ export default function DashboardPage() {
   }
 
   return (
-    <div data-tour="dashboard-overview" className="space-y-6">
+    <div
+      data-tour="dashboard-overview"
+      className="space-y-6"
+      aria-busy={isLoading || recentSalesLoading}
+    >
+      <AsyncStatus
+        message={
+          isLoading || recentSalesLoading
+            ? 'Carregando dados do dashboard.'
+            : 'Dados do dashboard carregados.'
+        }
+      />
       <div>
         <h1 className="text-xl font-semibold text-[#fafafa]">Dashboard</h1>
         <p className="mt-1 text-sm text-[#a1a1aa]">

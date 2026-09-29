@@ -35,6 +35,31 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+:where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 3px solid #34d399 !important;
+  outline-offset: 3px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .animate-pulse {
+    animation: none !important;
+  }
+}
+
 /* Driver.js — onboarding tour styled with the TaxSim dark design system */
 .driver-popover.taxsim-tour-popover {
   min-width: 280px;
@@ -60,11 +85,11 @@ body {
 }
 
 .driver-popover.taxsim-tour-popover .driver-popover-progress-text {
-  color: #71717a;
+  color: #a1a1aa;
 }
 
 .driver-popover.taxsim-tour-popover .driver-popover-close-btn {
-  color: #71717a;
+  color: #a1a1aa;
 }
 
 .driver-popover.taxsim-tour-popover .driver-popover-close-btn:hover,
@@ -83,7 +108,7 @@ body {
 
 .driver-popover.taxsim-tour-popover .driver-popover-footer-btn:hover,
 .driver-popover.taxsim-tour-popover .driver-popover-footer-btn:focus {
-  border-color: #71717a;
+  border-color: #a1a1aa;
   background: #27272a;
   color: #fafafa;
 }

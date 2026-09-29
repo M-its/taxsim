@@ -1,5 +1,6 @@
 "use client"
 
+import type { RefObject } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { Menu } from "lucide-react"
@@ -40,12 +41,14 @@ interface TopbarProps {
   className?: string
   isSidebarOpen?: boolean
   onToggleSidebar?: () => void
+  menuButtonRef?: RefObject<HTMLButtonElement | null>
 }
 
 export function Topbar({
   className,
   isSidebarOpen = true,
   onToggleSidebar,
+  menuButtonRef,
 }: TopbarProps) {
   const pathname = usePathname()
   const label = breadcrumbLabel(pathname)
@@ -62,10 +65,13 @@ export function Topbar({
       {/* Lado Esquerdo: Botão Menu + Breadcrumbs */}
       <div className="flex items-center gap-2 md:ml-6">
         <button
+          ref={menuButtonRef}
           type="button"
           onClick={onToggleSidebar}
           className="p-2 hover:bg-zinc-800 transition-colors cursor-pointer rounded-none md:hidden"
           aria-label="Abrir menu"
+          aria-controls="app-sidebar"
+          aria-expanded={isSidebarOpen}
         >
           <Menu className="h-5 w-5 text-[#a1a1aa]" />
         </button>

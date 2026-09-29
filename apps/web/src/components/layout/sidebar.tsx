@@ -1,5 +1,6 @@
 "use client"
 
+import type { RefObject } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
@@ -27,14 +28,30 @@ const navItems = [
 interface SidebarProps {
   className?: string
   isOpen?: boolean
+  isMobile?: boolean
   onToggle?: () => void
+  onNavigate?: () => void
+  containerRef?: RefObject<HTMLElement | null>
 }
 
-export function Sidebar({ className, isOpen = true, onToggle }: SidebarProps) {
+export function Sidebar({
+  className,
+  isOpen = true,
+  isMobile = false,
+  onToggle,
+  onNavigate,
+  containerRef,
+}: SidebarProps) {
   const pathname = usePathname()
 
   return (
     <aside
+      id="app-sidebar"
+      ref={containerRef}
+      role={isMobile && isOpen ? "dialog" : undefined}
+      aria-modal={isMobile && isOpen ? "true" : undefined}
+      aria-label={isMobile && isOpen ? "Menu principal" : undefined}
+      aria-hidden={isMobile && !isOpen ? "true" : undefined}
       style={{ width: isOpen ? 256 : 64 }}
       className={cn(
         "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-[#27272a] bg-[#18181b]",
@@ -86,6 +103,7 @@ export function Sidebar({ className, isOpen = true, onToggle }: SidebarProps) {
         <button
           type="button"
           onClick={onToggle}
+          data-drawer-initial-focus
           className="flex h-8 w-8 items-center justify-center text-[#a1a1aa] transition-colors hover:bg-[#27272a] hover:text-[#fafafa] md:hidden"
           aria-label="Fechar menu"
         >
@@ -103,6 +121,9 @@ export function Sidebar({ className, isOpen = true, onToggle }: SidebarProps) {
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={onNavigate}
+                  aria-label={item.label}
+                  aria-current={isActive ? "page" : undefined}
                   className={cn(
                     "group flex items-center gap-3 rounded-none px-3 py-2 text-sm transition-colors",
                     isActive
@@ -134,7 +155,10 @@ export function Sidebar({ className, isOpen = true, onToggle }: SidebarProps) {
 
       <div className="border-t border-[#27272a] p-2">
         <Link
-          href="settings"
+          href="/settings"
+          onClick={onNavigate}
+          aria-label="Configurações"
+          aria-current={pathname === "/settings" ? "page" : undefined}
           className={cn(
             "flex items-center gap-3 rounded-none px-3 py-2 text-sm text-[#a1a1aa] transition-colors hover:bg-[#27272a] hover:text-[#fafafa]",
             !isOpen && "justify-center"
