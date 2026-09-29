@@ -13,9 +13,15 @@ import {
 } from './products.service.js'
 
 import type { Product } from '@prisma/client'
+import type { NcmEligibilityStatus } from '../ncm/ncm.service.js'
 import { formatDecimal } from '../../shared/formatters/decimal.js'
 
-const formatProductResponse = (product: Product) => ({
+const formatProductResponse = (
+  product: Product & {
+    ncmStatus?: NcmEligibilityStatus
+    ncmDescription?: string | null
+  },
+) => ({
   ...product,
   unitPrice: formatDecimal(product.unitPrice),
 })

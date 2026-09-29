@@ -32,6 +32,22 @@ describe('product schemas - proteção contra exponentes e amplificação (Findi
     expect(result.success).toBe(false)
   })
 
+  it('rejeita NCM ausente ou com caracteres não numéricos', () => {
+    const missing = createProductSchema.safeParse({
+      name: baseProduct.name,
+      sku: baseProduct.sku,
+      unitPrice: '2500.00',
+    })
+    const nonNumeric = createProductSchema.safeParse({
+      ...baseProduct,
+      ncmCode: '84713ABC',
+      unitPrice: '2500.00',
+    })
+
+    expect(missing.success).toBe(false)
+    expect(nonNumeric.success).toBe(false)
+  })
+
   it('aceita um valor monetário válido normal', () => {
     const createResult = createProductSchema.safeParse({
       ...baseProduct,

@@ -8,7 +8,7 @@ const monetaryStringSchema = z
 export const createProductSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   sku: z.string().min(1, 'SKU is required'),
-  ncmCode: z.string().length(8, 'NCM code must be exactly 8 characters'),
+  ncmCode: z.string().regex(/^\d{8}$/, 'NCM code must contain exactly 8 digits'),
   unitPrice: monetaryStringSchema,
 })
 

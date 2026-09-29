@@ -139,10 +139,10 @@ zoom a 200% e checagem dirigida a 400%.
 
 ### 5. Validar NCM contra o catálogo vigente
 
-- [ ] Validar NCM em criação e edição no backend.
-- [ ] Criar endpoint batch ou join eficiente para evitar N+1.
-- [ ] Mostrar aviso acessível quando o NCM não estiver vigente.
-- [ ] Diferenciar formato inválido de código ausente no catálogo.
+- [x] Validar NCM em criação e edição no backend.
+- [x] Criar endpoint batch ou join eficiente para evitar N+1.
+- [x] Mostrar aviso acessível quando o NCM não estiver vigente.
+- [x] Diferenciar formato inválido de código ausente no catálogo.
 
 ### 6. Refinar 404 e estados globais
 

@@ -516,3 +516,26 @@ entrega:
   como um exemplo comparativo ou captura com dados demonstrativos.
 - **P2:** manter uma ação acessível no header móvel e reduzir a extensão ou a
   repetição da página em viewports estreitos.
+
+## 2026-09-26 — P2 #5: NCM vigente em produtos
+
+### Validação de NCM em produtos
+
+- Criação de produto exige NCM com oito dígitos, existente e vigente na data
+  corrente de São Paulo. A verificação reutiliza **ncmValidityDate**, a mesma
+  referência temporal usada por simulações e vendas.
+- Alteração para um novo NCM repete a validação no backend. Quando o NCM legado
+  permanece inalterado, nome, SKU e preço continuam editáveis mesmo que o código
+  tenha expirado ou nunca tenha pertencido ao catálogo atual.
+- NCM vigente sem regra ativa, ou com configuração fiscal incompleta, pode ser
+  salvo. A listagem distingue esses estados e comunica que o produto não é
+  simulável no regime atual.
+- A listagem calcula o diagnóstico no momento da leitura e expõe formato
+  inválido, código não encontrado, código expirado, ausência de regra,
+  configuração indisponível e elegibilidade com cores e textos distintos.
+- Simulação e criação de venda continuam revalidando o NCM antes dos motores
+  tributários. Snapshots fiscais já persistidos em vendas não são revalidados.
+- O catálogo permanece uma importação manual/versionada. A versão visível nesta
+  rodada é **2026-07-10**, correspondente ao arquivo
+  **Tabela_NCM_Vigente_20260710.json**; não foi criada atualização externa
+  automática.

@@ -1,6 +1,11 @@
 import { Prisma } from '@prisma/client'
 import { prisma } from '../../lib/prisma.js'
 import { AppError } from '../../shared/errors/AppError.js'
+import {
+  diagnoseNcmCodes,
+  NCM_CATALOG_VERSION,
+  type NcmDiagnosis,
+} from '../ncm/ncm.service.js'
 import type {
   CreateProductInput,
   UpdateProductInput,
@@ -27,7 +32,7 @@ export async function listProducts(
       : {}),
   }
 
-  const [data, total] = await Promise.all([
+  const [data, total, company] = await Promise.all([
     prisma.product.findMany({
       where,
       skip,
@@ -35,16 +40,68 @@ export async function listProducts(
       orderBy: { createdAt: 'desc' },
     }),
     prisma.product.count({ where }),
+    prisma.company.findUnique({
+      where: { id: companyId },
+      select: { taxRegime: true },
+    }),
   ])
 
+  if (!company) {
+    throw AppError.notFound('Company not found')
+  }
+
+  const diagnoses = await diagnoseNcmCodes(
+    data.map((product) => product.ncmCode),
+    company.taxRegime,
+  )
+
   return {
-    data,
+    data: data.map((product, index) => ({
+      ...product,
+      ncmStatus: diagnoses[index]?.status ?? 'NOT_FOUND',
+      ncmDescription: diagnoses[index]?.description ?? null,
+    })),
     pagination: {
       page,
       limit,
       total,
       totalPages: Math.ceil(total / limit),
     },
+    metadata: {
+      ncmCatalogVersion: NCM_CATALOG_VERSION,
+    },
+  }
+}
+
+const rejectedNcmMessages: Partial<Record<NcmDiagnosis['status'], string>> = {
+  INVALID_FORMAT: 'NCM deve conter exatamente 8 dígitos',
+  NOT_FOUND: 'NCM não encontrado no catálogo vigente',
+  NOT_CURRENT: 'NCM não está vigente na data atual',
+}
+
+async function assertCurrentProductNcm(
+  companyId: string,
+  ncmCode: string,
+): Promise<void> {
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: { taxRegime: true },
+  })
+
+  if (!company) {
+    throw AppError.notFound('Company not found')
+  }
+
+  const [diagnosis] = await diagnoseNcmCodes([ncmCode], company.taxRegime)
+  const message = diagnosis
+    ? rejectedNcmMessages[diagnosis.status]
+    : rejectedNcmMessages.NOT_FOUND
+
+  if (message) {
+    throw new AppError('INVALID_NCM', message, 422, {
+      ncmCode,
+      status: diagnosis?.status ?? 'NOT_FOUND',
+    })
   }
 }
 
@@ -64,6 +121,8 @@ export async function createProduct(
   companyId: string,
   input: CreateProductInput,
 ) {
+  await assertCurrentProductNcm(companyId, input.ncmCode)
+
   try {
     return await prisma.product.create({
       data: {
@@ -95,6 +154,10 @@ export async function updateProduct(
   })
   if (!existing) {
     throw AppError.notFound('Product not found')
+  }
+
+  if (input.ncmCode !== existing.ncmCode) {
+    await assertCurrentProductNcm(companyId, input.ncmCode)
   }
 
   try {
