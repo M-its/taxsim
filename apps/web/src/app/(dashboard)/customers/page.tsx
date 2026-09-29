@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
 import { Pencil, Plus, Search, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { AsyncStatus } from "@/components/ui/async-status"
 import {
   Dialog,
   DialogContent,
@@ -24,17 +25,12 @@ import {
 } from "@/components/ui/table"
 import { createClient, deleteClient, getClients, updateClient } from "@/lib/api"
 import type { Client, ClientInput, ClientListResponse } from "@/lib/client.types"
-
-function formatDocument(value: string): string {
-  const digits = value.replace(/\D/g, "")
-  if (digits.length === 11) {
-    return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
-  }
-  if (digits.length === 14) {
-    return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5")
-  }
-  return digits
-}
+import {
+  formatDocument,
+  publicDocumentErrorMessage,
+  sanitizeDocumentInput,
+  validateBrazilianDocument,
+} from "@/lib/br-document"
 
 const emptyForm: ClientInput = {
   name: "",
@@ -50,18 +46,21 @@ type ClientQuery = {
   immediate: boolean
 }
 
-function validateClient(values: ClientInput): FieldErrors {
+function validateClient(values: ClientInput, existingDocument?: string): FieldErrors {
   const errors: FieldErrors = {}
 
   if (!values.name.trim()) {
     errors.name = "Nome é obrigatório"
   }
 
-  const documentDigits = values.document.replace(/\D/g, "")
-  if (!documentDigits) {
+  const document = sanitizeDocumentInput(values.document)
+  if (!document) {
     errors.document = "Documento é obrigatório"
-  } else if (documentDigits.length < 11 || documentDigits.length > 14) {
-    errors.document = "Documento deve conter entre 11 e 14 dígitos"
+  } else if (document !== existingDocument) {
+    const validation = validateBrazilianDocument(document)
+    if (!validation.valid) {
+      errors.document = publicDocumentErrorMessage(validation.kind)
+    }
   }
 
   if (values.email.trim()) {
@@ -87,6 +86,7 @@ function ClientModal({ client, open, onOpenChange, onSuccess }: ClientModalProps
   const [errors, setErrors] = useState<FieldErrors>({})
   const [apiError, setApiError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const errorSummaryRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (open) {
@@ -115,15 +115,21 @@ function ClientModal({ client, open, onOpenChange, onSuccess }: ClientModalProps
     event.preventDefault()
     setApiError(null)
 
-    const validationErrors = validateClient(values)
+    const validationErrors = validateClient(values, client?.document)
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
+      const firstInvalid = (['name', 'document', 'email'] as const).find(
+        (field) => validationErrors[field],
+      )
+      if (firstInvalid) {
+        requestAnimationFrame(() => document.getElementById(firstInvalid)?.focus())
+      }
       return
     }
 
     const payload = {
       ...values,
-      document: values.document.replace(/\D/g, ""),
+      document: sanitizeDocumentInput(values.document),
       email: values.email.trim() || undefined,
     }
 
@@ -137,10 +143,13 @@ function ClientModal({ client, open, onOpenChange, onSuccess }: ClientModalProps
       onSuccess()
       onOpenChange(false)
     } catch (error) {
-      if (error instanceof Error) {
-        setApiError(error.message)
+      const message = error instanceof Error ? error.message : "Ocorreu um erro inesperado. Tente novamente."
+      if (/^(CNPJ|CPF) inválido$/i.test(message)) {
+        setErrors((current) => ({ ...current, document: message }))
+        requestAnimationFrame(() => document.getElementById("document")?.focus())
       } else {
-        setApiError("Ocorreu um erro inesperado. Tente novamente.")
+        setApiError(message)
+        requestAnimationFrame(() => errorSummaryRef.current?.focus())
       }
     } finally {
       setIsSubmitting(false)
@@ -153,7 +162,8 @@ function ClientModal({ client, open, onOpenChange, onSuccess }: ClientModalProps
         showCloseButton={false}
         className="rounded-none border border-[#27272a] bg-[#18181b] p-0 text-[#fafafa] sm:max-w-md"
       >
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate aria-busy={isSubmitting}>
+          <AsyncStatus message={isSubmitting ? "Salvando cliente." : ""} />
           <DialogHeader className="border-b border-[#27272a] p-4">
             <DialogTitle className="text-sm font-medium text-[#fafafa]">
               {isEditing ? "Editar Cliente" : "Novo Cliente"}
@@ -166,10 +176,25 @@ function ClientModal({ client, open, onOpenChange, onSuccess }: ClientModalProps
           </DialogHeader>
 
           <div className="space-y-4 p-4">
-            {apiError && (
-              <p className="rounded-none border border-[#f87171]/30 bg-[#f87171]/10 p-2 text-xs text-[#f87171]">
-                {apiError}
-              </p>
+            {(apiError || Object.keys(errors).length > 0) && (
+              <div
+                ref={errorSummaryRef}
+                tabIndex={-1}
+                role="alert"
+                className="rounded-none border border-[#f87171]/30 bg-[#f87171]/10 p-3 text-xs text-[#f87171] outline-none focus:ring-2 focus:ring-[#fca5a5]"
+              >
+                <p className="font-medium">Revise os campos do cliente:</p>
+                <ul className="mt-1 list-disc pl-5">
+                  {apiError && <li>{apiError}</li>}
+                  {(["name", "document", "email"] as const).map((field) =>
+                    errors[field] ? (
+                      <li key={field}>
+                        <a href={`#${field}`}>{errors[field]}</a>
+                      </li>
+                    ) : null,
+                  )}
+                </ul>
+              </div>
             )}
 
             <div className="space-y-2">
@@ -182,8 +207,12 @@ function ClientModal({ client, open, onOpenChange, onSuccess }: ClientModalProps
                 onChange={(event) => updateField("name", event.target.value)}
                 placeholder="Ex: Cliente Exemplo"
                 variant={errors.name ? "error" : "default"}
+                aria-invalid={Boolean(errors.name) || undefined}
+                aria-describedby={errors.name ? "name-error" : undefined}
               />
-              {errors.name && <p className="text-xs text-[#f87171]">{errors.name}</p>}
+              {errors.name && (
+                <p id="name-error" className="text-xs text-[#f87171]">{errors.name}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -196,16 +225,21 @@ function ClientModal({ client, open, onOpenChange, onSuccess }: ClientModalProps
                 onChange={(event) =>
                   updateField(
                     "document",
-                    event.target.value.replace(/\D/g, "").slice(0, 14),
+                    sanitizeDocumentInput(event.target.value),
                   )
                 }
                 placeholder="CPF ou CNPJ"
-                inputMode="numeric"
+                inputMode="text"
+                maxLength={18}
+                autoCapitalize="characters"
+                spellCheck={false}
                 variant={errors.document ? "error" : "default"}
+                aria-invalid={Boolean(errors.document) || undefined}
+                aria-describedby={errors.document ? "document-error" : undefined}
                 className="font-numbers"
               />
               {errors.document && (
-                <p className="text-xs text-[#f87171]">{errors.document}</p>
+                <p id="document-error" className="text-xs text-[#f87171]">{errors.document}</p>
               )}
             </div>
 
@@ -220,8 +254,12 @@ function ClientModal({ client, open, onOpenChange, onSuccess }: ClientModalProps
                 onChange={(event) => updateField("email", event.target.value)}
                 placeholder="cliente@email.com"
                 variant={errors.email ? "error" : "default"}
+                aria-invalid={Boolean(errors.email) || undefined}
+                aria-describedby={errors.email ? "email-error" : undefined}
               />
-              {errors.email && <p className="text-xs text-[#f87171]">{errors.email}</p>}
+              {errors.email && (
+                <p id="email-error" className="text-xs text-[#f87171]">{errors.email}</p>
+              )}
             </div>
           </div>
 
@@ -258,7 +296,8 @@ export default function CustomersPage() {
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null)
-  const confirmationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [statusMessage, setStatusMessage] = useState("")
+  const afterLoadMessageRef = useRef<string | null>(null)
 
   const [query, setQuery] = useState<ClientQuery>({
     search: "",
@@ -275,6 +314,11 @@ export default function CustomersPage() {
         .then((response) => {
           setClients(response.data)
           setPagination(response.pagination)
+          setStatusMessage(
+            afterLoadMessageRef.current ??
+              `${response.data.length} ${response.data.length === 1 ? "cliente carregado" : "clientes carregados"}.`,
+          )
+          afterLoadMessageRef.current = null
         })
         .catch((error) => {
           setClients([])
@@ -288,12 +332,20 @@ export default function CustomersPage() {
   }, [query])
 
   useEffect(() => {
-    return () => {
-      if (confirmationTimerRef.current) {
-        clearTimeout(confirmationTimerRef.current)
+    if (!confirmingDeleteId) return
+
+    function cancelOnOutsideClick(event: PointerEvent) {
+      const target = event.target
+      if (target instanceof Element && target.closest(`[data-delete-id="${confirmingDeleteId}"]`)) {
+        return
       }
+      setConfirmingDeleteId(null)
+      setStatusMessage("Exclusão de cliente cancelada.")
     }
-  }, [])
+
+    document.addEventListener("pointerdown", cancelOnOutsideClick)
+    return () => document.removeEventListener("pointerdown", cancelOnOutsideClick)
+  }, [confirmingDeleteId])
 
   function handleSearchChange(value: string) {
     setSearchInput(value)
@@ -304,7 +356,8 @@ export default function CustomersPage() {
     setQuery((current) => ({ ...current, page: nextPage, immediate: true }))
   }
 
-  function refreshList() {
+  function refreshList(completionMessage?: string) {
+    afterLoadMessageRef.current = completionMessage ?? null
     setQuery((current) => ({ ...current, immediate: true }))
   }
 
@@ -327,33 +380,24 @@ export default function CustomersPage() {
 
   function handleDeleteClick(client: Client) {
     if (confirmingDeleteId === client.id) {
-      performDelete(client.id)
+      performDelete(client)
       return
     }
 
     setConfirmingDeleteId(client.id)
-
-    if (confirmationTimerRef.current) {
-      clearTimeout(confirmationTimerRef.current)
-    }
-
-    confirmationTimerRef.current = setTimeout(() => {
-      setConfirmingDeleteId((current) => (current === client.id ? null : current))
-    }, 2000)
+    setStatusMessage(`Confirme a exclusão do cliente ${client.name}.`)
   }
 
-  async function performDelete(id: string) {
-    if (confirmationTimerRef.current) {
-      clearTimeout(confirmationTimerRef.current)
-    }
+  async function performDelete(client: Client) {
     setConfirmingDeleteId(null)
-    setIsDeletingId(id)
+    setIsDeletingId(client.id)
     try {
-      await deleteClient(id)
+      await deleteClient(client.id)
       if (clients.length === 1 && pagination && pagination.page > 1) {
+        afterLoadMessageRef.current = `Cliente ${client.name} excluído.`
         handlePageChange(pagination.page - 1)
       } else {
-        refreshList()
+        refreshList(`Cliente ${client.name} excluído.`)
       }
     } catch (error) {
       setListError(error instanceof Error ? error.message : "Erro ao excluir cliente.")
@@ -374,6 +418,7 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-4">
+      <AsyncStatus message={isLoading ? "Carregando clientes." : statusMessage} />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -402,19 +447,23 @@ export default function CustomersPage() {
         transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
         style={{ willChange: "transform, opacity" }}
         className="rounded-none border border-[#27272a] bg-[#18181b] p-5"
+        aria-busy={isLoading}
       >
         <div className="mb-4">
           <Input
             value={searchInput}
             onChange={(event) => handleSearchChange(event.target.value)}
             placeholder="Buscar por nome ou documento..."
-            startIcon={<Search className="h-4 w-4 text-[#71717a]" />}
-            className="rounded-none border-[#27272a] bg-[#09090b] text-[#fafafa] placeholder:text-[#71717a] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
+            startIcon={<Search className="h-4 w-4 text-[#a1a1aa]" />}
+            className="rounded-none border-[#27272a] bg-[#09090b] text-[#fafafa] placeholder:text-[#a1a1aa] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20"
           />
         </div>
 
         {listError && (
-          <div className="mb-4 rounded-none border border-[#f87171]/30 bg-[#f87171]/10 p-3 text-xs text-[#f87171]">
+          <div
+            role="alert"
+            className="mb-4 rounded-none border border-[#f87171]/30 bg-[#f87171]/10 p-3 text-xs text-[#f87171]"
+          >
             {listError}
           </div>
         )}
@@ -446,7 +495,7 @@ export default function CustomersPage() {
                     <p className="text-sm text-[#a1a1aa]">
                       Nenhum cliente encontrado.
                     </p>
-                    <p className="mt-1 text-xs text-[#71717a]">
+                    <p className="mt-1 text-xs text-[#a1a1aa]">
                       Cadastre um novo cliente ou ajuste os filtros de busca.
                     </p>
                   </TableCell>
@@ -469,7 +518,10 @@ export default function CustomersPage() {
                       {client.email ?? "—"}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div
+                        className="flex items-center justify-end gap-2"
+                        data-delete-id={client.id}
+                      >
                         <Button
                           type="button"
                           variant="ghost"
@@ -486,6 +538,11 @@ export default function CustomersPage() {
                           size="sm"
                           disabled={isDeletingId === client.id}
                           onClick={() => handleDeleteClick(client)}
+                          aria-label={
+                            confirmingDeleteId === client.id
+                              ? `Confirmar exclusão do cliente ${client.name}`
+                              : `Excluir cliente ${client.name}`
+                          }
                           className="rounded-none border border-transparent px-2 text-xs text-[#f87171] hover:border-[#f87171]/20 hover:bg-[#f87171]/10 hover:text-[#f87171] disabled:opacity-50"
                         >
                           {confirmingDeleteId === client.id ? (
@@ -499,6 +556,20 @@ export default function CustomersPage() {
                             </>
                           )}
                         </Button>
+                        {confirmingDeleteId === client.id && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setConfirmingDeleteId(null)
+                              setStatusMessage("Exclusão de cliente cancelada.")
+                            }}
+                            className="rounded-none px-2 text-xs text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#fafafa]"
+                          >
+                            Cancelar
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </motion.tr>
@@ -510,7 +581,7 @@ export default function CustomersPage() {
 
         {pagination && pagination.totalPages > 1 && (
           <div className="mt-4 flex items-center justify-between border-t border-[#27272a] pt-4">
-            <p className="text-xs text-[#71717a]">
+            <p className="text-xs text-[#a1a1aa]">
               Página {pagination.page} de {pagination.totalPages}
             </p>
             <div className="flex items-center gap-2">
@@ -541,7 +612,9 @@ export default function CustomersPage() {
         client={editingClient}
         open={isModalOpen}
         onOpenChange={handleCloseModal}
-        onSuccess={refreshList}
+        onSuccess={() =>
+          refreshList(editingClient ? "Cliente atualizado com sucesso." : "Cliente cadastrado com sucesso.")
+        }
       />
     </div>
   )

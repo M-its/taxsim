@@ -62,3 +62,64 @@
 - O ESLint não pôde iniciar porque o ambiente Web existente não contém a
   dependência `@eslint/eslintrc`, já importada por `eslint.config.mjs`; nenhuma
   falha de lint do código desta entrega chegou a ser produzida.
+
+## 2026-09-25 — P1 #3: CNPJ alfanumérico
+
+### Resumo
+
+- CNPJs numéricos existentes foram mantidos sem migração. A auditoria somente
+  leitura encontrou 8 empresas e 5 clientes, todos já armazenados sem máscara,
+  com comprimento esperado e em caixa canônica; não há duplicidade dentro dos
+  respectivos escopos de unicidade.
+- A validação de CNPJ agora aceita os formatos numérico e alfanumérico oficiais:
+  12 posições numéricas/alfanuméricas e dois dígitos verificadores numéricos,
+  calculados por módulo 11 com o valor ASCII do caractere menos 48.
+- Formato inválido e dígito verificador incorreto permanecem diagnósticos
+  internos distintos, mas cadastro, edição e conflitos de unicidade exibem uma
+  única mensagem pública: **CNPJ inválido**.
+- Entradas com máscara, espaços e letras minúsculas são aceitas. O valor enviado
+  à persistência é sempre canônico, sem máscara e em maiúsculas.
+- Cadastro da empresa, exibição em Configurações e CRUD de clientes usam máscara
+  progressiva. CPF continua aceitando somente números e tem validação própria.
+- A busca de clientes normaliza documentos mascarados e letras minúsculas antes
+  de consultar o valor canônico, preservando simultaneamente a busca por nome.
+- Clientes com documentos legados permanecem editáveis quando o documento não é
+  alterado; valores novos ou modificados precisam passar pela validação atual.
+- Não foi necessária alteração no schema Prisma nem migration: os campos já são
+  `String`, e a normalização na fronteira de escrita mantém a unicidade
+  independente de máscara e caixa.
+
+### Arquivos alterados
+
+#### API
+
+- `apps/api/src/shared/documents/br-document.ts`
+- `apps/api/src/shared/documents/br-document.test.ts`
+- `apps/api/src/modules/auth/auth.schema.ts`
+- `apps/api/src/modules/auth/auth.schema.test.ts`
+- `apps/api/src/modules/auth/auth.service.ts`
+- `apps/api/src/modules/auth/auth.controller.test.ts`
+- `apps/api/src/modules/clients/clients.schema.ts`
+- `apps/api/src/modules/clients/clients.schema.test.ts`
+- `apps/api/src/modules/clients/clients.service.ts`
+- `apps/api/src/modules/clients/clients.service.test.ts`
+
+#### Web
+
+- `apps/web/src/lib/br-document.ts`
+- `apps/web/src/lib/br-document.test.ts`
+- `apps/web/src/app/(auth)/register/page.tsx`
+- `apps/web/src/app/(dashboard)/customers/page.tsx`
+- `apps/web/src/app/(dashboard)/settings/page.tsx`
+
+### Validação executada
+
+- Auditoria somente leitura no PostgreSQL local — 8 empresas e 5 clientes sem
+  necessidade de normalização ou correção de duplicidade por tenant.
+- API: `vitest run` — 25 arquivos e 101 testes aprovados.
+- Web: `vitest run` — 4 arquivos e 21 testes aprovados.
+- API: `tsc --noEmit` — aprovado.
+- Web: `tsc --noEmit` — aprovado.
+- Testes específicos cobrem CNPJ numérico, exemplos alfanuméricos oficiais,
+  cálculo de DV, máscara progressiva, CPF numérico, busca canônica, mensagem
+  pública genérica e preservação de documento legado inalterado.

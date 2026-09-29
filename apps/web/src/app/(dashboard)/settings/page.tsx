@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Building2, Search } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { AsyncStatus } from '@/components/ui/async-status'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -21,6 +22,7 @@ import {
   type Municipality,
 } from '@/lib/api'
 import { ApiError } from '@/lib/api'
+import { formatCnpj } from '@/lib/br-document'
 
 interface CompanyFormData {
   name: string
@@ -67,7 +69,7 @@ const UF_OPTIONS = [
 ]
 
 const inputClassName =
-  'rounded-none border-[#27272a] bg-[#09090b] text-[#fafafa] placeholder:text-[#71717a] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20'
+  'rounded-none border-[#27272a] bg-[#09090b] text-[#fafafa] placeholder:text-[#a1a1aa] focus-visible:border-[#34d399] focus-visible:ring-[#34d399]/20'
 
 function parseCompanyForm(company: ReturnType<typeof useAuth>['company']): CompanyFormData | null {
   if (!company) return null
@@ -136,6 +138,8 @@ export default function SettingsPage() {
 
   function handleChange(field: keyof CompanyFormData, value: string) {
     setForm((prev) => (prev ? { ...prev, [field]: value } : null))
+    setError(null)
+    setSuccess(false)
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -156,7 +160,6 @@ export default function SettingsPage() {
       await updateCompany(company.id, payload)
       await refreshCompany()
       setSuccess(true)
-      setTimeout(() => setSuccess(false), 3000)
     } catch (err) {
       let message = 'Erro ao atualizar dados. Tente novamente.'
       if (err instanceof ApiError) {
@@ -185,7 +188,7 @@ export default function SettingsPage() {
             <Building2 className="h-4 w-4" />
           </div>
           <div>
-            <CardTitle className="text-sm font-medium text-[#fafafa]">
+            <CardTitle as="h2" className="text-sm font-medium text-[#fafafa]">
               Dados fiscais da empresa
             </CardTitle>
             <CardDescription className="text-xs text-[#a1a1aa]">
@@ -195,7 +198,18 @@ export default function SettingsPage() {
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5" aria-busy={isSubmitting}>
+            <AsyncStatus
+              message={
+                isSubmitting
+                  ? 'Salvando dados da empresa.'
+                  : success
+                    ? 'Dados atualizados com sucesso.'
+                    : isLoadingMunicipios
+                      ? 'Carregando municípios.'
+                      : ''
+              }
+            />
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="name" className="text-xs text-[#a1a1aa]">
@@ -215,7 +229,7 @@ export default function SettingsPage() {
                 </Label>
                 <Input
                   id="document"
-                  value={form.document}
+                  value={formatCnpj(form.document)}
                   readOnly
                   className={`${inputClassName} cursor-not-allowed opacity-70`}
                 />
@@ -284,7 +298,7 @@ export default function SettingsPage() {
                   Município (IBGE)
                 </Label>
                 {isLoadingMunicipios ? (
-                  <p className="text-sm text-[#71717a]">Carregando municípios...</p>
+                  <p className="text-sm text-[#a1a1aa]">Carregando municípios...</p>
                 ) : form.municipioCode ? (
                   <div className="border border-[#27272a] bg-[#09090b] p-3">
                     <div className="flex items-start justify-between gap-3">
@@ -293,7 +307,7 @@ export default function SettingsPage() {
                           {currentMunicipioName ?? `Código ${form.municipioCode}`}
                         </p>
                         {currentMunicipioName && (
-                          <p className="text-xs text-[#71717a]">IBGE {form.municipioCode}</p>
+                          <p className="text-xs text-[#a1a1aa]">IBGE {form.municipioCode}</p>
                         )}
                       </div>
                       <Button
@@ -314,7 +328,7 @@ export default function SettingsPage() {
                 ) : (
                   <div className="space-y-2">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71717a]" />
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a1a1aa]" />
                       <Input
                         id="municipioCode"
                         value={municipioSearch}
@@ -346,7 +360,7 @@ export default function SettingsPage() {
                                 className="w-full px-3 py-2 text-left transition-colors hover:bg-[#27272a]"
                               >
                                 <p className="text-sm text-[#fafafa]">{municipio.name}</p>
-                                <p className="text-xs text-[#71717a]">IBGE {municipio.code}</p>
+                                <p className="text-xs text-[#a1a1aa]">IBGE {municipio.code}</p>
                               </button>
                             </li>
                           ))}
@@ -355,7 +369,7 @@ export default function SettingsPage() {
                             municipio.name.toLowerCase().includes(municipioSearch.toLowerCase()) ||
                             municipio.code.toString().includes(municipioSearch),
                         ).length === 0 && (
-                          <li className="px-3 py-2 text-xs text-[#71717a]">
+                          <li className="px-3 py-2 text-xs text-[#a1a1aa]">
                             Nenhum município encontrado.
                           </li>
                         )}
@@ -368,9 +382,15 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-end gap-3 pt-2">
               {success && (
-                <span className="text-sm text-[#34d399]">Dados atualizados com sucesso</span>
+                <span role="status" className="text-sm text-[#34d399]">
+                  Dados atualizados com sucesso
+                </span>
               )}
-              {error && <span className="text-sm text-red-400">{error}</span>}
+              {error && (
+                <span role="alert" className="text-sm text-red-400">
+                  {error}
+                </span>
+              )}
               <Button
                 type="submit"
                 disabled={isSubmitting}

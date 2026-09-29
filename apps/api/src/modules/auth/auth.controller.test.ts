@@ -131,7 +131,7 @@ describe('auth routes', () => {
       company: {
         id: 'c1',
         name: 'Test Company',
-        document: '12345678000199',
+        document: '12345678000195',
         taxRegime: 'SIMPLES_NACIONAL',
         municipioCode: 4314902,
         uf: 'RS',
@@ -145,7 +145,7 @@ describe('auth routes', () => {
     const payload = {
       company: {
         name: 'Test Company',
-        document: '12345678000199',
+        document: '12345678000195',
         taxRegime: 'SIMPLES_NACIONAL',
         municipioCode: 4314902,
         uf: 'RS',

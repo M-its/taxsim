@@ -60,9 +60,9 @@ Dentro de cada prioridade, os itens estão na ordem recomendada. Um novo risco d
 
 ### 3. Atualizar CNPJ alfanumérico
 
-- [ ] Aceitar letras e números nos 12 primeiros caracteres e manter os dois verificadores numéricos.
-- [ ] Atualizar máscara, normalização, schema Zod e mensagens.
-- [ ] Cobrir CNPJs antigos e novos com testes.
+- [x] Aceitar letras e números nos 12 primeiros caracteres e manter os dois verificadores numéricos.
+- [x] Atualizar máscara, normalização, schema Zod e mensagens.
+- [x] Cobrir CNPJs antigos e novos com testes.
 
 **Contexto:** mudança vigente desde julho de 2026; deixou de ser apenas uma melhoria futura.
 

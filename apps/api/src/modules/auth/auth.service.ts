@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '../../lib/prisma.js'
 import { seedTaxRulesIfEmpty } from '../../lib/tax-rule-seed.js'
 import { AppError } from '../../shared/errors/AppError.js'
+import { publicDocumentErrorMessage, validateCnpj } from '../../shared/documents/br-document.js'
 import {
   InvalidRefreshTokenError,
   RefreshTokenReuseDetectedError,
@@ -48,7 +49,16 @@ export const generateTokens = async (
 export const register = async (
   app: FastifyInstance,
   input: RegisterInput,
-): Promise<{ user: User; company: Company; tokens: { accessToken: string; refreshToken: string } }> => {
+): Promise<{
+  user: User
+  company: Company
+  tokens: { accessToken: string; refreshToken: string }
+}> => {
+  const documentValidation = validateCnpj(input.company.document)
+  if (!documentValidation.valid) {
+    throw AppError.unprocessable(publicDocumentErrorMessage('CNPJ'))
+  }
+
   const passwordHash = await hashPassword(input.user.password)
 
   try {
@@ -56,7 +66,7 @@ export const register = async (
       const company = await tx.company.create({
         data: {
           name: input.company.name,
-          document: input.company.document,
+          document: documentValidation.normalized,
           taxRegime: input.company.taxRegime,
           municipioCode: input.company.municipioCode,
           uf: input.company.uf,
@@ -87,7 +97,11 @@ export const register = async (
     return { user: result.user, company: result.company, tokens }
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      throw AppError.conflict('Document or email already registered')
+      const target = Array.isArray(error.meta?.target) ? error.meta.target : []
+      if (target.includes('document')) {
+        throw AppError.conflict('CNPJ inválido')
+      }
+      throw AppError.conflict('Não foi possível concluir o cadastro')
     }
     throw error
   }
@@ -181,9 +195,7 @@ export const logoutAll = async (userId: string): Promise<void> => {
   await prisma.refreshToken.deleteMany({ where: { userId } })
 }
 
-export const me = async (
-  userId: string,
-): Promise<{ user: User; company: Company }> => {
+export const me = async (userId: string): Promise<{ user: User; company: Company }> => {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: { company: true },
