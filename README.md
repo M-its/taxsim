@@ -26,7 +26,7 @@ O projeto roda em **duas VMs separadas** na Oracle Cloud Free Tier — não por 
 flowchart TB
     subgraph OCI["☁️ Oracle Cloud Infrastructure (sa-saopaulo-1)"]
         
-        subgraph VM_ARM["🖥️ VM ARM: taxsim-prod (2 OCPU / 12GB)"]
+        subgraph VM_ARM["🖥️ VM ARM: aplicação (2 OCPU / 12GB)"]
             Caddy["🔒 Caddy Reverse Proxy<br/>(Portas 80/443 - DuckDNS + HTTPS)"]
             Web["📱 Next.js 15.5<br/>(taxsim-web)"]
             API["⚙️ Fastify API<br/>(taxsim-api)"]
@@ -134,15 +134,15 @@ O projeto passou por uma auditoria automatizada com [Codex Security](https://git
 | 1 | Exponentes decimais (`1e100000000`) em campos monetários podiam exaurir memória da API | Alta | ✅ Corrigido em Sales e Products, com validação sintática e testes |
 | 2 | `redirectTo` pós-login não validado permitia open redirect / DOM XSS | Alta | ✅ Corrigido — allowlist de caminhos relativos |
 | 3 | Fallback silencioso de `JWT_SECRET` para valor público conhecido | Média | ✅ Corrigido — fail-fast em produção |
-| 5 | Porta da API exposta diretamente, contornando rate limiting centralizado | Média | 🟡 Bypass de autenticação mitigado no Fastify; exposição HTTP direta ainda depende do firewall externo |
+| 5 | Porta da API exposta diretamente, contornando o proxy | Média | ✅ Corrigido — publicações 3000/3333 removidas e validação externa concluída |
 | 6 | Tráfego de autenticação em HTTP puro, sem TLS | Média | ✅ Corrigido — HTTPS via Caddy + Let's Encrypt |
 | 8 | Logout não revogava sessão no servidor (`Path` do cookie divergente) | Baixa | ✅ Corrigido — escopo do cookie alinhado entre set/clear |
 | 4 | Resposta da calculadora RFB confiada sem validação de schema em runtime | Média | ✅ Corrigido — schema Zod, correlação por item e reconciliação de totais |
 | 7 | Refresh tokens armazenados em texto puro no banco (não hasheados) | Baixa | ✅ Corrigido — HMAC-SHA-256 com pepper externo e detecção de reuso |
 
-### Limitações conhecidas (decisão consciente de escopo)
+### Validação operacional
 
-- **Defesa em profundidade da API incompleta:** as portas da API/Web continuam publicadas no `docker-compose.prod.yml`, embora vinculadas ao loopback do host e protegidas externamente pelo firewall da nuvem. Login e cadastro têm limite de 5 tentativas por minuto e IP dentro do Fastify; o risco residual é uma configuração externa expor a API HTTP diretamente.
+- O docker-compose.prod.yml não publica as portas 3000/3333 no host: Caddy é o único serviço da stack principal com portas públicas (80/443) e acessa Web/API pela rede Docker interna. A aplicação mantém rate limiting no Fastify como defesa em profundidade. A configuração e a verificação externa da OCI/host estão descritas no [runbook de firewall da OCI](./docs/runbooks/oci-firewall.md).
 
 ---
 

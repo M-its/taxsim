@@ -11,12 +11,19 @@ opencode.txt
 # Node
 node_modules/
 .npm/
+apps/web/.pnpm-store/
 
 # Next.js
 apps/web/.next/
+apps/web/playwright-report/
+apps/web/test-results/
+.impeccable/critique/
 
 # OS
 .DS_Store
+
+# Local agent runbook
+.claude/napkin.md
 Thumbs.db
 
 # Lock file conflicts

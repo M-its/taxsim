@@ -11,7 +11,7 @@ import {
 } from './auth.controller.js'
 
 const AUTH_RATE_LIMIT = {
-  max: 5,
+  max: Number(process.env.AUTH_RATE_LIMIT_MAX ?? 5),
   timeWindow: '1 minute',
 } as const
 

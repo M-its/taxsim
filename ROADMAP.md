@@ -37,10 +37,18 @@ Dentro de cada prioridade, os itens estão na ordem recomendada. Um novo risco d
 
 ### 4. Fechar a exposição residual da API em produção
 
-- [ ] Confirmar que somente o Caddy é alcançável externamente.
-- [ ] Remover publicações de porta desnecessárias do compose de produção.
-- [ ] Documentar e testar firewall e Security List.
-- [ ] Manter rate limiting no Fastify como defesa em profundidade.
+- [x] Confirmar que somente o Caddy é alcançável externamente.
+- [x] Remover publicações de porta desnecessárias do compose de produção.
+- [x] Documentar firewall, Security List, troca de IP administrativo e rollback.
+- [x] Executar a verificação externa a partir de origens SSH autorizada e não autorizada.
+- [x] Manter rate limiting no Fastify como defesa em profundidade.
+
+**Evidência (24/09/2026):** 7 verificações externas aprovadas. Caddy em
+`80/443` aberto; Next.js `3000`, Fastify `3333` e calculadora `8080/8081`
+fechados no IP público da aplicação. SSH alcançável da origem autorizada e
+recusado da origem não autorizada. A VM da calculadora permanece sem IP
+público; sua remoção foi a correção efetiva da exposição, documentada no
+[runbook OCI](./docs/runbooks/oci-firewall.md).
 
 ## P1 — Confiabilidade e acessibilidade essencial
 

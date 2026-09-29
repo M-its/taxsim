@@ -11,6 +11,7 @@ import { companiesRoutes } from './modules/companies/companies.routes.js'
 import { dashboardRoutes } from './modules/dashboard/dashboard.routes.js'
 import { ncmRoutes } from './modules/ncm/ncm.routes.js'
 import { municipalitiesRoutes } from './modules/municipalities/municipalities.routes.js'
+import { assertProductionJwtSecret } from './config/auth-secrets.js'
 
 const app = Fastify({
   logger: true,
@@ -24,7 +25,9 @@ const app = Fastify({
 // back to a publicly known development secret in a real deployment.
 // This must be enforced here (not only in docker-compose.prod.yml) because
 // the standalone Dockerfile.prod entry point has no other safeguard.
-if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+try {
+  assertProductionJwtSecret(process.env)
+} catch (error) {
   app.log.fatal('JWT_SECRET must be set in production. Refusing to start.')
   process.exit(1)
 }
