@@ -7,10 +7,12 @@ RUN corepack enable && corepack prepare pnpm@10.17.1 --activate
 
 COPY package.json pnpm-lock.yaml* .npmrc pnpm-workspace.yaml ./
 COPY prisma ./prisma/
+COPY docker-entrypoint.dev.sh /usr/local/bin/taxsim-api-dev
 
 RUN pnpm install --frozen-lockfile
 RUN pnpm exec prisma generate
+RUN chmod +x /usr/local/bin/taxsim-api-dev
 
 EXPOSE 3333
 
-CMD ["pnpm", "exec", "tsx", "watch", "src/server.ts"]
+CMD ["taxsim-api-dev"]

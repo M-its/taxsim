@@ -6,8 +6,10 @@ RUN apk add --no-cache curl
 RUN corepack enable && corepack prepare pnpm@10.17.1 --activate
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY docker-entrypoint.dev.sh /usr/local/bin/taxsim-web-dev
 RUN pnpm install --frozen-lockfile
+RUN chmod +x /usr/local/bin/taxsim-web-dev
 
 EXPOSE 3000
 
-CMD ["pnpm", "exec", "next", "dev"]
+CMD ["taxsim-web-dev"]
