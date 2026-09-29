@@ -93,32 +93,32 @@ zoom a 200% e checagem dirigida a 400%.
 
 ### 6. Impedir indexação de rotas privadas
 
-- [ ] Definir `robots: { index: false, follow: false }` nos layouts de autenticação e dashboard.
-- [ ] Criar `robots.ts` permitindo apenas superfícies públicas.
-- [ ] Nunca incluir dashboard, configurações, clientes, vendas ou simulação autenticada no sitemap.
-- [ ] Confirmar que metadados não revelam dados de tenant.
+- [x] Definir `robots: { index: false, follow: false }` nos layouts de autenticação e dashboard.
+- [x] Criar `robots.ts` permitindo apenas superfícies públicas.
+- [x] Nunca incluir dashboard, configurações, clientes, vendas ou simulação autenticada no sitemap.
+- [x] Confirmar que metadados não revelam dados de tenant.
 
 ## P2 — Descoberta pública e evolução de UX
 
 ### 1. Criar landing page pública em `/`
 
-- [ ] Substituir o redirecionamento para `/login` por uma página pública leve.
-- [ ] Explicar proposta de valor, escopo de demonstração e ausência de vínculo com a RFB.
-- [ ] Mostrar funcionalidades e arquitetura sem expor dados internos.
-- [ ] Oferecer CTAs para demonstração, login e GitHub.
-- [ ] Manter login e cadastro fora do índice.
+- [x] Substituir o redirecionamento para `/login` por uma página pública leve.
+- [x] Explicar proposta de valor, escopo de demonstração e ausência de vínculo com a RFB.
+- [x] Mostrar funcionalidades e arquitetura sem expor dados internos.
+- [x] Oferecer CTAs para demonstração, login e dashboard autenticado.
+- [x] Manter login e cadastro fora do índice.
 
 **Dependência:** os próximos itens de SEO só geram valor depois que existe conteúdo público indexável.
 
 ### 2. Completar metadados e compartilhamento social
 
-- [ ] Configurar `metadataBase` com origem confiável.
-- [ ] Usar template de títulos e descrição específica para a landing.
-- [ ] Adicionar canonical, application name, autor, creator e publisher.
-- [ ] Configurar Open Graph com URL, locale, site name e imagem 1200 × 630 com texto alternativo.
-- [ ] Configurar Twitter/X Card consistente.
-- [ ] Manter `lang="pt-BR"`.
-- [ ] Não adicionar `meta keywords`; conteúdo e metadados semânticos têm prioridade.
+- [x] Configurar `metadataBase` com origem confiável.
+- [x] Usar template de títulos e descrição específica para a landing.
+- [x] Adicionar canonical, application name, autor, creator e publisher.
+- [x] Configurar Open Graph com URL, locale, site name e imagem 1200 × 630 com texto alternativo.
+- [x] Configurar Twitter/X Card consistente.
+- [x] Manter `lang="pt-BR"`.
+- [x] Não adicionar `meta keywords`; conteúdo e metadados semânticos têm prioridade.
 
 ### 3. Adicionar superfícies técnicas de descoberta
 

@@ -433,3 +433,86 @@ o baseline pragmático, sem ser apresentada como teste aprovado.
 - Web Vitest: **5 arquivos e 23 testes aprovados**; a pasta Playwright é
   explicitamente excluída desse runner.
 - TypeScript API e Web: aprovados com `--noEmit --incremental false`.
+
+## 2026-09-26 — P2 #1 e #2: landing pública e metadados
+
+### Posicionamento e direção visual
+
+- A raiz `/` deixou de redirecionar para o login e passou a apresentar o
+  TaxSim como portfólio técnico full-stack para recrutadores e engenheiros.
+- A landing adota uma direção editorial técnica: tipografia de grande escala,
+  grade precisa, cantos retos, alto contraste e verde usado como acento
+  funcional. A hierarquia, o espaçamento, a ação principal única e a redução
+  de cartões decorativos seguem os princípios publicados pelo
+  `impeccable.style`, preservando o design system escuro existente.
+- O conteúdo está somente em `pt-BR` e cobre produto, arquitetura de alto nível,
+  segurança e acessibilidade. Não foram incluídos depoimentos, logos de
+  clientes, planos ou detalhes operacionais sensíveis.
+- O diagrama público limita-se ao fluxo Next.js → API Fastify → PostgreSQL,
+  motor tributário e calculadora RFB, com alternativa textual acessível.
+- Visitantes recebem os CTAs `Entrar` e `Experimentar demonstração`; este
+  último leva ao cadastro. Uma sessão válida mantém o usuário na landing e
+  substitui essas ações por `Ir ao dashboard`.
+- O rodapé exibe permanentemente o disclaimer aprovado: “Projeto de
+  demonstração técnica, sem vínculo com a Receita Federal. Não deve ser usado
+  para cálculos fiscais reais.”
+
+### Metadados e indexação
+
+- `metadataBase`, canonical, author/creator e publisher usam respectivamente
+  `https://taxsim-web.duckdns.org`, `Mitsrael` e `TaxSim`.
+- O canonical da landing sempre aponta para produção. O host definitivo emite
+  `index, follow`; qualquer outro host emite `noindex, nofollow, noarchive,
+  nosnippet`. Login, cadastro e todas as rotas privadas continuam declarando
+  `noindex, nofollow` em seus layouts.
+- Open Graph e Twitter Card foram definidos somente no segmento da landing.
+  A imagem social é gerada deterministicamente em PNG, 1200 × 630, com marca,
+  posicionamento curto e a indicação `demonstração técnica`, sem identidade
+  visual que sugira um produto oficial da Receita Federal.
+- `robots.txt` declara o host de produção, permite a landing e bloqueia as
+  rotas de autenticação, API e aplicação privada.
+
+### Arquivos alterados
+
+- Rota e conteúdo: remoção de `apps/web/src/app/page.tsx` e criação de
+  `apps/web/src/app/(landing)/page.tsx`,
+  `apps/web/src/components/landing/landing-page.tsx` e
+  `apps/web/src/app/(landing)/opengraph-image.tsx`.
+- Metadados globais e crawler: `apps/web/src/app/layout.tsx` e
+  `apps/web/src/app/robots.ts`.
+- Regressão automatizada: `apps/web/tests/accessibility/landing.spec.ts`.
+- Registro: este arquivo.
+
+### Validação
+
+- TypeScript Web: aprovado com `--noEmit --incremental false`.
+- Web Vitest: **5 arquivos e 23 testes aprovados**.
+- Build de produção Next.js: aprovado; `/`, `robots.txt` e a imagem Open Graph
+  foram gerados. A rota pública adiciona aproximadamente 6,27 kB ao bundle da
+  página e mantém 113 kB de First Load JS no relatório do build.
+- HTML verificado por host: ambiente local emitiu `noindex, nofollow,
+  noarchive, nosnippet`; o host de produção emitiu `index, follow`; ambos
+  emitiram o canonical definitivo correto.
+- Playwright/axe em banco descartável e calculadora determinística: **28
+  cenários aprovados e 2 skips condicionais esperados** em Chromium desktop e
+  móvel. Os quatro cenários da landing cobriram visitante, sessão autenticada,
+  CTA, disclaimer, canonical, Open Graph, política de robots e ausência de
+  violações sérias/críticas.
+- Capturas full-page em 1440 × 900 e 412 × 915 foram inspecionadas após o estado
+  de sessão estabilizar. Hierarquia, reflow, CTAs e disclaimer permaneceram
+  legíveis nos dois viewports.
+
+### Pendências da crítica Impeccable
+
+A crítica posterior da landing não encontrou P0, mas registrou quatro melhorias
+conhecidas que permanecem abertas e não invalidam o aceite funcional desta
+entrega:
+
+- **P1:** definir timeout e recuperação quando a restauração da sessão demora
+  ou falha, sem bloquear os CTAs públicos indefinidamente.
+- **P1:** tornar a audiência primária e o resultado esperado mais explícitos no
+  hero, reduzindo a competição entre “portfólio”, “SaaS” e “demonstração”.
+- **P1:** mostrar uma prova concreta do produto no primeiro terço da página,
+  como um exemplo comparativo ou captura com dados demonstrativos.
+- **P2:** manter uma ação acessível no header móvel e reduzir a extensão ou a
+  repetição da página em viewports estreitos.
