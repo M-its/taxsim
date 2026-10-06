@@ -33,12 +33,32 @@ export function useComboboxNavigation<T>({
 
   useEffect(() => setActiveIndex(-1), [items])
 
+  const activeOptionId =
+    activeIndex >= 0 && items[activeIndex]
+      ? getOptionId(items[activeIndex], activeIndex)
+      : undefined
+
   function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
       event.preventDefault()
-      setActiveIndex((current) =>
-        nextComboboxIndex(current, items.length, event.key as ComboboxNavigationKey),
+      const nextIndex = nextComboboxIndex(
+        activeIndex,
+        items.length,
+        event.key as ComboboxNavigationKey,
       )
+      setActiveIndex(nextIndex)
+      if (items[nextIndex]) {
+        const optionId = getOptionId(items[nextIndex], nextIndex)
+        // Wait for the input handler to open/render the list. Pointer hover must
+        // not scroll the list and feed another mouseenter back into selection.
+        requestAnimationFrame(() => {
+          document.getElementById(optionId)?.scrollIntoView({
+            block: 'nearest',
+            inline: 'nearest',
+            behavior: 'instant',
+          })
+        })
+      }
       return
     }
 
@@ -57,10 +77,7 @@ export function useComboboxNavigation<T>({
 
   return {
     activeIndex,
-    activeOptionId:
-      activeIndex >= 0 && items[activeIndex]
-        ? getOptionId(items[activeIndex], activeIndex)
-        : undefined,
+    activeOptionId,
     onKeyDown,
     setActiveIndex,
   }

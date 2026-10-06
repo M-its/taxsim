@@ -249,6 +249,7 @@ function ProductModal({ taxRegime, product, open, onOpenChange, onSuccess }: Pro
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedNcm, setSelectedNcm] = useState<NcmDiagnosis | null>(null)
   const errorSummaryRef = useRef<HTMLDivElement>(null)
+  const nameInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (open) {
@@ -320,6 +321,7 @@ function ProductModal({ taxRegime, product, open, onOpenChange, onSuccess }: Pro
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        initialFocus={nameInputRef}
         showCloseButton={false}
         className="rounded-none border border-[#27272a] bg-[#18181b] p-0 text-[#fafafa] sm:max-w-md"
       >
@@ -364,6 +366,7 @@ function ProductModal({ taxRegime, product, open, onOpenChange, onSuccess }: Pro
               </Label>
               <Input
                 id="name"
+                ref={nameInputRef}
                 value={values.name}
                 onChange={(event) => updateField('name', event.target.value)}
                 placeholder="Ex: Notebook Dell"
@@ -459,7 +462,7 @@ function ProductModal({ taxRegime, product, open, onOpenChange, onSuccess }: Pro
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1f2a1f] disabled:translate-y-0"
+              className="rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-colors duration-150 hover:bg-[#1f2a1f]"
             >
               {isSubmitting ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Cadastrar'}
             </Button>
@@ -623,14 +626,14 @@ export default function ProductsPage() {
             Gerencie o catálogo de produtos e suas informações tributárias.
           </p>
           {ncmCatalogVersion && (
-            <p className="mt-1 text-xs text-[#71717a]">
+            <p className="mt-1 text-xs text-[#a1a1aa]">
               Catálogo NCM: versão {ncmCatalogVersion.split('-').reverse().join('/')}
             </p>
           )}
         </div>
         <Button
           onClick={handleOpenCreate}
-          className="w-fit gap-2 rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1f2a1f]"
+          className="w-fit gap-2 rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-colors duration-150 hover:bg-[#1f2a1f]"
         >
           <Plus className="h-4 w-4" />
           Novo Produto

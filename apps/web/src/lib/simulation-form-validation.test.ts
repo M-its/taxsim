@@ -38,7 +38,7 @@ describe('simulation NCM validation', () => {
     expect(errors.catalog).toEqual([
       {
         field: 'product',
-        message: 'NCM vigente, mas sem regra para este regime.',
+        message: 'NCM vigente, mas não simulável neste regime por falta de regra fiscal.',
       },
     ])
   })
@@ -82,6 +82,8 @@ describe('simulation NCM validation', () => {
 
     expect(Object.keys(errors)).toEqual(['missing', 'no-rule'])
     expect(errors.missing[0].message).toBe('NCM não encontrado no catálogo.')
-    expect(errors['no-rule'][0].message).toBe('NCM vigente, mas sem regra para este regime.')
+    expect(errors['no-rule'][0].message).toBe(
+      'NCM vigente, mas não simulável neste regime por falta de regra fiscal.',
+    )
   })
 })

@@ -1,13 +1,13 @@
-"use client"
+'use client'
 
-import { motion } from "framer-motion"
-import { Info } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { formatCurrency, formatPercent } from "@/lib/formatters"
-import type { TaxRegime } from "@/lib/auth.types"
-import type { SimulationResponse } from "@/lib/simulation.types"
+import { motion } from 'framer-motion'
+import { Info } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import { formatCurrency, formatPercent } from '@/lib/formatters'
+import type { TaxRegime } from '@/lib/auth.types'
+import type { SimulationResponse } from '@/lib/simulation.types'
 
 interface TaxComparisonProps {
   data: SimulationResponse
@@ -15,9 +15,9 @@ interface TaxComparisonProps {
 }
 
 const REGIME_LABELS: Record<TaxRegime, string> = {
-  SIMPLES_NACIONAL: "Simples Nacional",
-  LUCRO_PRESUMIDO: "Lucro Presumido",
-  LUCRO_REAL: "Lucro Real",
+  SIMPLES_NACIONAL: 'Simples Nacional',
+  LUCRO_PRESUMIDO: 'Lucro Presumido',
+  LUCRO_REAL: 'Lucro Real',
 }
 
 interface LineItemProps {
@@ -29,20 +29,16 @@ interface LineItemProps {
 function LineItem({ label, value, isTotal }: LineItemProps) {
   return (
     <div
-      className={`flex items-center justify-between py-2 ${
-        isTotal ? "border-t border-[#27272a] pt-3" : ""
+      className={`flex min-w-0 flex-wrap items-center justify-between gap-2 py-2 ${
+        isTotal ? 'border-t border-[#27272a] pt-3' : ''
       }`}
     >
-      <span
-        className={
-          isTotal ? "text-sm font-medium text-[#fafafa]" : "text-sm text-[#a1a1aa]"
-        }
-      >
+      <span className={isTotal ? 'text-sm font-medium text-[#fafafa]' : 'text-sm text-[#a1a1aa]'}>
         {label}
       </span>
       <span
-        className={`font-numbers ${
-          isTotal ? "text-base font-semibold text-[#fafafa]" : "text-sm text-[#fafafa]"
+        className={`max-w-full break-all font-numbers ${
+          isTotal ? 'text-base font-semibold text-[#fafafa]' : 'text-sm text-[#fafafa]'
         }`}
       >
         {formatCurrency(value)}
@@ -53,20 +49,20 @@ function LineItem({ label, value, isTotal }: LineItemProps) {
 
 export function TaxComparison({ data, taxRegime }: TaxComparisonProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
-        style={{ willChange: "transform, opacity" }}
+        transition={{ duration: 0.4, ease: 'easeOut', delay: 0.1 }}
+        style={{ willChange: 'transform, opacity' }}
       >
-        <Card className="rounded-none border-[#27272a] bg-[#18181b]">
+        <Card className="min-w-0 rounded-none border-[#27272a] bg-[#18181b]">
           <CardHeader className="border-b border-[#27272a] pb-4">
-            <div className="flex items-center justify-between">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
               <CardTitle as="h2" className="text-sm font-medium text-[#fafafa]">
                 Regime Atual
               </CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <Badge
                   variant="secondary"
                   className="rounded-none bg-[#27272a] text-xs text-[#a1a1aa]"
@@ -75,7 +71,7 @@ export function TaxComparison({ data, taxRegime }: TaxComparisonProps) {
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="rounded-none border-[#27272a] bg-transparent text-xs text-[#a1a1aa]"
+                  className="min-w-0 rounded-none border-[#27272a] bg-transparent text-xs text-[#a1a1aa]"
                 >
                   {formatPercent(data.currentModel.effectiveRate)}
                 </Badge>
@@ -96,25 +92,25 @@ export function TaxComparison({ data, taxRegime }: TaxComparisonProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut", delay: 0.2 }}
-        style={{ willChange: "transform, opacity" }}
+        transition={{ duration: 0.4, ease: 'easeOut', delay: 0.2 }}
+        style={{ willChange: 'transform, opacity' }}
       >
-        <Card className="rounded-none border-[#34d399]/30 bg-gradient-to-br from-[#34d399]/5 to-[#18181b]">
+        <Card className="min-w-0 rounded-none border-[#34d399]/30 bg-gradient-to-br from-[#34d399]/5 to-[#18181b]">
           <CardHeader className="border-b border-[#27272a] pb-4">
-            <div className="flex items-center justify-between">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
               <CardTitle as="h2" className="text-sm font-medium text-[#fafafa]">
                 IVA Dual (Reforma)
               </CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <Badge
                   variant="emerald"
-                  className="rounded-none border-[#34d399]/20 bg-[#34d399]/10 text-xs text-[#34d399]"
+                  className="min-w-0 rounded-none border-[#34d399]/20 bg-[#34d399]/10 text-xs text-[#34d399]"
                 >
                   Novo Modelo
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="rounded-none border-[#34d399]/30 bg-transparent text-xs text-[#34d399]"
+                  className="min-w-0 rounded-none border-[#34d399]/30 bg-transparent text-xs text-[#34d399]"
                 >
                   {formatPercent(data.reformModel.effectiveRate)}
                 </Badge>
@@ -135,13 +131,13 @@ export function TaxComparison({ data, taxRegime }: TaxComparisonProps) {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut", delay: 0.3 }}
-          style={{ willChange: "transform, opacity" }}
+          transition={{ duration: 0.4, ease: 'easeOut', delay: 0.3 }}
+          style={{ willChange: 'transform, opacity' }}
           className="lg:col-span-2"
         >
-          <Card className="rounded-none border-[#27272a] bg-[#09090b]">
+          <Card className="min-w-0 rounded-none border-[#27272a] bg-[#09090b]">
             <CardHeader className="border-b border-[#27272a] pb-4">
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <Info className="h-4 w-4 text-[#a1a1aa]" />
                 <CardTitle as="h2" className="text-sm font-medium text-[#fafafa]">
                   Split Payment (NT 2025.002)
@@ -152,7 +148,7 @@ export function TaxComparison({ data, taxRegime }: TaxComparisonProps) {
               </p>
             </CardHeader>
             <CardContent className="pt-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                   <p className="text-xs text-[#a1a1aa]">IBS Retido</p>
                   <p className="mt-1 font-numbers text-sm text-[#fafafa]">

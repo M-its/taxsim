@@ -576,3 +576,25 @@ entrega:
 - Matriz manual de acessibilidade concluída conforme aceite informado pelo responsável: teclado em Firefox, NVDA com Chromium, zoom a 200% e checagem dirigida a 400%. Não foi reexecutada nesta preparação.
 - Produtos e Clientes recebem títulos nativos Editar/Excluir; os nomes acessíveis existentes são preservados e a confirmação de exclusão não recebe tooltip redundante.
 - Release sem novas features. Procedimento operacional e consultas somente leitura em docs/runbooks/release-deploy-rollback.md e release-preflight.sql.
+
+
+## 2026-10-06 — Correções pós-teste manual: teclado e reflow
+
+- Busca global inerte já removida em `aa48450`; filtros de Produtos/Clientes possuem handlers e consulta à API.
+- Lista compartilhada de NCM/produtos rola a opção ativa à vista sem tirar o foco do combobox.
+- Adicionar item foca Produto ou Código NCM conforme o modo herdado; limpar restaura foco ao primeiro Produto.
+- Foco inicial explícito em Nome nos dialogs de Produtos/Clientes e no título em detalhes de venda; retorno continua gerenciado pelo Base UI.
+- Formulário e resultado de /simulation permitem quebra de grupos/texto em 320 CSS px (equivalente ao reflow de 1280 px a 400%).
+- Removidos deslocamentos no hover de ações autenticadas; landing e primitivos compartilhados preservados.
+- `c3fa21e` introduziu diagnóstico compartilhado e testes com expectativas divergentes no mesmo commit. Mantida mensagem clara de ausência de regra fiscal; expectativas correspondentes corrigidas. Restaurada mensagem neutra de NCM não vigente, pois NOT_CURRENT também inclui vigência futura: chamar todos de expirados era incorreto.
+- Cenários Playwright adicionados para scroll real da lista, foco, geometria no hover e ausência de overflow em formulário/resultado/erro.
+
+### Validação desta correção
+
+- API: 27 arquivos / 110 testes aprovados; TypeScript `--noEmit` aprovado em Node 22 no container.
+- Web: 5 arquivos / 23 testes aprovados; TypeScript aprovado incluindo testes/configuração Playwright (`--noEmit --incremental false`).
+- Axe/Playwright: 42 cenários aprovados e 2 skips condicionais esperados em Chromium desktop/móvel; 16 execuções novas para os achados manuais.
+- Captura do resultado em 320 CSS px inspecionada após estabilização das animações; formulário, cards e valores sem overflow horizontal. Não substitui um novo teste manual de zoom/NVDA.
+- Contraste da versão do catálogo em Produtos corrigido após violação séria detectada pelo axe (4,11:1).
+- Medição de hover espera a animação de entrada terminar para não confundir seu deslocamento inicial de 20 px com movimento por hover.
+- Testes E2E executados exclusivamente no banco descartável `taxsim_a11y`; nenhum deploy, push ou migration em bancos de desenvolvimento/produção.

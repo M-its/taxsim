@@ -23,7 +23,7 @@ export function getNcmStatusMessage(status: NcmEligibilityStatus): string {
     case 'NOT_FOUND':
       return 'NCM não encontrado no catálogo.'
     case 'NOT_CURRENT':
-      return 'NCM expirado: o código não está vigente.'
+      return 'NCM existe no catálogo, mas não está vigente.'
     case 'NO_ACTIVE_RULE':
       return 'NCM vigente, mas não simulável neste regime por falta de regra fiscal.'
     case 'CONFIGURATION_UNAVAILABLE':

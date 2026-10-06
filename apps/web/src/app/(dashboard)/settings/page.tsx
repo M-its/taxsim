@@ -394,7 +394,7 @@ export default function SettingsPage() {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1f2a1f] disabled:opacity-60"
+                className="rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-colors duration-150 hover:bg-[#1f2a1f] disabled:opacity-60"
               >
                 {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
               </Button>

@@ -87,6 +87,7 @@ function ClientModal({ client, open, onOpenChange, onSuccess }: ClientModalProps
   const [apiError, setApiError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const errorSummaryRef = useRef<HTMLDivElement>(null)
+  const nameInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (open) {
@@ -160,6 +161,7 @@ function ClientModal({ client, open, onOpenChange, onSuccess }: ClientModalProps
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        initialFocus={nameInputRef}
         showCloseButton={false}
         className="rounded-none border border-[#27272a] bg-[#18181b] p-0 text-[#fafafa] sm:max-w-md"
       >
@@ -204,6 +206,7 @@ function ClientModal({ client, open, onOpenChange, onSuccess }: ClientModalProps
               </Label>
               <Input
                 id="name"
+                ref={nameInputRef}
                 value={values.name}
                 onChange={(event) => updateField('name', event.target.value)}
                 placeholder="Ex: Cliente Exemplo"
@@ -279,7 +282,7 @@ function ClientModal({ client, open, onOpenChange, onSuccess }: ClientModalProps
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1f2a1f] disabled:translate-y-0"
+              className="rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-colors duration-150 hover:bg-[#1f2a1f]"
             >
               {isSubmitting ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Cadastrar'}
             </Button>
@@ -439,7 +442,7 @@ export default function CustomersPage() {
         </div>
         <Button
           onClick={handleOpenCreate}
-          className="w-fit gap-2 rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1f2a1f]"
+          className="w-fit gap-2 rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-colors duration-150 hover:bg-[#1f2a1f]"
         >
           <Plus className="h-4 w-4" />
           Novo Cliente

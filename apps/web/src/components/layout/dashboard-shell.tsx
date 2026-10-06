@@ -53,9 +53,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       }
 
       if (event.key !== 'Tab') return
-      const controls = Array.from(
-        sidebar!.querySelectorAll<HTMLElement>(focusableSelector),
-      ).filter((control) => control.getClientRects().length > 0)
+      const controls = Array.from(sidebar!.querySelectorAll<HTMLElement>(focusableSelector)).filter(
+        (control) => control.getClientRects().length > 0,
+      )
       if (controls.length === 0) {
         event.preventDefault()
         return
@@ -104,7 +104,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               isSidebarOpen ? 'md:pl-64' : 'md:pl-16',
             )}
           >
-            <div className="mx-auto max-w-7xl p-6">{children}</div>
+            <div className="mx-auto max-w-7xl min-w-0 p-4 sm:p-6">{children}</div>
           </main>
         </div>
         {isMobile && isSidebarOpen && (

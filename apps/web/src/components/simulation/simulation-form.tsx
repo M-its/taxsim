@@ -215,7 +215,7 @@ function ProductSearch({
   }, [query, taxRegime])
 
   return (
-    <div className="space-y-2">
+    <div className="min-w-0 space-y-2">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a1a1aa]" />
         <Input
@@ -256,7 +256,7 @@ function ProductSearch({
 
       {selectedProduct && (
         <div className="flex items-start justify-between gap-3 border border-[#27272a] bg-[#09090b] p-3">
-          <div className="space-y-1">
+          <div className="min-w-0 space-y-1 break-words">
             <p className="text-sm font-medium text-[#fafafa]">{selectedProduct.name}</p>
             <p className="text-xs text-[#a1a1aa]">
               SKU {selectedProduct.sku} · NCM {selectedProduct.ncmCode} ·{' '}
@@ -297,7 +297,7 @@ function ProductSearch({
                 onMouseEnter={() => combobox.setActiveIndex(index)}
                 onClick={() => chooseProduct({ product, diagnosis })}
                 className={cn(
-                  'w-full px-3 py-2 text-left transition-colors hover:bg-[#27272a]',
+                  'w-full break-words px-3 py-2 text-left transition-colors hover:bg-[#27272a]',
                   combobox.activeIndex === index && 'bg-[#27272a]',
                 )}
               >
@@ -320,10 +320,7 @@ function ProductSearch({
   )
 }
 
-function simulationFieldId(
-  item: ItemDraft,
-  field: SimulationValidationError['field'],
-): string {
+function simulationFieldId(item: ItemDraft, field: SimulationValidationError['field']): string {
   if (field === 'product') return `product-${item.id}`
   if (field === 'ncm') return `ncm-${item.id}`
   if (field === 'unitPrice') return `price-${item.id}`
@@ -337,12 +334,12 @@ function focusFirstSimulationError(
   for (const item of items) {
     const errors = errorsByItem[item.id] ?? []
     const order: SimulationValidationError['field'][] =
-      item.mode === 'catalog'
-        ? ['product', 'quantity']
-        : ['ncm', 'unitPrice', 'quantity']
+      item.mode === 'catalog' ? ['product', 'quantity'] : ['ncm', 'unitPrice', 'quantity']
     const firstField = order.find((field) => errors.some((error) => error.field === field))
     if (firstField) {
-      requestAnimationFrame(() => document.getElementById(simulationFieldId(item, firstField))?.focus())
+      requestAnimationFrame(() =>
+        document.getElementById(simulationFieldId(item, firstField))?.focus(),
+      )
       return
     }
   }
@@ -396,7 +393,7 @@ function ManualNcmSearch({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="min-w-0 space-y-2">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#a1a1aa]" />
         <Input
@@ -456,7 +453,7 @@ function ManualNcmSearch({
                 onMouseEnter={() => combobox.setActiveIndex(index)}
                 onClick={() => chooseNcm(ncm)}
                 className={cn(
-                  'w-full px-3 py-2 text-left transition-colors hover:bg-[#27272a]',
+                  'w-full break-words px-3 py-2 text-left transition-colors hover:bg-[#27272a]',
                   combobox.activeIndex === index && 'bg-[#27272a]',
                 )}
               >
@@ -509,6 +506,16 @@ export function SimulationForm({
     Record<string, SimulationValidationError[]>
   >({})
   const [isCheckingEligibility, setIsCheckingEligibility] = useState(false)
+  const [pendingFocusId, setPendingFocusId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!pendingFocusId) return
+    const frame = requestAnimationFrame(() => {
+      document.getElementById(pendingFocusId)?.focus()
+      setPendingFocusId(null)
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [pendingFocusId])
 
   useEffect(() => {
     if (serverIssues.length === 0) return
@@ -623,11 +630,15 @@ export function SimulationForm({
 
   function addItem() {
     const lastMode = items[items.length - 1]?.mode ?? 'catalog'
-    setItems((current) => [...current, createEmptyItem(lastMode)])
+    const newItem = createEmptyItem(lastMode)
+    setItems((current) => [...current, newItem])
+    setPendingFocusId(simulationFieldId(newItem, lastMode === 'catalog' ? 'product' : 'ncm'))
   }
 
   function clearAll() {
-    setItems([createEmptyItem()])
+    const newItem = createEmptyItem()
+    setItems([newItem])
+    setPendingFocusId(simulationFieldId(newItem, 'product'))
     setValidationErrors({})
     onClearServerIssues?.()
   }
@@ -673,9 +684,9 @@ export function SimulationForm({
   if (isLoadingCompany) {
     return (
       <div className="space-y-5 rounded-none border border-[#27272a] bg-[#18181b] p-5">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-start gap-3">
           <div className="h-8 w-8 animate-pulse bg-[#27272a]" />
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <div className="h-4 w-48 animate-pulse bg-[#27272a]" />
             <div className="h-3 w-32 animate-pulse bg-[#27272a]" />
           </div>
@@ -697,7 +708,7 @@ export function SimulationForm({
       onSubmit={handleSubmit}
       noValidate
       aria-busy={isSubmitting || isCheckingEligibility}
-      className="rounded-none border border-[#27272a] bg-[#18181b] p-5"
+      className="min-w-0 rounded-none border border-[#27272a] bg-[#18181b] p-4 sm:p-5"
     >
       <AsyncStatus
         message={
@@ -709,8 +720,8 @@ export function SimulationForm({
         }
       />
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center bg-[#34d399]/10 text-[#34d399]">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center bg-[#34d399]/10 text-[#34d399]">
             <Calculator className="h-4 w-4" />
           </div>
           <div>
@@ -723,7 +734,7 @@ export function SimulationForm({
         {taxRegime && (
           <Badge
             variant="secondary"
-            className="w-fit rounded-none bg-[#27272a] text-xs text-[#a1a1aa]"
+            className="max-w-full w-fit whitespace-normal rounded-none bg-[#27272a] text-xs text-[#a1a1aa]"
           >
             Regime: {REGIME_LABELS[taxRegime]}
           </Badge>
@@ -770,17 +781,17 @@ export function SimulationForm({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, delay: index * 0.05 }}
               className={cn(
-                'rounded-none border bg-[#09090b] p-4',
+                'min-w-0 rounded-none border bg-[#09090b] p-3 sm:p-4',
                 errors.length > 0 ? 'border-[#f87171]/60' : 'border-[#27272a]',
               )}
             >
               <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <span className="text-xs font-medium text-[#a1a1aa]">Item {index + 1}</span>
                   <div
                     role="group"
                     aria-label={`Modo do item ${index + 1}`}
-                    className="flex items-center border border-[#27272a]"
+                    className="flex max-w-full flex-wrap items-center border border-[#27272a]"
                   >
                     <Button
                       type="button"
@@ -789,7 +800,7 @@ export function SimulationForm({
                       aria-pressed={item.mode === 'catalog'}
                       onClick={() => changeMode(item.id, 'catalog')}
                       className={cn(
-                        'h-7 rounded-none px-3 text-xs',
+                        'h-auto min-h-7 whitespace-normal rounded-none px-3 py-1 text-xs',
                         item.mode === 'catalog'
                           ? 'bg-[#27272a] text-[#fafafa] hover:bg-[#27272a]'
                           : 'text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#fafafa]',
@@ -805,7 +816,7 @@ export function SimulationForm({
                       aria-pressed={item.mode === 'manual'}
                       onClick={() => changeMode(item.id, 'manual')}
                       className={cn(
-                        'h-7 rounded-none px-3 text-xs',
+                        'h-auto min-h-7 whitespace-normal rounded-none px-3 py-1 text-xs',
                         item.mode === 'manual'
                           ? 'bg-[#27272a] text-[#fafafa] hover:bg-[#27272a]'
                           : 'text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#fafafa]',
@@ -828,9 +839,9 @@ export function SimulationForm({
                 </Button>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
                 {item.mode === 'catalog' ? (
-                  <div className="md:col-span-2">
+                  <div className="min-w-0 md:col-span-2">
                     <Label
                       htmlFor={`product-${item.id}`}
                       className="mb-2 block text-xs text-[#a1a1aa]"
@@ -865,7 +876,7 @@ export function SimulationForm({
                   </div>
                 ) : (
                   <>
-                    <div className="space-y-2">
+                    <div className="min-w-0 space-y-2">
                       <Label htmlFor={`ncm-${item.id}`} className="text-xs text-[#a1a1aa]">
                         Código NCM
                       </Label>
@@ -890,7 +901,7 @@ export function SimulationForm({
                       ))}
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="min-w-0 space-y-2">
                       <Label htmlFor={`price-${item.id}`} className="text-xs text-[#a1a1aa]">
                         Preço Unitário (R$)
                       </Label>
@@ -918,7 +929,7 @@ export function SimulationForm({
                   </>
                 )}
 
-                <div className="space-y-2">
+                <div className="min-w-0 space-y-2">
                   <Label htmlFor={`qty-${item.id}`} className="text-xs text-[#a1a1aa]">
                     Quantidade
                   </Label>
@@ -955,19 +966,18 @@ export function SimulationForm({
                   </div>
                 )}
               </div>
-
             </motion.div>
           )
         })}
       </div>
 
       <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex min-w-0 flex-wrap gap-2">
           <Button
             type="button"
             variant="ghost"
             onClick={addItem}
-            className="w-fit gap-2 rounded-none border border-[#27272a] bg-transparent px-4 py-2 text-sm text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#fafafa]"
+            className="max-w-full h-auto min-h-8 w-fit whitespace-normal gap-2 rounded-none border border-[#27272a] bg-transparent px-4 py-2 text-sm text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#fafafa]"
           >
             <Plus className="h-4 w-4" />
             Adicionar item
@@ -976,7 +986,7 @@ export function SimulationForm({
             type="button"
             variant="ghost"
             onClick={clearAll}
-            className="w-fit gap-2 rounded-none px-4 py-2 text-sm text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#fafafa]"
+            className="max-w-full h-auto min-h-8 w-fit whitespace-normal gap-2 rounded-none px-4 py-2 text-sm text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#fafafa]"
           >
             <RotateCcw className="h-4 w-4" />
             Limpar tudo
@@ -988,9 +998,8 @@ export function SimulationForm({
           data-tour="simulation-submit"
           disabled={isSubmitting || isCheckingEligibility}
           className={cn(
-            'rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1f2a1f]',
-            (isSubmitting || isCheckingEligibility) &&
-              'cursor-not-allowed opacity-60 hover:translate-y-0',
+            'h-auto min-h-8 max-w-full whitespace-normal rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-colors duration-150 hover:bg-[#1f2a1f]',
+            (isSubmitting || isCheckingEligibility) && 'cursor-not-allowed opacity-60',
           )}
         >
           {isCheckingEligibility

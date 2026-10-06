@@ -90,13 +90,13 @@ export default function SimulationPage() {
         <AsyncStatus message="Carregando dados da empresa para a simulação." />
         <div>
           <SkeletonBlock className="h-6 w-40" />
-          <SkeletonBlock className="mt-2 h-4 w-72" />
+          <SkeletonBlock className="mt-2 h-4 w-72 max-w-full" />
         </div>
         <div className="space-y-5 rounded-none border border-[#27272a] bg-[#18181b] p-5">
           <div className="flex items-center gap-3">
             <SkeletonBlock className="h-8 w-8" />
             <div className="space-y-2">
-              <SkeletonBlock className="h-4 w-48" />
+              <SkeletonBlock className="h-4 w-48 max-w-full" />
               <SkeletonBlock className="h-3 w-32" />
             </div>
           </div>

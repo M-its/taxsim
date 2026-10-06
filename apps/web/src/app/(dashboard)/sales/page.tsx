@@ -1,24 +1,24 @@
-"use client"
+'use client'
 
-import { useEffect, useRef, useState } from "react"
-import { motion } from "framer-motion"
-import { Check, Eye, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { AsyncStatus } from "@/components/ui/async-status"
+import { useEffect, useRef, useState } from 'react'
+import { motion } from 'framer-motion'
+import { Check, Eye, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { AsyncStatus } from '@/components/ui/async-status'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -26,54 +26,51 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Label } from "@/components/ui/label"
-import { cancelSale, confirmSale, getSaleById, getSales } from "@/lib/api"
-import { formatCurrency, formatDate, formatPercent } from "@/lib/formatters"
-import type { Sale, SaleListItem, SaleListResponse, SaleStatus } from "@/lib/sale.types"
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
+import { cancelSale, confirmSale, getSaleById, getSales } from '@/lib/api'
+import { formatCurrency, formatDate, formatPercent } from '@/lib/formatters'
+import type { Sale, SaleListItem, SaleListResponse, SaleStatus } from '@/lib/sale.types'
 
-const statusOptions: { value: SaleStatus | "ALL"; label: string }[] = [
-  { value: "ALL", label: "Todas" },
-  { value: "DRAFT", label: "Rascunho" },
-  { value: "CONFIRMED", label: "Confirmada" },
-  { value: "CANCELLED", label: "Cancelada" },
+const statusOptions: { value: SaleStatus | 'ALL'; label: string }[] = [
+  { value: 'ALL', label: 'Todas' },
+  { value: 'DRAFT', label: 'Rascunho' },
+  { value: 'CONFIRMED', label: 'Confirmada' },
+  { value: 'CANCELLED', label: 'Cancelada' },
 ]
 
-const statusBadgeMap: Record<
-  SaleStatus,
-  { label: string; className: string }
-> = {
+const statusBadgeMap: Record<SaleStatus, { label: string; className: string }> = {
   CONFIRMED: {
-    label: "Confirmada",
-    className: "bg-[#34d399]/10 text-[#34d399] border-[#34d399]/20",
+    label: 'Confirmada',
+    className: 'bg-[#34d399]/10 text-[#34d399] border-[#34d399]/20',
   },
   DRAFT: {
-    label: "Rascunho",
-    className: "bg-[#facc15]/10 text-[#facc15] border-[#facc15]/20",
+    label: 'Rascunho',
+    className: 'bg-[#facc15]/10 text-[#facc15] border-[#facc15]/20',
   },
   CANCELLED: {
-    label: "Cancelada",
-    className: "bg-[#a1a1aa]/10 text-[#a1a1aa] border-[#a1a1aa]/20",
+    label: 'Cancelada',
+    className: 'bg-[#a1a1aa]/10 text-[#a1a1aa] border-[#a1a1aa]/20',
   },
 }
 
-const emptyFilterMessages: Record<SaleStatus | "ALL", { title: string; description: string }> = {
+const emptyFilterMessages: Record<SaleStatus | 'ALL', { title: string; description: string }> = {
   ALL: {
-    title: "Nenhuma venda encontrada.",
-    description: "As vendas criadas aparecerão aqui automaticamente.",
+    title: 'Nenhuma venda encontrada.',
+    description: 'As vendas criadas aparecerão aqui automaticamente.',
   },
   DRAFT: {
-    title: "Nenhuma venda em rascunho.",
-    description: "Vendas criadas e ainda não confirmadas aparecerão aqui.",
+    title: 'Nenhuma venda em rascunho.',
+    description: 'Vendas criadas e ainda não confirmadas aparecerão aqui.',
   },
   CONFIRMED: {
-    title: "Nenhuma venda confirmada.",
-    description: "Vendas confirmadas aparecerão aqui.",
+    title: 'Nenhuma venda confirmada.',
+    description: 'Vendas confirmadas aparecerão aqui.',
   },
   CANCELLED: {
-    title: "Nenhuma venda cancelada.",
-    description: "Vendas canceladas aparecerão aqui.",
+    title: 'Nenhuma venda cancelada.',
+    description: 'Vendas canceladas aparecerão aqui.',
   },
 }
 
@@ -100,25 +97,36 @@ interface SaleDetailModalProps {
 }
 
 function SaleDetailModal({ sale, open, onOpenChange }: SaleDetailModalProps) {
+  const titleRef = useRef<HTMLHeadingElement>(null)
   if (!sale) return null
 
   const currentTotal = sale.currentModel.total
   const reformTotal = sale.reformModel.total
-  const currentEffectiveRate = (parseFloat(currentTotal) / parseFloat(sale.totalAmount || "1")).toFixed(4)
-  const reformEffectiveRate = (parseFloat(reformTotal) / parseFloat(sale.totalAmount || "1")).toFixed(4)
+  const currentEffectiveRate = (
+    parseFloat(currentTotal) / parseFloat(sale.totalAmount || '1')
+  ).toFixed(4)
+  const reformEffectiveRate = (
+    parseFloat(reformTotal) / parseFloat(sale.totalAmount || '1')
+  ).toFixed(4)
   const savings = parseFloat(sale.delta.absolute)
-  const savingsClass = savings < 0 ? "text-[#34d399]" : savings > 0 ? "text-[#f87171]" : "text-[#a1a1aa]"
+  const savingsClass =
+    savings < 0 ? 'text-[#34d399]' : savings > 0 ? 'text-[#f87171]' : 'text-[#a1a1aa]'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
+        initialFocus={titleRef}
         showCloseButton={false}
         className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-none border border-[#27272a] bg-[#18181b] p-0 text-[#fafafa]"
       >
         <DialogHeader className="border-b border-[#27272a] p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <DialogTitle className="text-sm font-medium text-[#fafafa]">
+              <DialogTitle
+                ref={titleRef}
+                tabIndex={-1}
+                className="text-sm font-medium text-[#fafafa]"
+              >
                 Operação {truncateId(sale.id)}
               </DialogTitle>
               <DialogDescription className="mt-1 text-xs text-[#a1a1aa]">
@@ -141,7 +149,9 @@ function SaleDetailModal({ sale, open, onOpenChange }: SaleDetailModalProps) {
             </div>
             <div className="space-y-1">
               <p className="text-xs text-[#a1a1aa]">Valor Total</p>
-              <p className="font-numbers text-sm text-[#fafafa]">{formatCurrency(sale.totalAmount)}</p>
+              <p className="font-numbers text-sm text-[#fafafa]">
+                {formatCurrency(sale.totalAmount)}
+              </p>
             </div>
           </div>
 
@@ -151,28 +161,40 @@ function SaleDetailModal({ sale, open, onOpenChange }: SaleDetailModalProps) {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-[#a1a1aa]">PIS</span>
-                  <span className="font-numbers text-[#fafafa]">{formatCurrency(sale.currentModel.totalPis)}</span>
+                  <span className="font-numbers text-[#fafafa]">
+                    {formatCurrency(sale.currentModel.totalPis)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[#a1a1aa]">COFINS</span>
-                  <span className="font-numbers text-[#fafafa]">{formatCurrency(sale.currentModel.totalCofins)}</span>
+                  <span className="font-numbers text-[#fafafa]">
+                    {formatCurrency(sale.currentModel.totalCofins)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[#a1a1aa]">ICMS</span>
-                  <span className="font-numbers text-[#fafafa]">{formatCurrency(sale.currentModel.totalIcms)}</span>
+                  <span className="font-numbers text-[#fafafa]">
+                    {formatCurrency(sale.currentModel.totalIcms)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[#a1a1aa]">ISS</span>
-                  <span className="font-numbers text-[#fafafa]">{formatCurrency(sale.currentModel.totalIss)}</span>
+                  <span className="font-numbers text-[#fafafa]">
+                    {formatCurrency(sale.currentModel.totalIss)}
+                  </span>
                 </div>
                 <div className="border-t border-[#27272a] pt-2">
                   <div className="flex justify-between text-sm font-medium">
                     <span className="text-[#fafafa]">Total</span>
-                    <span className="font-numbers text-[#fafafa]">{formatCurrency(currentTotal)}</span>
+                    <span className="font-numbers text-[#fafafa]">
+                      {formatCurrency(currentTotal)}
+                    </span>
                   </div>
                   <div className="mt-1 flex justify-between text-xs">
                     <span className="text-[#a1a1aa]">Alíquota efetiva</span>
-                    <span className="font-numbers text-[#a1a1aa]">{formatPercent(currentEffectiveRate)}</span>
+                    <span className="font-numbers text-[#a1a1aa]">
+                      {formatPercent(currentEffectiveRate)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -183,24 +205,34 @@ function SaleDetailModal({ sale, open, onOpenChange }: SaleDetailModalProps) {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-[#a1a1aa]">IBS</span>
-                  <span className="font-numbers text-[#fafafa]">{formatCurrency(sale.reformModel.totalIbs)}</span>
+                  <span className="font-numbers text-[#fafafa]">
+                    {formatCurrency(sale.reformModel.totalIbs)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[#a1a1aa]">CBS</span>
-                  <span className="font-numbers text-[#fafafa]">{formatCurrency(sale.reformModel.totalCbs)}</span>
+                  <span className="font-numbers text-[#fafafa]">
+                    {formatCurrency(sale.reformModel.totalCbs)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-[#a1a1aa]">IS</span>
-                  <span className="font-numbers text-[#fafafa]">{formatCurrency(sale.reformModel.totalIs)}</span>
+                  <span className="font-numbers text-[#fafafa]">
+                    {formatCurrency(sale.reformModel.totalIs)}
+                  </span>
                 </div>
                 <div className="border-t border-[#27272a] pt-2">
                   <div className="flex justify-between text-sm font-medium">
                     <span className="text-[#fafafa]">Total</span>
-                    <span className="font-numbers text-[#fafafa]">{formatCurrency(reformTotal)}</span>
+                    <span className="font-numbers text-[#fafafa]">
+                      {formatCurrency(reformTotal)}
+                    </span>
                   </div>
                   <div className="mt-1 flex justify-between text-xs">
                     <span className="text-[#a1a1aa]">Alíquota efetiva</span>
-                    <span className="font-numbers text-[#a1a1aa]">{formatPercent(reformEffectiveRate)}</span>
+                    <span className="font-numbers text-[#a1a1aa]">
+                      {formatPercent(reformEffectiveRate)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -231,10 +263,18 @@ function SaleDetailModal({ sale, open, onOpenChange }: SaleDetailModalProps) {
                 <TableHeader>
                   <TableRow className="border-[#27272a] hover:bg-transparent">
                     <TableHead className="text-xs font-medium text-[#a1a1aa]">Produto</TableHead>
-                    <TableHead className="text-center text-xs font-medium text-[#a1a1aa]">Qtd</TableHead>
-                    <TableHead className="text-right text-xs font-medium text-[#a1a1aa]">Unitário</TableHead>
-                    <TableHead className="text-right text-xs font-medium text-[#a1a1aa]">Total</TableHead>
-                    <TableHead className="text-right text-xs font-medium text-[#a1a1aa]">NCM</TableHead>
+                    <TableHead className="text-center text-xs font-medium text-[#a1a1aa]">
+                      Qtd
+                    </TableHead>
+                    <TableHead className="text-right text-xs font-medium text-[#a1a1aa]">
+                      Unitário
+                    </TableHead>
+                    <TableHead className="text-right text-xs font-medium text-[#a1a1aa]">
+                      Total
+                    </TableHead>
+                    <TableHead className="text-right text-xs font-medium text-[#a1a1aa]">
+                      NCM
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -281,17 +321,17 @@ function SaleDetailModal({ sale, open, onOpenChange }: SaleDetailModalProps) {
 
 export default function SalesPage() {
   const [sales, setSales] = useState<SaleListItem[]>([])
-  const [pagination, setPagination] = useState<SaleListResponse["pagination"] | null>(null)
+  const [pagination, setPagination] = useState<SaleListResponse['pagination'] | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [listError, setListError] = useState<string | null>(null)
-  const [statusFilter, setStatusFilter] = useState<SaleStatus | "ALL">("ALL")
+  const [statusFilter, setStatusFilter] = useState<SaleStatus | 'ALL'>('ALL')
   const [page, setPage] = useState(1)
   const [detailSale, setDetailSale] = useState<Sale | null>(null)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isDetailLoading, setIsDetailLoading] = useState(false)
   const [confirmingCancelId, setConfirmingCancelId] = useState<string | null>(null)
   const [isActionId, setIsActionId] = useState<string | null>(null)
-  const [statusMessage, setStatusMessage] = useState("")
+  const [statusMessage, setStatusMessage] = useState('')
   const afterLoadMessageRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -308,37 +348,37 @@ export default function SalesPage() {
         return
       }
       setConfirmingCancelId(null)
-      setStatusMessage("Cancelamento da venda interrompido.")
+      setStatusMessage('Cancelamento da venda interrompido.')
     }
 
-    document.addEventListener("pointerdown", cancelOnOutsideClick)
-    return () => document.removeEventListener("pointerdown", cancelOnOutsideClick)
+    document.addEventListener('pointerdown', cancelOnOutsideClick)
+    return () => document.removeEventListener('pointerdown', cancelOnOutsideClick)
   }, [confirmingCancelId])
 
   function loadSales() {
     setIsLoading(true)
     setListError(null)
 
-    const status = statusFilter === "ALL" ? undefined : statusFilter
+    const status = statusFilter === 'ALL' ? undefined : statusFilter
     getSales(status, page)
       .then((response) => {
         setSales(response.data)
         setPagination(response.pagination)
         setStatusMessage(
           afterLoadMessageRef.current ??
-            `${response.data.length} ${response.data.length === 1 ? "venda carregada" : "vendas carregadas"}.`,
+            `${response.data.length} ${response.data.length === 1 ? 'venda carregada' : 'vendas carregadas'}.`,
         )
         afterLoadMessageRef.current = null
       })
       .catch((error) => {
         setSales([])
         setPagination(null)
-        setListError(error instanceof Error ? error.message : "Erro ao carregar vendas.")
+        setListError(error instanceof Error ? error.message : 'Erro ao carregar vendas.')
       })
       .finally(() => setIsLoading(false))
   }
 
-  function handleStatusChange(value: SaleStatus | "ALL" | null) {
+  function handleStatusChange(value: SaleStatus | 'ALL' | null) {
     if (value) {
       setStatusFilter(value)
       setPage(1)
@@ -368,7 +408,7 @@ export default function SalesPage() {
       setDetailSale(sale)
       setStatusMessage(`Detalhes da operação ${truncateId(saleId)} carregados.`)
     } catch (error) {
-      setListError(error instanceof Error ? error.message : "Erro ao carregar detalhes da venda.")
+      setListError(error instanceof Error ? error.message : 'Erro ao carregar detalhes da venda.')
       setIsDetailOpen(false)
     } finally {
       setIsDetailLoading(false)
@@ -382,7 +422,7 @@ export default function SalesPage() {
       afterLoadMessageRef.current = `Venda ${truncateId(saleId)} confirmada.`
       loadSales()
     } catch (error) {
-      setListError(error instanceof Error ? error.message : "Erro ao confirmar venda.")
+      setListError(error instanceof Error ? error.message : 'Erro ao confirmar venda.')
     } finally {
       setIsActionId(null)
     }
@@ -406,7 +446,7 @@ export default function SalesPage() {
       afterLoadMessageRef.current = `Venda ${truncateId(saleId)} cancelada.`
       loadSales()
     } catch (error) {
-      setListError(error instanceof Error ? error.message : "Erro ao cancelar venda.")
+      setListError(error instanceof Error ? error.message : 'Erro ao cancelar venda.')
     } finally {
       setIsActionId(null)
     }
@@ -419,19 +459,19 @@ export default function SalesPage() {
       <AsyncStatus
         message={
           isDetailLoading
-            ? "Carregando detalhes da venda."
+            ? 'Carregando detalhes da venda.'
             : isActionId
-              ? "Processando a venda."
+              ? 'Processando a venda.'
               : isLoading
-                ? "Carregando vendas."
+                ? 'Carregando vendas.'
                 : statusMessage
         }
       />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        style={{ willChange: "transform, opacity" }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        style={{ willChange: 'transform, opacity' }}
         className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
       >
         <div>
@@ -443,8 +483,8 @@ export default function SalesPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
-        style={{ willChange: "transform, opacity" }}
+        transition={{ duration: 0.4, ease: 'easeOut', delay: 0.1 }}
+        style={{ willChange: 'transform, opacity' }}
         className="rounded-none border border-[#27272a] bg-[#18181b] p-5"
         aria-busy={isLoading || Boolean(isActionId)}
       >
@@ -520,8 +560,8 @@ export default function SalesPage() {
                     key={sale.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, ease: "easeOut", delay: index * 0.05 }}
-                    style={{ willChange: "transform, opacity" }}
+                    transition={{ duration: 0.3, ease: 'easeOut', delay: index * 0.05 }}
+                    style={{ willChange: 'transform, opacity' }}
                     className="border-b border-[#27272a] transition-colors last:border-b-0 hover:bg-[#27272a]/30"
                   >
                     <TableCell className="font-numbers text-sm text-[#fafafa]">
@@ -552,7 +592,7 @@ export default function SalesPage() {
                           <Eye className="mr-1 h-3.5 w-3.5" />
                           Ver detalhes
                         </Button>
-                        {sale.status === "DRAFT" && (
+                        {sale.status === 'DRAFT' && (
                           <>
                             <Button
                               type="button"
@@ -564,7 +604,7 @@ export default function SalesPage() {
                               className="rounded-none border border-transparent px-2 text-xs text-[#34d399] hover:border-[#34d399]/20 hover:bg-[#34d399]/10 hover:text-[#34d399] dark:hover:bg-[#34d399]/10 dark:hover:text-[#34d399] disabled:opacity-50"
                             >
                               {isActionId === sale.id ? (
-                                "Processando..."
+                                'Processando...'
                               ) : (
                                 <>
                                   <Check className="mr-1 h-3.5 w-3.5" />
@@ -587,9 +627,9 @@ export default function SalesPage() {
                                 className="rounded-none border border-transparent px-2 text-xs text-[#f87171] hover:border-[#f87171]/20 hover:bg-[#f87171]/10 hover:text-[#f87171] disabled:opacity-50"
                               >
                                 {confirmingCancelId === sale.id ? (
-                                  "Confirmar?"
+                                  'Confirmar?'
                                 ) : isActionId === sale.id ? (
-                                  "Processando..."
+                                  'Processando...'
                                 ) : (
                                   <>
                                     <X className="mr-1 h-3.5 w-3.5" />
@@ -604,7 +644,7 @@ export default function SalesPage() {
                                   size="sm"
                                   onClick={() => {
                                     setConfirmingCancelId(null)
-                                    setStatusMessage("Cancelamento da venda interrompido.")
+                                    setStatusMessage('Cancelamento da venda interrompido.')
                                   }}
                                   className="rounded-none px-2 text-xs text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#fafafa]"
                                 >
@@ -653,7 +693,7 @@ export default function SalesPage() {
       </motion.div>
 
       {isDetailOpen && (isDetailLoading || detailSale) && (
-        <div className={isDetailLoading ? "opacity-50" : ""}>
+        <div className={isDetailLoading ? 'opacity-50' : ''}>
           <SaleDetailModal
             sale={detailSale}
             open={isDetailOpen}
