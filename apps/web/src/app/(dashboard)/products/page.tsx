@@ -609,9 +609,7 @@ export default function ProductsPage() {
 
   return (
     <div data-tour="products" className="space-y-4">
-      <AsyncStatus
-        message={isLoading ? 'Carregando produtos.' : statusMessage}
-      />
+      <AsyncStatus message={isLoading ? 'Carregando produtos.' : statusMessage} />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -730,6 +728,7 @@ export default function ProductsPage() {
                           variant="ghost"
                           size="icon-sm"
                           onClick={() => handleEdit(product)}
+                          title="Editar"
                           className="h-7 w-7 rounded-none text-[#a1a1aa] hover:bg-[#27272a] hover:text-[#fafafa]"
                         >
                           <Pencil className="h-4 w-4" />
@@ -741,6 +740,11 @@ export default function ProductsPage() {
                           size="sm"
                           disabled={isDeletingId === product.id}
                           onClick={() => handleDeleteClick(product)}
+                          title={
+                            confirmingDeleteId === product.id || isDeletingId === product.id
+                              ? undefined
+                              : 'Excluir'
+                          }
                           aria-label={
                             confirmingDeleteId === product.id
                               ? `Confirmar exclusão do produto ${product.name}`
@@ -817,7 +821,9 @@ export default function ProductsPage() {
         open={isModalOpen}
         onOpenChange={handleCloseModal}
         onSuccess={() =>
-          refreshList(editingProduct ? 'Produto atualizado com sucesso.' : 'Produto cadastrado com sucesso.')
+          refreshList(
+            editingProduct ? 'Produto atualizado com sucesso.' : 'Produto cadastrado com sucesso.',
+          )
         }
       />
     </div>

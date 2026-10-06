@@ -81,14 +81,15 @@ público; sua remoção foi a correção efetiva da exposição, documentada no
 - [x] Garantir nome acessível em botões de ícone e controles compactos.
 - [x] Associar erros e ajuda aos campos com `aria-describedby` e `aria-invalid`.
 - [x] Anunciar falhas, confirmações e carregamentos relevantes com `aria-live`, sem duplicidade.
-- [ ] Garantir teclado em sidebar, menu, selects, dialogs e tour.
+- [x] Garantir teclado em sidebar, menu, selects, dialogs e tour.
 - [x] Manter foco visível e restaurá-lo ao fechar overlays.
 - [x] Não comunicar status fiscal somente por cor.
 - [x] Oferecer alternativa textual aos gráficos.
 - [x] Respeitar `prefers-reduced-motion` em transições, gráficos e onboarding.
 
-**Validação manual ainda aberta:** teclado em Firefox, NVDA com Chromium,
-zoom a 200% e checagem dirigida a 400%.
+**Validação manual concluída (aceite informado pelo responsável):** teclado em Firefox,
+NVDA com Chromium, zoom a 200% e checagem dirigida a 400%.
+Tooltips nativos de editar/excluir adicionados a Produtos e Clientes.
 
 **Aceite:** login, cadastro, simulação, produtos, clientes e vendas podem ser concluídos por teclado e leitor de tela, sem violações críticas conhecidas.
 

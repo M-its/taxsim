@@ -569,3 +569,10 @@ entrega:
   aviso conhecido do ambiente sobre a dependência ausente
   **@eslint/eslintrc** permaneceu não bloqueante; compilação, typecheck e
   geração estática concluíram com código zero.
+
+
+## 2026-10-06 — Preparação do release e fechamento da matriz manual
+
+- Matriz manual de acessibilidade concluída conforme aceite informado pelo responsável: teclado em Firefox, NVDA com Chromium, zoom a 200% e checagem dirigida a 400%. Não foi reexecutada nesta preparação.
+- Produtos e Clientes recebem títulos nativos Editar/Excluir; os nomes acessíveis existentes são preservados e a confirmação de exclusão não recebe tooltip redundante.
+- Release sem novas features. Procedimento operacional e consultas somente leitura em docs/runbooks/release-deploy-rollback.md e release-preflight.sql.
