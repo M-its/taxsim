@@ -51,10 +51,14 @@ services:
       AUTH_RATE_LIMIT_MAX: 1000
       API_PORT: 3333
       API_HOST: 0.0.0.0
-      CORS_ORIGIN: http://host.docker.internal:3100
+      CORS_ORIGIN: http://web.taxsim.test:3000
     volumes:
       - ./apps/api/src:/app/src:ro
       - ./apps/api/prisma:/app/prisma:ro
+    networks:
+      default:
+        aliases:
+          - api.taxsim.test
     ports:
       - "127.0.0.1:3334:3333"
     depends_on:
@@ -77,8 +81,8 @@ services:
     command: ["pnpm", "exec", "next", "dev", "-p", "3000"]
     environment:
       NODE_ENV: development
-      API_INTERNAL_URL: http://api:3333
-      NEXT_PUBLIC_API_URL: http://host.docker.internal:3334
+      API_INTERNAL_URL: http://api.taxsim.test:3333
+      NEXT_PUBLIC_API_URL: http://api.taxsim.test:3333
       NEXT_TELEMETRY_DISABLED: 1
     volumes:
       - ./apps/web/src:/app/src:ro
@@ -86,6 +90,10 @@ services:
       - ./apps/web/next.config.ts:/app/next.config.ts:ro
       - ./apps/web/postcss.config.mjs:/app/postcss.config.mjs:ro
       - ./apps/web/tsconfig.json:/app/tsconfig.json:ro
+    networks:
+      default:
+        aliases:
+          - web.taxsim.test
     ports:
       - "127.0.0.1:3100:3000"
     depends_on:
@@ -111,10 +119,8 @@ services:
         pnpm test:a11y
     environment:
       CI: "true"
-      A11Y_BASE_URL: http://host.docker.internal:3100
-      A11Y_API_URL: http://host.docker.internal:3334
-    extra_hosts:
-      - host.docker.internal:host-gateway
+      A11Y_BASE_URL: http://web.taxsim.test:3000
+      A11Y_API_URL: http://api.taxsim.test:3333
     volumes:
       - ./apps/web:/work
       - /work/node_modules

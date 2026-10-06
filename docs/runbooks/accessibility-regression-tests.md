@@ -21,17 +21,28 @@ O seed destrutivo possui duas travas: somente executa com `NODE_ENV=test` e
 `A11Y_SEED_ALLOWED=true`. Nunca aponte a composição de acessibilidade para um
 banco compartilhado, de desenvolvimento ou de produção.
 
+O runner Playwright acessa a web em `http://web.taxsim.test:3000` e a API em
+`http://api.taxsim.test:3333`, pela rede interna do Compose. O CORS da API e a URL pública
+da API usada pelo navegador de teste seguem esses mesmos endereços. As portas
+publicadas em `127.0.0.1` servem apenas para inspeção local; o runner não depende
+de `host.docker.internal` nem do gateway do host. Os aliases compartilham o
+site `taxsim.test` para preservar o cookie de sessão `SameSite=Lax` sem
+alterar a autenticação nem os fixtures.
+
 ## Gate de pull request
 
 O workflow `.github/workflows/ci.yml` executa a suíte em Chromium desktop e
-em viewport móvel em todo pull request e push para `main`.
+em viewport móvel em pull requests para `main` e pushes para `main` e `release/**`.
 
-O merge é bloqueado quando:
+A suíte falha quando:
 
 - axe encontra qualquer violação de impacto `serious` ou `critical`;
 - uma interação obrigatória por teclado falha, mesmo que o axe não a detecte;
 - o ambiente determinístico não consegue preparar os dados ou concluir um
   cenário.
+
+Para bloquear o merge, configure este job como check obrigatório na proteção
+da branch de destino.
 
 Não há consulta à demo pública nem à RFB real. A calculadora local responde de
 forma determinística para evitar resultados flutuantes e dependências externas.
