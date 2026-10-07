@@ -1,5 +1,78 @@
 # TaxSim — Roadmap geral
 
+## Estado atual
+
+Atualizado em **07/10/2026**, após `git fetch origin` e consulta ao estado da CI.
+
+**Versão alvo: v1.0** — publicada, CI verde, fluxos principais verificados em
+produção e limitações documentadas. A versão no `package.json` não constitui
+evidência de release publicado.
+
+O código do release está em `origin/release/oct-2026`, na revisão `7e1c49d`,
+igual à `main` local antes deste commit documental. A `main` local estava
+19 commits à frente de `origin/main`; o release ainda não foi integrado à
+`main` remota. A acessibilidade manual e os tooltips de Produtos/Clientes
+estão concluídos e registrados.
+
+### Checklist de release, em ordem
+
+1. **Fechar conteúdo — em fechamento.** Funcionalidades e acessibilidade
+   commitadas; resta resolver o diff local de `pnpm-lock.yaml`. As notas locais
+   de Split Payment ficam fora deste release. Após este commit documental,
+   publicar a revisão final na branch de release para validá-la na CI.
+2. **CI — aprovada para `7e1c49d`.** O workflow da branch `release/oct-2026`
+   terminou com sucesso em 06/10/2026:
+   [execução aprovada](https://github.com/M-its/taxsim/actions/runs/37487894105).
+   A revisão final, incluindo esta documentação, ainda deve passar pela CI.
+3. **Integrar na main — pendente.** `origin/main` ainda está 19 commits atrás
+   do código do release; integrar a revisão aprovada e conferir a CI da main.
+4. **Preparação do servidor — pendente de comprovação.** Runbook e SQL de
+   preflight prontos; não há registro do SHA implantado, estado das migrations,
+   backup validado e configuração do servidor para este release. Seguir
+   [deploy e rollback](./docs/runbooks/release-deploy-rollback.md).
+5. **Deploy — pendente de comprovação.** Não há evidência registrada de
+   implantação deste release em produção; registrar SHA e imagens publicados.
+6. **Smoke test — pendente em produção.** Verificar cadastro, login, refresh,
+   Produtos, Clientes, simulação, venda e logout; registrar resultados e
+   comportamento quando a calculadora estiver indisponível.
+7. **Tag — pendente.** Nenhuma tag foi encontrada após o fetch. Criar `v1.0.0`
+   sobre a revisão integrada e verificada em produção, com notas de release
+   e limitações conhecidas.
+
+### Acabamento pós-deploy
+
+- CTAs da landing: timeout/recuperação da restauração de sessão para evitar
+  espera indefinida, mantendo as ações públicas disponíveis.
+- Hero e prova do produto: explicitar a audiência, mostrar um exemplo concreto
+  e melhorar a ação no header móvel.
+- **P2 #3:** sitemap público, manifest, ícones, `themeColor`, JSON-LD e
+  validação dos metadados publicados.
+- **P2 #4:** performance de laboratório, orçamento de recursos e correções
+  dirigidas às medições. Estes itens são acabamento, não requisitos adicionais
+  para fechar o release funcional acima.
+
+### Fora do escopo da v1.0
+
+- **P3:** Split Payment, NF-e/PSC, PSPs, conciliação e exportações associadas.
+- Atualização automática do catálogo NCM; permanece manual e versionada.
+- Métricas reais de performance com tráfego de produção.
+- Novo redesign ou expansão de funcionalidades.
+
+### Diff local de `pnpm-lock.yaml`
+
+O lockfile raiz recebeu **94 linhas**, acrescentando antes do documento
+original um documento YAML com `packageManagerDependencies` para `pnpm` e
+`@pnpm/exe` 10.17.1 e seus binários por plataforma. O conteúdo anterior do
+lockfile foi preservado; os lockfiles de API/Web não fazem parte desse diff.
+O acréscimo é compatível com resolução automática do gerenciador configurado
+em `devEngines.packageManager`, embora sua origem exata não esteja registrada.
+
+**Recomendação: descartar somente esse diff antes de fechar o release.** Não
+há mudança intencional de dependência da aplicação ou requisito aprovado para
+versionar os binários do gerenciador. Se essa gestão passar a ser desejada,
+tratá-la em alteração própria de tooling. O arquivo foi preservado nesta
+rodada e não entra no commit documental.
+
 Este documento organiza features, correções e melhorias transversais do TaxSim por prioridade. O roadmap de Split Payment continua detalhado em [`SPLIT_PAYMENT_ROADMAP.md`](./SPLIT_PAYMENT_ROADMAP.md); aqui ele aparece apenas como uma trilha dependente de serviços externos.
 
 ## Critério de prioridade
