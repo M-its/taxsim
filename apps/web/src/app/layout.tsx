@@ -1,7 +1,8 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { headers } from 'next/headers'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { MotionPreferences } from '@/components/accessibility/motion-preferences'
+import { isProductionHost, productionUrl, themeColor } from '@/lib/site-metadata'
 import 'driver.js/dist/driver.css'
 import './globals.css'
 
@@ -15,17 +16,12 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
 })
 
-const productionUrl = new URL('https://taxsim-web.duckdns.org')
+export const viewport: Viewport = { themeColor, colorScheme: 'dark' }
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers()
   const forwardedHost = requestHeaders.get('x-forwarded-host')
-  const requestHost = (forwardedHost ?? requestHeaders.get('host') ?? '')
-    .split(',')[0]
-    .trim()
-    .split(':')[0]
-    .toLowerCase()
-  const isProductionHost = requestHost === productionUrl.hostname
+  const production = isProductionHost(forwardedHost ?? requestHeaders.get('host'))
 
   return {
     metadataBase: productionUrl,
@@ -33,12 +29,19 @@ export async function generateMetadata(): Promise<Metadata> {
     authors: [{ name: 'Mitsrael' }],
     creator: 'Mitsrael',
     publisher: 'TaxSim',
+    icons: {
+      icon: [
+        { url: '/brand/icon.svg', type: 'image/svg+xml', sizes: 'any' },
+        { url: '/brand/icon-32.png', type: 'image/png', sizes: '32x32' },
+      ],
+      apple: { url: '/brand/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    },
     title: {
       default: 'TaxSim — Simulação da Reforma Tributária',
       template: '%s | TaxSim',
     },
     description: 'Compare o modelo tributário atual com o IVA Dual (IBS/CBS/IS).',
-    robots: isProductionHost
+    robots: production
       ? { index: true, follow: true }
       : {
           index: false,

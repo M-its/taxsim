@@ -1,24 +1,11 @@
-import type { MetadataRoute } from 'next'
+import { headers } from 'next/headers'
+import { isProductionHost, publicRobots } from '@/lib/site-metadata'
 
-export default function robots(): MetadataRoute.Robots {
-  const productionUrl = 'https://taxsim-web.duckdns.org'
+export const dynamic = 'force-dynamic'
 
-  return {
-    host: productionUrl,
-    rules: {
-      userAgent: '*',
-      allow: '/',
-      disallow: [
-        '/api/',
-        '/login',
-        '/register',
-        '/customers',
-        '/dashboard',
-        '/products',
-        '/sales',
-        '/settings',
-        '/simulation',
-      ],
-    },
-  }
+export default async function robots() {
+  const requestHeaders = await headers()
+  return publicRobots(
+    isProductionHost(requestHeaders.get('x-forwarded-host') ?? requestHeaders.get('host')),
+  )
 }
