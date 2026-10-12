@@ -8,7 +8,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3333'
 
 let accessToken: string | null = null
 let refreshPromise: Promise<string> | null = null
-let onAuthFailureCallback: (() => void) | null = null
+let onAuthFailureCallback: ((error: unknown) => void) | null = null
 
 export function setAccessToken(token: string | null): void {
   accessToken = token
@@ -18,8 +18,11 @@ export function getAccessToken(): string | null {
   return accessToken
 }
 
-export function onAuthFailure(callback: () => void): void {
+export function onAuthFailure(callback: (error: unknown) => void): () => void {
   onAuthFailureCallback = callback
+  return () => {
+    if (onAuthFailureCallback === callback) onAuthFailureCallback = null
+  }
 }
 
 export class ApiError extends Error {
@@ -51,7 +54,7 @@ async function parseError(response: Response): Promise<ApiError> {
   }
 }
 
-async function refreshAccessToken(): Promise<string> {
+async function refreshAccessToken(signal?: AbortSignal): Promise<string> {
   if (refreshPromise) {
     return refreshPromise
   }
@@ -59,12 +62,14 @@ async function refreshAccessToken(): Promise<string> {
   refreshPromise = fetch(`${API_BASE_URL}/auth/refresh`, {
     method: 'POST',
     credentials: 'include',
+    signal,
   })
     .then(async (response) => {
       if (!response.ok) {
         throw await parseError(response)
       }
       const data = (await response.json()) as { accessToken: string }
+      signal?.throwIfAborted()
       accessToken = data.accessToken
       return data.accessToken
     })
@@ -102,9 +107,9 @@ export async function apiFetch(input: string, init?: RequestInit): Promise<Respo
         headers,
         credentials: 'include',
       })
-    } catch {
-      onAuthFailureCallback?.()
-      throw await parseError(response)
+    } catch (error) {
+      onAuthFailureCallback?.(error)
+      throw error
     }
   }
 
@@ -148,8 +153,23 @@ async function apiDelete(input: string): Promise<void> {
   }
 }
 
-export async function refreshSession(): Promise<string> {
-  return refreshAccessToken()
+export async function refreshSession(signal?: AbortSignal): Promise<string> {
+  return refreshAccessToken(signal)
+}
+
+/** Restoration reads must never renew the token indirectly on a 401. */
+export async function meForRestoration(
+  signal: AbortSignal,
+): Promise<{ user: User; company: Company }> {
+  const response = await fetch(`${API_BASE_URL}/auth/me`, {
+    credentials: 'include',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    signal,
+  })
+  if (!response.ok) throw await parseError(response)
+  const profile = (await response.json()) as { user: User; company: Company }
+  signal.throwIfAborted()
+  return profile
 }
 
 export async function me(): Promise<{ user: User; company: Company }> {

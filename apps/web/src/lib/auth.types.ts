@@ -44,6 +44,9 @@ export type AuthContextValue = {
   company: Company | null
   isLoading: boolean
   isAuthenticated: boolean
+  sessionStatus: import('./session-restoration').SessionStatus
+  isSlowRestoration: boolean
+  retrySession: () => void
   login: (input: LoginInput) => Promise<void>
   register: (input: RegisterInput) => Promise<void>
   logout: () => Promise<void>

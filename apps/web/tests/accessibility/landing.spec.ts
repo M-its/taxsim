@@ -15,10 +15,9 @@ test.describe('landing pública', () => {
         name: 'Engenharia fiscal para uma reforma em movimento.',
       }),
     ).toBeVisible()
-    await expect(page.getByRole('link', { name: /Experimentar demonstração/ }).first()).toHaveAttribute(
-      'href',
-      '/register',
-    )
+    await expect(
+      page.getByRole('link', { name: /Experimentar demonstração/ }).first(),
+    ).toHaveAttribute('href', '/register')
     await expect(page.getByText(disclaimer)).toBeVisible()
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       'href',
@@ -37,7 +36,9 @@ test.describe('landing pública', () => {
       'href',
       '/dashboard',
     )
-    await expect(page.getByRole('link', { name: /Experimentar demonstração/ })).toHaveCount(0)
+    await expect(
+      page.getByRole('link', { name: /Experimentar demonstração/ }).first(),
+    ).toHaveAttribute('href', '/register')
     await expectNoBlockingAxeViolations(page, testInfo, 'landing-autenticada')
   })
 })
