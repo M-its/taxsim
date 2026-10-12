@@ -26,6 +26,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "3.3.5",
     "@axe-core/playwright": "4.10.2",
     "@playwright/test": "1.55.0",
     "@tailwindcss/postcss": "^4",
