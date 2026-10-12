@@ -12,7 +12,7 @@ test.describe('landing pública', () => {
     await expect(
       page.getByRole('heading', {
         level: 1,
-        name: 'Engenharia fiscal para uma reforma em movimento.',
+        name: 'Do NCM à comparação tributária.',
       }),
     ).toBeVisible()
     await expect(

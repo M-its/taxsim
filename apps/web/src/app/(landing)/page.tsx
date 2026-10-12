@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import { LandingPage } from '@/components/landing/landing-page'
 
-const title = 'TaxSim — engenharia fiscal como demonstração técnica'
+const title = 'TaxSim — do NCM à comparação tributária'
 const description =
-  'Portfólio full-stack de um SaaS fiscal multi-tenant que compara o modelo atual ao IVA Dual com segurança, acessibilidade e integração à calculadora pública da RFB.'
+  'Compare o modelo tributário atual com o IVA Dual em uma demonstração técnica de SaaS fiscal multi-tenant. Explore produto, arquitetura, segurança e acessibilidade.'
 
 export const metadata: Metadata = {
   title: { absolute: title },
