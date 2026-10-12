@@ -203,17 +203,17 @@ function LandingContent() {
         Pular para o conteúdo
       </a>
       <header className="border-b border-zinc-800">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-5 py-4 lg:px-8">
+        <div className="mx-auto flex max-w-7xl items-start justify-between gap-3 px-5 py-4 lg:px-8">
           <Link
             href="/"
             aria-label="TaxSim — página inicial"
-            className="shrink-0 text-lg font-bold tracking-tight"
+            className="inline-flex min-h-11 shrink-0 items-center text-lg font-bold tracking-tight"
           >
             Tax<span className="text-emerald-400">Sim</span>
           </Link>
           <nav
             aria-label="Navegação principal"
-            className="hidden items-center gap-7 text-sm text-zinc-300 md:flex"
+            className="hidden min-h-11 items-center gap-7 text-sm text-zinc-300 md:flex"
           >
             <a href="#produto" className="hover:text-white">
               Produto

@@ -110,6 +110,15 @@ test('header e CTA permanecem estáveis ao confirmar a sessão', async ({ page }
   await page.evaluate(() => document.fonts.ready)
   const before = await primary.boundingBox()
   const headerBefore = await page.locator('header').boundingBox()
+  const brand = await page.getByRole('link', { name: 'TaxSim — página inicial' }).boundingBox()
+  expect(before).not.toBeNull()
+  expect(brand).not.toBeNull()
+  expect(Math.abs(before!.y + before!.height / 2 - brand!.y - brand!.height / 2)).toBeLessThan(1)
+  const navigation = page.getByRole('navigation', { name: 'Navegação principal' })
+  if (await navigation.isVisible()) {
+    const nav = (await navigation.boundingBox())!
+    expect(Math.abs(before!.y + before!.height / 2 - nav.y - nav.height / 2)).toBeLessThan(1)
+  }
   release()
   await expect(page.locator('header').getByRole('link', { name: 'Ir ao dashboard' })).toBeVisible()
   expect(await primary.boundingBox()).toEqual(before)
