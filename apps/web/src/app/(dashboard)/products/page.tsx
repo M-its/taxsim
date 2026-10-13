@@ -462,7 +462,7 @@ function ProductModal({ taxRegime, product, open, onOpenChange, onSuccess }: Pro
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-colors duration-150 hover:bg-[#1f2a1f]"
+              className="rounded-none border border-transparent bg-[#34d399] px-5 py-2 text-sm font-medium text-[#09090b] transition-colors duration-150 hover:bg-[#6ee7b7]"
             >
               {isSubmitting ? 'Salvando...' : isEditing ? 'Salvar alterações' : 'Cadastrar'}
             </Button>
@@ -633,7 +633,7 @@ export default function ProductsPage() {
         </div>
         <Button
           onClick={handleOpenCreate}
-          className="w-fit gap-2 rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-colors duration-150 hover:bg-[#1f2a1f]"
+          className="w-fit gap-2 rounded-none border border-transparent bg-[#34d399] px-5 py-2 text-sm font-medium text-[#09090b] transition-colors duration-150 hover:bg-[#6ee7b7]"
         >
           <Plus className="h-4 w-4" />
           Novo Produto
@@ -648,8 +648,12 @@ export default function ProductsPage() {
         className="rounded-none border border-[#27272a] bg-[#18181b] p-5"
         aria-busy={isLoading}
       >
-        <div className="mb-4">
+        <div className="mb-4 space-y-2">
+          <Label htmlFor="products-search" className="text-xs font-medium text-[#a1a1aa]">
+            Buscar produtos
+          </Label>
           <Input
+            id="products-search"
             value={searchInput}
             onChange={(event) => handleSearchChange(event.target.value)}
             placeholder="Buscar por nome ou SKU..."
@@ -790,11 +794,11 @@ export default function ProductsPage() {
         </div>
 
         {pagination && pagination.totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-between border-t border-[#27272a] pt-4">
+          <div className="mt-4 flex flex-col items-start justify-between gap-3 border-t border-[#27272a] pt-4 sm:flex-row sm:items-center">
             <p className="text-xs text-[#a1a1aa]">
               Página {pagination.page} de {pagination.totalPages}
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 type="button"
                 variant="ghost"

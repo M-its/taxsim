@@ -664,11 +664,11 @@ export default function SalesPage() {
         </div>
 
         {pagination && pagination.totalPages > 1 && (
-          <div className="mt-4 flex items-center justify-between border-t border-[#27272a] pt-4">
+          <div className="mt-4 flex flex-col items-start justify-between gap-3 border-t border-[#27272a] pt-4 sm:flex-row sm:items-center">
             <p className="text-xs text-[#a1a1aa]">
               Página {pagination.page} de {pagination.totalPages}
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 type="button"
                 variant="ghost"
