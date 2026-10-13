@@ -98,7 +98,10 @@ export async function apiFetch(input: string, init?: RequestInit): Promise<Respo
     credentials: 'include',
   })
 
-  if (response.status === 401 && input !== '/auth/refresh') {
+  // Credentials are an explicit authentication attempt, not an expired session.
+  // Never replace their 401 with a refresh error or replay login/registration.
+  const isAuthenticationAttempt = ['/auth/login', '/auth/register', '/auth/refresh'].includes(input)
+  if (response.status === 401 && !isAuthenticationAttempt) {
     try {
       const newToken = await refreshAccessToken()
       headers.set('Authorization', `Bearer ${newToken}`)

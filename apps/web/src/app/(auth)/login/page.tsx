@@ -61,7 +61,12 @@ function LoginForm() {
       await login({ email: email.trim(), password })
       router.replace(redirectTo)
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Erro ao entrar. Tente novamente.'
+      const message =
+        err instanceof ApiError
+          ? err.status === 401
+            ? 'E-mail ou senha inválidos.'
+            : err.message
+          : 'Erro ao entrar. Tente novamente.'
       setFormError(message)
       requestAnimationFrame(() => errorSummaryRef.current?.focus())
     } finally {

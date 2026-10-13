@@ -19,6 +19,36 @@ const profile = {
   },
 }
 
+test('credenciais inválidas não renovam sessão nem substituem o erro ou apagam campos', async ({
+  page,
+}) => {
+  let refreshes = 0
+  let logins = 0
+  await page.route('**/auth/refresh', (route) => {
+    refreshes += 1
+    return route.fulfill({ status: 401, json: { error: { message: 'Missing refresh token' } } })
+  })
+  await page.route('**/auth/login', (route) => {
+    logins += 1
+    return route.fulfill({
+      status: 401,
+      json: { error: { code: 'UNAUTHORIZED', message: 'Invalid credentials' } },
+    })
+  })
+  await page.goto('/login')
+  await page.getByLabel('E-mail').fill('wrong@taxsim.test')
+  await page.getByLabel('Senha', { exact: true }).fill('WrongPassword!')
+  const initialRefreshes = refreshes
+  await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+  await expect(page.locator('form').getByRole('alert')).toContainText('E-mail ou senha inválidos.')
+  await expect(page.locator('form').getByRole('alert')).not.toContainText('refresh token')
+  await expect(page.getByLabel('E-mail')).toHaveValue('wrong@taxsim.test')
+  await expect(page.getByLabel('Senha', { exact: true })).toHaveValue('WrongPassword!')
+  expect(logins).toBe(1)
+  expect(refreshes).toBe(initialRefreshes)
+  await expect(page).toHaveURL(/\/login$/)
+})
+
 async function mockProfile(page: Page, status = 200) {
   await page.route('**/auth/me', (route) =>
     route.fulfill({
