@@ -118,6 +118,7 @@ test('header e CTA permanecem estáveis ao confirmar a sessão', async ({ page }
   if (await navigation.isVisible()) {
     const nav = (await navigation.boundingBox())!
     expect(Math.abs(before!.y + before!.height / 2 - nav.y - nav.height / 2)).toBeLessThan(1)
+    expect(Math.abs(nav.x + nav.width / 2 - page.viewportSize()!.width / 2)).toBeLessThan(1)
   }
   release()
   await expect(page.locator('header').getByRole('link', { name: 'Ir ao dashboard' })).toBeVisible()
@@ -125,4 +126,71 @@ test('header e CTA permanecem estáveis ao confirmar a sessão', async ({ page }
   expect(await page.locator('header').boundingBox()).toEqual(headerBefore)
   await expect(primary).toHaveAttribute('href', '/register')
   await expect(page).toHaveURL(/\/$/)
+})
+
+test('âncoras preservam conteúdo ao voltar e avançar; retorno explícito vai ao início', async ({
+  page,
+}) => {
+  await page.route('**/auth/refresh', (route) => route.fulfill({ status: 401, json: {} }))
+  for (const hash of ['#produto', '#arquitetura', '#qualidade']) {
+    await page.goto('/')
+    // On mobile the navigation is hidden; enter the same route directly instead.
+    const anchor = page.locator(`nav a[href="${hash}"]`)
+    if (await anchor.isVisible()) await anchor.click()
+    else await page.goto(`/${hash}`)
+    await expect(page).toHaveURL(new RegExp(`${hash}$`))
+    await page
+      .locator('header')
+      .getByRole('link', { name: /Experimentar/ })
+      .click()
+    await expect(page.getByRole('heading', { name: 'Criar conta no TaxSim' })).toBeVisible()
+    await page.goBack()
+    await expect(page).toHaveURL(new RegExp(`${hash}$`))
+    await expect(
+      page.getByRole('heading', { name: 'Do NCM à comparação tributária.' }),
+    ).toBeVisible()
+    await page.goForward()
+    await expect(page.getByRole('heading', { name: 'Criar conta no TaxSim' })).toBeVisible()
+    await page.getByRole('link', { name: 'Voltar ao início' }).click()
+    await expect(page).toHaveURL(/\/$/)
+    await expect(
+      page.getByRole('heading', { name: 'Do NCM à comparação tributária.' }),
+    ).toBeVisible()
+  }
+})
+
+test('foco contrastante, GitHub em nova aba e movimento reduzido', async ({ page }) => {
+  await page.route('**/auth/refresh', (route) => route.fulfill({ status: 401, json: {} }))
+  await page.goto('/')
+  const github = page.getByRole('link', { name: /Explorar código e decisões no GitHub/ })
+  await expect(github).toHaveAttribute('target', '_blank')
+  await expect(github).toHaveAttribute('rel', 'noopener noreferrer')
+  await page.keyboard.press('Tab')
+  const skip = page.getByRole('link', { name: 'Pular para o conteúdo' })
+  await expect(skip).toBeFocused()
+  expect(await skip.evaluate((el) => getComputedStyle(el).outlineColor)).toBe('rgb(250, 250, 250)')
+  await page.keyboard.press('Enter')
+  await expect(page.locator('main')).toBeFocused()
+  const accentLink = page.locator('.landing-accent').getByRole('link', { name: 'Entrar' })
+  await accentLink.focus()
+  await page.keyboard.press('Tab')
+  await page.keyboard.press('Shift+Tab')
+  await expect(accentLink).toBeFocused()
+  expect(await accentLink.evaluate((el) => getComputedStyle(el).outlineColor)).toBe('rgb(9, 9, 11)')
+  if (captureDir)
+    await page.screenshot({
+      path: join(captureDir, `focus-accent-${test.info().project.name}.png`),
+    })
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  expect(await page.locator('html').evaluate((el) => getComputedStyle(el).scrollBehavior)).toBe(
+    'smooth',
+  )
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  expect(await page.locator('html').evaluate((el) => getComputedStyle(el).scrollBehavior)).toBe(
+    'auto',
+  )
+  await page.setViewportSize({ width: 768, height: 900 })
+  const nav = (await page.getByRole('navigation', { name: 'Navegação principal' }).boundingBox())!
+  expect(Math.abs(nav.x + nav.width / 2 - 384)).toBeLessThan(1)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(768)
 })

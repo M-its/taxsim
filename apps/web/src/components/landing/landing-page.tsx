@@ -39,35 +39,37 @@ function SessionActions({
     : 'bg-emerald-400 text-zinc-950 hover:bg-emerald-300'
   return (
     <div className={header ? 'flex flex-col items-end gap-1' : 'flex flex-wrap items-center gap-3'}>
-      <Link
+      {/* Cross the public/auth boundary with document navigation so native hash
+          history entries restore the landing document, not the auth router tree. */}
+      <a
         href="/register"
         className={`inline-flex min-h-11 items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold transition-colors ${primary}`}
       >
         {header ? (
           <>
-            <span className="sm:hidden">Experimentar</span>
-            <span className="hidden sm:inline">Experimentar demonstração</span>
+            <span className="lg:hidden">Experimentar</span>
+            <span className="hidden lg:inline">Experimentar demonstração</span>
           </>
         ) : (
           'Experimentar demonstração'
         )}
         <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
-      </Link>
+      </a>
       <div className={`relative ${header ? 'min-h-8 w-36' : 'min-h-11 w-40'}`}>
         {!header && (
-          <Link
+          <a
             href="/login"
             className={`absolute inset-0 inline-flex items-center justify-center border px-3 text-sm transition-colors ${onAccent ? 'border-zinc-900 text-zinc-950 hover:bg-emerald-300' : 'border-zinc-600 text-white hover:bg-zinc-900'} ${confirmed ? 'invisible' : ''}`}
           >
             Entrar
-          </Link>
+          </a>
         )}
-        <Link
+        <a
           href="/dashboard"
           className={`absolute inset-0 inline-flex items-center ${header ? 'justify-end' : 'justify-center'} text-sm underline underline-offset-4 ${onAccent ? 'text-zinc-950' : 'text-zinc-300 hover:text-white'} ${confirmed ? '' : 'invisible'}`}
         >
           Ir ao dashboard
-        </Link>
+        </a>
       </div>
     </div>
   )
@@ -195,19 +197,19 @@ function ArchitectureDiagram() {
 
 function LandingContent() {
   return (
-    <div className="min-h-screen bg-[#09090b] text-zinc-50 selection:bg-emerald-400 selection:text-zinc-950">
-      <a
+    <div className="taxsim-landing min-h-screen bg-[#09090b] text-zinc-50 selection:bg-emerald-400 selection:text-zinc-950">
+      <Link
         href="#conteudo"
-        className="sr-only z-50 bg-emerald-400 px-4 py-3 font-semibold text-zinc-950 focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+        className="landing-skip-link sr-only z-50 border-2 border-zinc-950 bg-emerald-400 px-4 py-3 font-semibold text-zinc-950 focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
       >
         Pular para o conteúdo
-      </a>
+      </Link>
       <header className="border-b border-zinc-800">
-        <div className="mx-auto flex max-w-7xl items-start justify-between gap-3 px-5 py-4 lg:px-8">
+        <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto] items-start gap-3 px-5 py-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-8">
           <Link
             href="/"
             aria-label="TaxSim — página inicial"
-            className="inline-flex min-h-11 shrink-0 items-center text-lg font-bold tracking-tight"
+            className="inline-flex min-h-11 w-fit items-center text-2xl font-bold tracking-tight"
           >
             Tax<span className="text-emerald-400">Sim</span>
           </Link>
@@ -215,20 +217,22 @@ function LandingContent() {
             aria-label="Navegação principal"
             className="hidden min-h-11 items-center gap-7 text-sm text-zinc-300 md:flex"
           >
-            <a href="#produto" className="hover:text-white">
+            <Link href="#produto" className="hover:text-white">
               Produto
-            </a>
-            <a href="#arquitetura" className="hover:text-white">
+            </Link>
+            <Link href="#arquitetura" className="hover:text-white">
               Arquitetura
-            </a>
-            <a href="#qualidade" className="hover:text-white">
-              Qualidade
-            </a>
+            </Link>
+            <Link href="#qualidade" className="hover:text-white">
+              Segurança e acessibilidade
+            </Link>
           </nav>
-          <SessionActions header />
+          <div className="justify-self-end">
+            <SessionActions header />
+          </div>
         </div>
       </header>
-      <main id="conteudo">
+      <main id="conteudo" tabIndex={-1} className="focus:outline-none!">
         <section className="mx-auto grid max-w-7xl items-start gap-10 px-5 py-12 lg:grid-cols-2 lg:gap-14 lg:px-8 lg:py-16">
           <div className="min-w-0 lg:pt-6">
             <h1 className="max-w-xl text-[clamp(2.25rem,5vw,4.5rem)] font-semibold leading-[1.05] tracking-[-0.035em] text-balance">
@@ -250,9 +254,12 @@ function LandingContent() {
             </div>
             <a
               href="https://github.com/M-its/taxsim"
+              target="_blank"
+              rel="noopener noreferrer"
               className="mt-6 inline-flex min-h-11 items-center text-sm text-zinc-300 underline underline-offset-4 hover:text-white"
             >
               Explorar código e decisões no GitHub{' '}
+              <span className="sr-only">(abre em nova aba)</span>
               <ArrowRight aria-hidden="true" className="ml-2 size-4" />
             </a>
           </div>
@@ -324,7 +331,7 @@ function LandingContent() {
             </div>
           </div>
         </section>
-        <section className="bg-emerald-400 text-zinc-950">
+        <section className="landing-accent bg-emerald-400 text-zinc-950">
           <div className="mx-auto flex max-w-7xl flex-col justify-between gap-6 px-5 py-10 md:flex-row md:items-center lg:px-8">
             <h2 className="text-2xl font-semibold tracking-tight">
               Explore as decisões em funcionamento.

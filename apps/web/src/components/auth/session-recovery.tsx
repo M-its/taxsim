@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { useAuth } from './auth-provider'
+import { SessionStatusText } from './session-status-text'
 
 export function SessionRecovery({ protectedRoute = false }: { protectedRoute?: boolean }) {
   const { sessionStatus, retrySession } = useAuth()
   if (sessionStatus === 'restoring')
     return (
       <p role="status" className="text-sm text-zinc-400">
-        Verificando sessão…
+        <SessionStatusText />
       </p>
     )
   if (sessionStatus !== 'unavailable') return null
