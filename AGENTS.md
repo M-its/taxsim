@@ -28,13 +28,21 @@ Usado como ferramenta de raciocínio arquitetural para:
   estratégia de autenticação, modelagem do Split Payment)
 - Revisão e debugging de problemas complexos de ambiente (Docker, pnpm,
   TypeScript, Next.js App Router)
-- Documentação técnica (PROJECT_CONTEXT.md, API_CONTRACTS.md, roadmaps)
+- Documentação técnica (`docs/PROJECT_CONTEXT.md`, `docs/API_CONTRACTS.md`, roadmaps)
 
 ### Kimi K2.7-code (Moonshot AI) via OpenCode — Geração de Código
 Usado como ferramenta de aceleração de implementação para:
 - Geração de código a partir de especificações técnicas já definidas
 - Implementação de módulos com contratos previamente acordados
 - Criação de componentes frontend seguindo design system definido
+
+### Codex (OpenAI) — Implementação e Verificação
+
+- Correções de sessão, interface, acessibilidade e descoberta pública a partir
+  de decisões aprovadas pelo responsável
+- Testes automatizados, typechecks, lint e medições locais reproduzíveis
+- Organização de commits locais e documentação; integração e aceite de release
+  continuam sob responsabilidade humana
 
 ---
 
@@ -56,7 +64,22 @@ Usado como ferramenta de aceleração de implementação para:
 7. Commit
 ```
 
-Nenhum código foi commitado sem revisão e validação humana.
+Commits locais podem ser preparados por agentes após autorização. A existência
+de commit ou teste automatizado não comprova revisão humana: o responsável
+revisa e valida as mudanças antes de qualquer integração ou publicação.
+
+## Contexto para contribuições
+
+- O README é a vitrine; ROADMAP registra escopo/estado; `docs/` guarda contratos,
+  contexto vigente, limites fiscais e runbooks. Não criar PRODUCT.md ou DESIGN.md.
+- Conferir contratos e código antes de reutilizar uma decisão histórica. Não
+  descrever propostas futuras como funcionalidades já disponíveis.
+- Preservar diffs anteriores; adicionar caminhos explícitos ao staging. Não
+  incluir materiais locais ignorados nem executar seed/migration/deploy sem
+  autorização específica.
+- Documentos públicos não devem conter endereços de infraestrutura, caminhos
+  operacionais, credenciais ou identificadores de backup. Evidências completas
+  de operação e pesquisa/entrevista ficam fora do checkout, em armazenamento privado.
 
 ---
 

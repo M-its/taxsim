@@ -1,316 +1,267 @@
-# TaxSim — Simulador da Reforma Tributária Brasileira
+# TaxSim — comparação tributária demonstrativa
 
-> Projeto de portfólio demonstrando desenvolvimento full-stack de um SaaS fiscal multi-tenant, do zero à produção — incluindo debugging de infraestrutura real, auditoria de segurança e deploy com HTTPS gratuito.
+Compare o modelo atual (PIS/COFINS/ICMS/ISS) com IBS/CBS/IS em uma aplicação
+full-stack multi-tenant. Projeto de portfólio de [Mitsrael](https://github.com/M-its),
+com motor decimal, integração externa validada, recuperação de sessão e testes
+de acessibilidade.
 
-**[Demo ao vivo](https://taxsim-web.duckdns.org)** · **[Autor](https://github.com/M-its)**
+[Experimentar a demonstração](https://taxsim-web.duckdns.org) ·
+[Escopo e estado do release](./ROADMAP.md) · [Arquitetura](./docs/PROJECT_CONTEXT.md)
 
----
+> Projeto de demonstração técnica, sem vínculo com a Receita Federal. Não deve
+> ser usado para cálculos fiscais reais. A branch de fechamento ainda não
+> representa uma v1.0 publicada; a demo pode executar uma revisão anterior.
 
-## O que é
+## Sumário
 
-TaxSim é um SaaS fiscal que permite empresas simularem e compararem o impacto financeiro da Reforma Tributária brasileira (LC 214/2025) — substituição do modelo atual (PIS/COFINS/ICMS/ISS) pelo IVA Dual (IBS/CBS/Imposto Seletivo).
+- [Produto e fluxo principal](#produto-e-fluxo-principal)
+- [Arquitetura](#arquitetura)
+- [Decisões de engenharia](#decisões-de-engenharia)
+- [Segurança e sessão](#segurança-e-sessão)
+- [Acessibilidade e descoberta](#acessibilidade-e-descoberta)
+- [Executar localmente](#executar-localmente)
+- [Verificações](#verificações)
+- [Limitações](#limitações)
+- [Documentação e estrutura](#documentação-e-estrutura)
+- [Autoria e licença](#autoria-e-licença)
 
-A calculadora de tributos integrada é a **calculadora oficial da Receita Federal do Brasil** (uso público), garantindo que os cálculos do modelo reformado sejam tecnicamente precisos.
+## Produto e fluxo principal
 
-Este projeto foi construído sozinho, do design de banco ao deploy em produção, incluindo a resolução de bugs reais de infraestrutura distribuída e uma auditoria de segurança paga com correções aplicadas. Não é um CRUD de tutorial — é um sistema com trade-offs reais e documentados.
+1. Cadastre uma empresa de demonstração; não há conta pública compartilhada.
+2. Crie produtos e clientes ou use NCM manual na simulação.
+3. Compare os tributos dos dois modelos; todos os bloqueios por item aparecem
+   juntos e os dados preenchidos são preservados para correção.
+4. Crie uma venda DRAFT e confirme/cancele conforme o estado permitido. O
+   dashboard agrega vendas confirmadas e oferece gráficos com dados textuais.
 
-> ⚠️ **Disclaimer:** Este é um projeto de demonstração técnica sem vínculo com a Receita Federal do Brasil. Não utilize para fins fiscais reais. Veja o [aviso completo](#compliance) abaixo.
+A busca de NCM combina prefixo de código e substring de descrição sem diferença
+de caixa/acentos. NCM vigente sem regra continua visível, marcado como bloqueador
+na simulação. Formato, existência, vigência e regra são diagnósticos diferentes;
+falha técnica de consulta não é tratada como prova de código inválido.
 
----
+CNPJ numérico e alfanumérico têm máscara progressiva, normalização e DV; CPF
+permanece numérico. Unicidade de produtos/clientes é por empresa. Configurações
+permitem editar dados fiscais da empresa; onboarding pode ser reaberto pelo tour.
 
-## Arquitetura de Produção
+A landing mostra notebook/NCM 84713012, 1 × R$ 1.000, Lucro Real: R$ 272,50 no
+modelo atual e R$ 10,00 na resposta reformada **sintética**. Fixture versionada,
+elegibilidade compartilhada e teste mantêm a prova coerente com o código. Não
+é chamada à RFB, promessa de economia ou cálculo fiscal válido.
 
-O projeto roda em **duas VMs separadas** na Oracle Cloud Free Tier — não por escolha, mas por necessidade: a calculadora oficial da RFB é uma imagem Docker `x86_64` (importada via `docker import`, não distribuída em nenhum registry) e não roda em ARM (`exec format error` confirmado). A camada gratuita da Oracle oferece VMs ARM com muito mais recursos do que as x86_64 — daí a divisão.
+## Arquitetura
 
 ```mermaid
 flowchart TB
-    subgraph OCI["☁️ Oracle Cloud Infrastructure (sa-saopaulo-1)"]
-        
-        subgraph VM_ARM["🖥️ VM ARM: aplicação (2 OCPU / 12GB)"]
-            Caddy["🔒 Caddy Reverse Proxy<br/>(Portas 80/443 - DuckDNS + HTTPS)"]
-            Web["📱 Next.js 15.5<br/>(taxsim-web)"]
-            API["⚙️ Fastify API<br/>(taxsim-api)"]
-            DB[("🗄️ PostgreSQL 16")]
-        end
-
-        subgraph VM_AMD["🖥️ VM AMD: calculadora-rfb-taxsim (1 OCPU / 1GB)"]
-            RFB["🧮 Calculadora RFB<br/>(Java / Spring Boot via Nginx :80)"]
-        end
-
-    end
-
-    Internet(("🌐 Internet")) -->|HTTP/HTTPS| Caddy
-    Caddy -->|Proxy| Web
-    Caddy -->|Proxy| API
-    Web -->|Chamadas da interface no navegador| API
-    API -->|Persistência| DB
-    API -.->|VCN Interna 10.0.0.0/24| RFB
-
-    classDef vm fill:#f9f9f9,stroke:#333,stroke-width:1px,color:#000;
-    classDef oci fill:#eef6ff,stroke:#1d63ed,stroke-width:2px,color:#000;
+    Browser[Navegador] --> Proxy[Caddy · HTTPS]
+    Proxy --> Web[Next.js · interface]
+    Proxy --> API[Fastify · API modular]
+    Web -. chamadas no navegador .-> API
+    API --> DB[(PostgreSQL · rede interna)]
+    API --> Engine[Tax Engine · modelo atual]
+    API --> Calculator[Calculadora integrada · rede privada]
 ```
 
-### Fluxo de uma simulação fiscal
+Aplicação e calculadora são separadas por compatibilidade ARM/x86. A stack de
+produção publica somente o proxy em 80/443; Web/API/banco não têm portas
+publicadas. Configuração real de rede e evidências operacionais são privadas.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Usuario as Usuário
-    participant Web as Next.js 15
-    participant API as Fastify API
-    participant DB as PostgreSQL
-    participant Engine as Tax Engine interno
-    participant RFB as Calculadora RFB<br/>(VM AMD)
+**Web:** Next.js 15.5, React 19, TypeScript, Tailwind v4, Base UI/shadcn,
+Recharts, Framer Motion e driver.js. Landing usa componentes de servidor com
+ilhas interativas; o app usa hooks consumindo REST no navegador.
 
-    Usuario->>Web: Preenche itens e solicita a simulação
-    Web->>API: POST /sales/simulate
-    API->>API: Autentica JWT e valida o payload com Zod
-    API->>DB: Busca regras fiscais por NCM e regime
-    DB-->>API: Alíquotas, CST e cClassTrib
+**API:** Fastify, Zod, Prisma e PostgreSQL 16. Motor atual puro, sem Prisma/HTTP,
+com aritmética decimal; adaptador separado para a calculadora disponibilizada
+pela RFB. Após elegibilidade, o fluxo executa o motor atual e então aguarda o
+modelo reformado. Só persiste a venda após validar e combinar as respostas.
 
-    Note over API,RFB: Os dois cálculos são executados sequencialmente no código atual
-    API->>Engine: calculateCurrentModel(taxEngineInput)
-    Engine-->>API: PIS, COFINS, ICMS e ISS
-    API->>RFB: POST /calculadora/regime-geral
-    RFB-->>API: IBS, CBS e Imposto Seletivo
+**Entrega:** Docker Compose, Caddy/TLS e GitHub Actions. pnpm 10.17.1 e Node 22
+na CI. Hospedagem demonstrativa em camada gratuita não é garantia de custo ou
+SLA futuro.
 
-    API->>API: mergeResults() calcula totais, delta e breakdown
-    API-->>Web: Resposta combinada dos dois modelos
-    Web-->>Usuario: Comparação tributária lado a lado
-```
+## Decisões de engenharia
 
-No fluxo atual, o Tax Engine síncrono termina primeiro; só depois a API aguarda a calculadora RFB. Não há execução paralela entre os dois motores em `simulateTax`.
+- **Monólito modular:** separa domínio, transporte e persistência sem adicionar
+  coordenação de microserviços ao escopo do portfólio.
+- **Multi-tenancy na aplicação:** tenant vem do JWT; consultas e verificações
+  de propriedade antecedem mutações por ID. Itens herdam a venda pai. Banco
+  compartilhado sem RLS: exige disciplina e testes de isolamento.
+- **Decimal e snapshots:** valores monetários não usam ponto flutuante;
+  preço/NCM/alíquotas são congelados ao criar a venda, não recalculados quando
+  o produto muda. Precisões de valores e alíquotas são distintas no Prisma.
+- **Contrato externo desconfiado:** schema runtime, correlação bijetiva por item
+  e reconciliação de totais antes de usar a resposta; não confiar na ordem ou
+  somente em HTTP 200. Timeout/circuit breaker não inventam resultado fiscal.
+- **Catálogo não é regra:** NCM válido pode ser cadastrado sem estar elegível
+  para simular. A validação final do backend continua obrigatória.
+- **Falha de rede não é logout:** restauração limitada e recuperável mantém
+  formulário e ações públicas disponíveis, sem exibir conteúdo privado antes
+  da confirmação da sessão.
 
-**Custo de infraestrutura: R$ 0,00/mês.** Duas VMs no Oracle Cloud Free Tier (permanentemente gratuito, sem cartão), domínio via DuckDNS (gratuito), certificado TLS via Let's Encrypt (gratuito, renovação automática pelo Caddy).
+Um caso de debugging que orientou a integração: datas com sufixo UTC `Z` eram
+rejeitadas pela versão integrada da calculadora, que exigia offset explícito.
+As respostas inválidas acabavam abrindo o circuit breaker e escondendo a causa
+atrás de indisponibilidade rápida. O adaptador e seus testes tratam o formato;
+o breaker não substitui diagnóstico e validação de contrato.
 
-**Stack:**
-- **Backend:** Fastify + TypeScript + Prisma ORM + PostgreSQL 16 + Zod (validação runtime)
-- **Frontend:** Next.js 15.5 (App Router) + Tailwind v4 + shadcn/ui (Base UI) + Recharts + driver.js
-- **Infra:** Docker Compose, Caddy (reverse proxy + TLS automático), Oracle Cloud (2 VMs)
-- **Qualidade:** Vitest (testes automatizados), Prettier + Husky + lint-staged (formatação em todo commit)
-- **Gerenciador de pacotes:** pnpm 10.17.1 (pinado)
+## Segurança e sessão
 
----
+- JWT de acesso em memória, com validade de 15 minutos; não armazenado em
+  localStorage. Isso reduz persistência do token, não torna a aplicação imune a XSS.
+- Refresh HttpOnly de sete dias, rotacionado atomicamente e armazenado somente
+  como HMAC-SHA-256 com pepper externo. Reuso detectado revoga sessões do usuário.
+- Produção: `Secure; SameSite=None; Path=/auth`. Os sites Web/API separados
+  exigem None; Path inclui refresh e logout. [Motivo e limites](./docs/API_CONTRACTS.md#autenticação-e-cookie).
+  CORS explícito com credenciais é necessário; não há token anti-CSRF dedicado,
+  e cookies de terceiros podem ser bloqueados pelo navegador.
+- Logout comum revoga o refresh apresentado; logout global é separado. JWTs
+  de acesso emitidos não têm denylist e podem durar até expirar.
+- Segredos obrigatórios falham no startup; login/cadastro têm rate limiting
+  no Fastify. Origem de redirects pós-login passa por allowlist local.
+- Payloads monetários rejeitam expoentes/valores fora do domínio. Erros de CNPJ
+  expõem mensagem genérica, sem distinguir DV de duplicidade na interface;
+  isso não promete indistinguibilidade de todos os status HTTP.
 
-## Funcionalidades
+Restauração de sessão tem limite de oito segundos e retry manual de refresh;
+apenas a leitura transitória de `me()` pode repetir uma vez sem refresh
+indireto. Respostas tardias não substituem sessão mais recente. Rotas privadas
+mostram recuperação em falha técnica e pedem login quando a sessão é inválida.
+O CTA principal da landing permanece disponível e estável; dashboard é secundário.
 
-### Core
-- **Simulação fiscal real** — itens com NCM → Tax Engine interno → calculadora oficial RFB → comparativo lado a lado
-- **Multi-tenant** — tenant derivado do JWT; leituras e verificações de propriedade usam `companyId`, e mutações por ID ocorrem somente após esse controle
-- **Autenticação completa** — JWT de 15min em memória + refresh token HttpOnly com rotação a cada uso
-- **Dashboard executivo** — KPIs YTD, gráfico de 6 meses rolantes, donut de composição tributária, todos com dados reais agregados via SQL nativo
-- **Circuit breaker** — proteção contra falhas em cascata na integração com a calculadora RFB (ver [a saga de debugging](#a-saga-do-circuit-breaker) abaixo)
-- **Onboarding interativo** — tour de seis etapas no primeiro acesso, persistido por usuário e reaberto pelo botão “Ajuda / Tour”
+## Acessibilidade e descoberta
 
-### Gestão
-- **Produtos** — CRUD com NCM autocomplete (10.515 NCMs da tabela oficial RFB 2026)
-- **Clientes** — CRUD com formatação CPF/CNPJ
-- **Vendas** — listagem com filtro por status, breakdown fiscal completo, confirmar/cancelar inline
-- **Configurações** — edição de dados fiscais da empresa com select de município dependente de UF
+Skip link, nomes acessíveis, erros inline/resumo/foco no primeiro campo inválido,
+status assíncronos, navegação por teclado, foco de overlays, alternativa textual
+a gráficos e `prefers-reduced-motion`. Confirmações inline não expiram por tempo.
+O baseline manual anterior foi aceito pelo responsável; alterações posteriores
+continuam sujeitas a revisão manual antes de integração. Não é certificação WCAG.
 
-### Reforma Tributária
-- **Split Payment** — fundação arquitetural implementada, com [roadmap técnico detalhado](./SPLIT_PAYMENT_ROADMAP.md) para fases 1-4
-- **IBS/CBS/IS** — calculados via integração real com a calculadora oficial da RFB
-- **Seed de regras fiscais** — 63 regras para 21 NCMs no cenário suportado de venda doméstica comum, auto-populadas no primeiro registro
+Playwright/axe cobre login, cadastro, simulação, produtos, clientes, vendas e
+componentes compartilhados em Chromium desktop/móvel. Sérios/críticos e falhas
+obrigatórias de teclado fazem o job falhar; a branch deve exigir o check para
+bloquear merge. [Processo e matriz manual](./docs/runbooks/accessibility-regression-tests.md).
 
----
+Somente a landing recebe sitemap, canonical, OG/Twitter e JSON-LD público.
+Login/cadastro e rotas privadas são noindex e não compartilham dados do tenant
+em metadados. Manifest e ícones TS são informativos: sem service worker ou
+promessa de uso offline. Metadados produtivos ainda exigem smoke após deploy.
 
-## A Saga do Circuit Breaker
+## Executar localmente
 
-Um dos bugs mais instrutivos deste projeto: em produção, `/sales/simulate` retornava 422 em ~12ms — rápido demais para ter tentado uma chamada de rede real, o que provava que o circuit breaker estava rejeitando antes de qualquer `fetch()`. Testamos reiniciar o container (circuit breaker é estado em memória, deveria zerar), verificamos conectividade entre as duas VMs em 4 camadas diferentes (ping, TCP raw, curl de dentro do container, `http.request()` nativo do Node) — tudo funcionando.
-
-A causa raiz: `new Date().toISOString()` gera datas no formato `2026-08-08T02:15:16.222Z` (UTC com sufixo `Z`), mas a calculadora da RFB **rejeita** esse formato e exige offset explícito (`2026-08-07T23:15:16-03:00`). Toda chamada retornava HTTP 400, e após 5 falhas o circuit breaker abria — mascarando o erro real atrás de uma resposta rápida e genérica.
-
-**Lição:** circuit breakers escondem a causa raiz. A resposta de 422 em 12ms parecia "infraestrutura quebrada" quando na verdade era um bug de formatação de data de uma linha.
-
----
-
-## Segurança
-
-O projeto passou por uma auditoria automatizada com [Codex Security](https://github.com/openai/codex) (OpenAI), cobrindo 115 de 167 arquivos do repositório. 8 findings foram identificados; todos foram corrigidos ou documentados como limitação conhecida.
-
-| # | Finding | Severidade | Status |
-|---|---|---|---|
-| 1 | Exponentes decimais (`1e100000000`) em campos monetários podiam exaurir memória da API | Alta | ✅ Corrigido em Sales e Products, com validação sintática e testes |
-| 2 | `redirectTo` pós-login não validado permitia open redirect / DOM XSS | Alta | ✅ Corrigido — allowlist de caminhos relativos |
-| 3 | Fallback silencioso de `JWT_SECRET` para valor público conhecido | Média | ✅ Corrigido — fail-fast em produção |
-| 5 | Porta da API exposta diretamente, contornando o proxy | Média | ✅ Corrigido — publicações 3000/3333 removidas e validação externa concluída |
-| 6 | Tráfego de autenticação em HTTP puro, sem TLS | Média | ✅ Corrigido — HTTPS via Caddy + Let's Encrypt |
-| 8 | Logout não revogava sessão no servidor (`Path` do cookie divergente) | Baixa | ✅ Corrigido — escopo do cookie alinhado entre set/clear |
-| 4 | Resposta da calculadora RFB confiada sem validação de schema em runtime | Média | ✅ Corrigido — schema Zod, correlação por item e reconciliação de totais |
-| 7 | Refresh tokens armazenados em texto puro no banco (não hasheados) | Baixa | ✅ Corrigido — HMAC-SHA-256 com pepper externo e detecção de reuso |
-
-### Validação operacional
-
-- O docker-compose.prod.yml não publica as portas 3000/3333 no host: Caddy é o único serviço da stack principal com portas públicas (80/443) e acessa Web/API pela rede Docker interna. A aplicação mantém rate limiting no Fastify como defesa em profundidade. A configuração e a verificação externa da OCI/host estão descritas no [runbook de firewall da OCI](./docs/runbooks/oci-firewall.md).
-
----
-
-## Testes Automatizados
-
-Suíte com Vitest cobrindo os pontos de maior risco identificados durante o desenvolvimento e a auditoria de segurança:
-
-- **Schemas de Sales e Products** — notação científica, `Infinity`, casas decimais e limites de domínio
-- **Integração RFB** — data com offset explícito, schema runtime, correlação `numero`/`nObj`, arredondamento e respostas malformadas
-- **Autenticação** — cookies, rotação de refresh token, detecção de reuso, logout idempotente e rate limiting
-- **Error handler** — propagação global de erros Zod através do encapsulamento de plugins
-- **Tax Engine** — aritmética decimal, arredondamento `HALF_EVEN`, valores-limite, múltiplos itens e regimes tributários
-- **`safeRedirectPath`** — vetores de open redirect como protocol-relative, `javascript:`, `data:` e backslash
-- **Onboarding** — primeiro acesso, conclusão persistida e reabertura manual
-- **Seed fiscal** — sincronização idempotente de `cClassTrib` e `cst`
+Pré-requisitos: Docker/Compose, Node 22, pnpm 10.17.1 e o arquivo da calculadora
+obtido de sua distribuição oficial. A imagem x86 pode exigir máquina compatível;
+para testes automatizados existe calculadora determinística, não um serviço fiscal.
 
 ```bash
-cd apps/api && pnpm exec vitest run
-cd apps/web && pnpm exec vitest run
-```
-
-O Tax Engine possui testes dedicados de aritmética e arredondamento; o circuit breaker tem cobertura para janela de falhas, estado aberto e falha da tentativa half-open. O workflow `.github/workflows/ci.yml` executa as duas suítes e `tsc --noEmit` em todo push e pull request para `main`; deploy permanece manual.
-
----
-
-## Decisões Técnicas Relevantes
-
-| Decisão | Escolha | Motivo |
-|---|---|---|
-| Token de acesso | Memória (nunca localStorage) | Proteção contra XSS |
-| Cookie de refresh | HttpOnly + `SameSite=None` em produção | `duckdns.org` está na Public Suffix List do navegador — API e Web em subdomínios diferentes são tratados como cross-site; `Secure` + `HttpOnly` + allowlist de CORS mitigam CSRF |
-| Rotas protegidas | Client-side (`RequireAuth`) | Cookie com `Path` restrito é invisível ao Edge Middleware |
-| Tax Engine | Zero-Prisma, funções puras | Testável sem banco, extraível para outro runtime |
-| Calculadora RFB indisponível | Fail-fast 422 | Fonte da verdade legal — sem fallback enganoso |
-| Agregação do dashboard | SQL nativo via `$queryRaw` | `SUM`/`COUNT`/`AVG` no banco, não no cliente |
-| Colunas do banco | camelCase sem `@map` | Aspas duplas obrigatórias em SQL raw |
-| Domínio + TLS | DuckDNS + Let's Encrypt via Caddy | Zero custo, renovação automática, mantém o projeto hospedável gratuitamente |
-| Error handler do Fastify | Registrado com `fastify-plugin` (`fp()`) | Sem isso, fica invisível a plugins-irmãos por encapsulamento padrão do Fastify — descoberto ao validar um fix de segurança em produção |
-| Rate limiting de autenticação | Dentro do Fastify, somente em login/cadastro | Mantém o controle junto às rotas mesmo quando a API é acessada sem passar pelo Caddy |
-
----
-
-## Como Rodar Localmente
-
-### Pré-requisitos
-- Docker + Docker Compose
-- Node.js 22 + pnpm 10.17.1
-- Arquivo `calculadora.tar.gz` da [calculadora oficial da RFB](https://www.gov.br/receitafederal/pt-br/assuntos/legislacao/legislacao-por-assunto/reforma-tributaria/calculadora-do-regime-geral)
-
-### Setup
-
-```bash
-# 1. Clone o repositório
-git clone https://github.com/M-its/taxsim
+git clone https://github.com/M-its/taxsim.git
 cd taxsim
-
-# 2. Importe a imagem da calculadora RFB
-docker import calculadora.tar.gz calculadora-image
-
-# 3. Configure as variáveis de ambiente
 cp .env.example .env
-# Edite .env com seus valores
-
-# 4. Suba o ambiente de desenvolvimento
-# Recria apenas API/Web; preserva o banco e evita mounts/dependencias obsoletos.
+# Configure valores locais; nunca reutilize segredos de produção.
+docker import calculadora.tar.gz calculadora-image
 ./scripts/dev-up.sh
-
-# 5. Aguarde todos ficarem healthy (~2 min)
-docker compose ps
-
-# 6. Popule os dados iniciais (NCMs + regras fiscais)
-docker compose exec api npx prisma migrate deploy
-docker compose exec api npx prisma db seed
-# Reexecute o seed após atualizar tax-rules-data.ts; ele sincroniza cClassTrib/cst das regras existentes.
-docker compose exec api pnpm run import:ncm
-
-# 7. Acesse
-# Frontend: http://localhost:3000
-# API:      http://localhost:3333/health
 ```
 
-### Variáveis de Ambiente
-
-```env
-# API
-DATABASE_URL=postgresql://taxsim_user:taxsim_pass@db:5432/taxsim_db
-JWT_SECRET=sua-chave-secreta-aqui
-REFRESH_TOKEN_PEPPER=gere-com-openssl-rand-base64-32
-CORS_ORIGIN=http://localhost:3000
-
-# Web
-NEXT_PUBLIC_API_URL=http://localhost:3333
-NEXTAUTH_SECRET=mais-uma-chave-secreta
-```
-
-Antes do deploy, gere um pepper exclusivo para os refresh tokens e salve-o
-somente no ambiente de execução (nunca no repositório):
+Na primeira instalação **local e descartável**, após revisar a configuração:
 
 ```bash
-openssl rand -base64 32
+docker compose exec api pnpm exec prisma migrate deploy
+docker compose exec api pnpm exec prisma db seed
+docker compose exec api pnpm run import:ncm
 ```
 
----
+Web: `http://localhost:3000`; saúde da API: `http://localhost:3333/health`.
+O script de desenvolvimento recria API/Web preservando o volume do banco. Não
+executar seed/import/reset indiscriminadamente contra ambientes com dados reais.
 
-## Estrutura do Projeto
+Use `.env.example` como referência de variáveis; JWT, senha do banco e pepper
+são valores gerados fora do Git. O compose também exige `NEXTAUTH_SECRET`,
+ainda que o fluxo atual use autenticação própria. O build do Web embute
+`NEXT_PUBLIC_API_URL`: mudança dessa origem exige rebuild, não só restart.
 
-```
-taxsim/
-├── apps/
-│   ├── api/                    # Fastify backend
-│   │   ├── prisma/
-│   │   │   ├── schema.prisma   # 9 modelos
-│   │   │   ├── seed.ts         # 63 regras fiscais
-│   │   │   └── import-ncm.ts   # Import da tabela NCM oficial
-│   │   ├── Dockerfile.prod
-│   │   └── src/
-│   │       ├── modules/
-│   │       │   ├── auth/       # JWT + refresh rotation
-│   │       │   ├── products/   # CRUD + NCM validation
-│   │       │   ├── clients/    # CRUD + CPF/CNPJ
-│   │       │   ├── sales/      # Orchestrator fiscal
-│   │       │   ├── dashboard/  # Agregações SQL
-│   │       │   ├── tax-engine/ # Motor fiscal puro
-│   │       │   ├── tax-calculator/ # Client RFB + circuit breaker
-│   │       │   ├── ncm/        # Search endpoint
-│   │       │   ├── municipalities/ # Proxy calculadora RFB
-│   │       │   └── companies/  # Settings PATCH
-│   │       └── shared/
-│   │           ├── errors/     # AppError + fastify-plugin error handler
-│   │           ├── middlewares/ # authenticate preHandler
-│   │           └── formatters/ # Decimal serialization
-│   └── web/                    # Next.js frontend
-│       ├── Dockerfile.prod
-│       └── src/
-│           ├── app/
-│           │   ├── (auth)/     # Login + Register
-│           │   └── (dashboard)/ # Todas as páginas protegidas
-│           ├── components/
-│           │   ├── auth/       # AuthProvider, RequireAuth, PublicRoute
-│           │   ├── dashboard/  # KPIs, charts, table
-│           │   ├── layout/     # Sidebar, Topbar, DashboardShell
-│           │   ├── onboarding/ # Tour interativo do fluxo principal
-│           │   └── simulation/ # Form, TaxComparison, ProjectedImpact
-│           ├── hooks/          # useDashboardSummary, useRecentSales
-│           └── lib/            # api.ts, safe-redirect.ts, formatters, types
-├── .github/workflows/ci.yml     # Testes + typecheck em push/PR para main
-├── docker-compose.yml           # Ambiente de desenvolvimento
-├── docker-compose.prod.yml      # Produção — inclui Caddy
-├── Caddyfile                    # Config do reverse proxy / TLS
-├── API_CONTRACTS.md             # Contratos de todos os endpoints
-├── PROJECT_CONTEXT.md           # Decisões arquiteturais
-└── SPLIT_PAYMENT_ROADMAP.md     # Roadmap Split Payment fases 1-4
+## Verificações
+
+Instale dependências em cada aplicação com seu lockfile versionado; para API,
+gere o Prisma Client antes do typecheck. Não substitua os lockfiles das apps
+pelo arquivo raiz nem sincronize ambientes de produção para executar testes.
+
+```bash
+pnpm --dir apps/api install --frozen-lockfile
+pnpm --dir apps/web install --frozen-lockfile
+pnpm --dir apps/api exec prisma generate
+pnpm --dir apps/api exec vitest run
+pnpm --dir apps/web exec vitest run
+pnpm --dir apps/api exec tsc --noEmit
+pnpm --dir apps/web exec tsc --noEmit
+pnpm --dir apps/web exec eslint .
+./scripts/a11y-test.sh
 ```
 
----
+CI em push para main/release e PR para main: testes, typecheck API/Web, lint Web
+(somente erros bloqueiam) e suíte acessível descartável. O lint ignora artefatos
+gerados, não fonte/testes/scripts. A suíte acessível prepara banco exclusivo e
+calculadora mock; nunca depende da demo ou RFB real. Deploy não é automático.
 
-## Compliance
+Performance, a partir de `apps/web` (substituir placeholders):
+`node scripts/performance-audit.mjs --build=<BUILD_ISOLADO> --tools=<FERRAMENTAS> --output=<RELATORIOS_FORA_DO_CHECKOUT> --phase=before`.
+Preparar build standalone separado com `NEXT_PUBLIC_API_URL=http://localhost:3339`,
+Lighthouse 12.8.2 em diretório de ferramentas privado e Chromium do Playwright.
+Não usar o cache `.next` de um `next dev` em execução. O script inicia API
+sintética e servidor somente em loopback; relatórios devem ficar fora do checkout.
 
-Este projeto é uma **demonstração técnica de portfólio** desenvolvida por [Mitsrael](https://github.com/M-its).
+## Limitações
 
-- Não possui vínculo com a Receita Federal do Brasil
-- A calculadora de tributos integrada é software público disponibilizado pela RFB
-- Os cálculos podem não refletir a legislação mais recente
-- Não monetizado — uso exclusivamente demonstrativo
-- Não utiliza logotipos ou marcas oficiais do Governo Federal
+- **Uso fiscal:** catálogo/regras limitados e versionados manualmente. Não há
+  resolução universal por CST/cClassTrib, CFOP, benefícios ou operações especiais.
+  A integração RFB não garante atualidade jurídica nem cálculo fiscal válido.
+  [Escopo fiscal detalhado](./docs/limitacoes-fiscais-e-classificacao.md).
+- **Localização:** simulação avulsa usa município/UF didáticos fixos; venda
+  persistida usa a configuração da empresa. Não interpretar os fluxos como
+  equivalentes a uma apuração por operação real.
+- **Dependências e segurança:** demo sem SLA; simulação depende da calculadora.
+  Sem RLS, RBAC avançado, denylist de JWT, token anti-CSRF dedicado ou auditoria
+  completa de operações. Endpoint auxiliar de municípios ainda tem dependência
+  de endereço fixo no código; cadastro solicita código IBGE e UF manualmente.
+- **Performance — medido:** em 14/10/2026, medianas de três execuções Lighthouse
+  por página/perfil: **desktop 100/99/92**, **móvel simulado 86/82/59**, na ordem
+  landing/login/dashboard. **Metas móveis de LCP, TBT e pontuação não atingidas**.
+  Móvel: LCP 2,80/3,40/4,52 s e TBT 409/352/1.408 ms. Metas: LCP ≤ 2,5 s,
+  TBT ≤ 200 ms, pontuação ≥ 90 públicas e ≥ 80 dashboard. CLS e orçamentos de
+  transferência JS/fontes/imagens ficaram dentro dos limites nesta amostra.
+  Build de produção local, cache HTTP frio, dashboard preenchido com fixture,
+  API sintética com 100 ms, móvel 390 × 844 com CPU 4× e rede simulada;
+  não são métricas reais de usuários ou do servidor produtivo. Amostra pequena,
+  sem INP de campo; um experimento sem ganho consistente foi revertido.
+- **Backlog pós-v1.0 de performance:** (1) perfilar scripting/hidratação móvel,
+  especialmente dashboard/Recharts; (2) avaliar carregamento tardio de gráficos
+  e tour com espaço reservado/alternativa textual e regressões; (3) revisar
+  preloads de fontes não usados no login. São oportunidades a validar, não
+  ganhos garantidos nem mudanças já implementadas. Sem gate Lighthouse ou
+  monitoramento periódico nesta entrega.
+- **Fora da v1.0:** Split Payment operacional, NF-e, PSPs, conciliação,
+  atualização automática NCM, métricas de tráfego real e novo redesign amplo.
+  Campos/modelos de fundação não significam integração financeira disponível.
 
----
+## Documentação e estrutura
 
-## Licença
+- [ROADMAP](./ROADMAP.md): estado de fechamento, critérios de release e backlog.
+- [Contexto de arquitetura](./docs/PROJECT_CONTEXT.md): decisões efetivas.
+- [Contratos REST](./docs/API_CONTRACTS.md): endpoints, sessão e diagnósticos.
+- [Limites fiscais](./docs/limitacoes-fiscais-e-classificacao.md).
+- Runbooks: [deploy/rollback](./docs/runbooks/release-deploy-rollback.md),
+  [rede OCI](./docs/runbooks/oci-firewall.md),
+  [acessibilidade](./docs/runbooks/accessibility-regression-tests.md).
+- [AGENTS](./AGENTS.md): responsabilidades e workflow de colaboração.
 
-MIT — veja [LICENSE](./LICENSE)
+`apps/api` contém Prisma e módulos de domínio; `apps/web` contém rotas,
+componentes, hooks e testes; `scripts` contém comandos operacionais/rede e a
+stack acessível descartável. Contratos e contexto públicos ficam em `docs/`.
+Históricos de auditoria, estudo, entrevista, logs de decisão e configurações
+locais de agentes não integram a árvore pública atual. O histórico Git anterior
+não é apagado pela retirada de arquivos do índice.
+
+## Autoria e licença
+
+Mitsrael mantém requisitos, arquitetura, revisão e aceite. Ferramentas de IA
+apoiam análise, implementação e testes, sem substituir responsabilidade humana
+ou provar revisão manual das mudanças ainda locais. Detalhes em [AGENTS](./AGENTS.md).
+
+MIT — [LICENSE](./LICENSE).
