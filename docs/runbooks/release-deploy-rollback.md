@@ -1,35 +1,87 @@
-# Deploy e rollback do release
+# Deploy e rollback
 
-## Preflight
+Procedimento manual, não autorização para executar comandos. Preencher os
+placeholders com configuração privada; não publicar hosts, endereços, caminhos
+operacionais, identificadores de backup ou saídas com segredos.
 
-1. No host `<DEPLOY_HOST>` (`<DEPLOY_IP>`), registrar SHA/imagens atuais, SHA alvo e migrations aplicadas. Guardar as imagens anteriores; executar `release-preflight.sql` no banco alvo. Não há evidência local do último SHA implantado nem confirmação de dados demo2 em produção.
-2. Configurar `.env` fora do Git e Caddyfile com `<WEB_HOST>` e `<API_HOST>`. Revisar `docker compose -f docker-compose.prod.yml config --quiet` (sem imprimir segredos). Caddy/API/web compartilham `app_network`; DB/API compartilham `db_network` interna. Somente Caddy publica 80/443; não publicar 3000/3333.
-3. Pausar escrita e realizar backup consistente: `docker compose -f docker-compose.prod.yml exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > <BACKUP_PATH>`. Validar backup e procedimento de restauração em banco isolado.
+## Antes do deploy
 
-## Variáveis
+1. Registrar privadamente revisão e imagens atuais, revisão alvo e migrations
+   aplicadas. Um deploy anterior não comprova que a branch de fechamento está
+   publicada. Conferir a revisão exata aprovada na CI.
+2. Validar configuração com `docker compose -f docker-compose.prod.yml config --quiet`,
+   sem imprimir valores. Caddy é o único serviço publicado em 80/443; não
+   publicar Web/API/banco. Confirmar a configuração externa separadamente.
+3. Executar o SQL somente leitura [release-preflight.sql](./release-preflight.sql)
+   pelo container do banco, cuja rede é interna. Ler toda a saída: regras e
+   produtos obsoletos, dados demo e histórico de migrations. O retorno anterior
+   do responsável confirmou esses pontos em 11/10/2026; repetir antes de novo
+   deploy se o estado puder ter mudado.
+4. Conferir presença do pepper sem exibir o valor. Gerar segredos apenas fora
+   do Git e guardá-los em gerenciador seguro. Não rotacionar o pepper existente
+   inadvertidamente: invalida a capacidade de usar sessões anteriores.
+5. Suspender escrita, obter backup consistente e validar tamanho, leitura do
+   arquivo e restauração em banco isolado. Guardar local, checksum e revisão
+   correspondente em registro privado. Não sobrescrever backups de rollback.
 
-- Compose exige explicitamente `POSTGRES_PASSWORD`, `JWT_SECRET`, `REFRESH_TOKEN_PEPPER`, `NEXTAUTH_SECRET`. Gerar segredos fora do repositório; não rotacionar o pepper sem planejamento de invalidação das sessões.
-- API: `DATABASE_URL` (montada pelo compose), `JWT_SECRET`, `REFRESH_TOKEN_PEPPER`; configurar `CORS_ORIGIN=https://<WEB_HOST>` e `TAX_CALCULATOR_STANDARD_URL=<CALCULATOR_URL>/api`. Compose também passa `TAX_CALCULATOR_SPLIT_PAYMENT_URL`.
-- Web: `NEXT_PUBLIC_API_URL=https://<API_HOST>` em build e runtime; mudar exige rebuild. Compose passa também `API_INTERNAL_URL=http://api:3333`, `NEXTAUTH_URL=https://<WEB_HOST>` e `NEXTAUTH_SECRET`; o código atual usa autenticação própria, sem consumo desses três valores na aplicação.
-- Defaults do compose: `POSTGRES_DB=taxsim_db`, `POSTGRES_USER=taxsim_user`, `JWT_EXPIRES_IN=15m`, `REFRESH_TOKEN_EXPIRES_IN=7d`, `DEFAULT_TAX_REGIME=SIMPLES_NACIONAL`. Os três últimos são passados mas não lidos atualmente pela API. Fixos: `API_PORT=3333`, `API_HOST=0.0.0.0`, `NODE_ENV=production` (API), `TZ=America/Sao_Paulo`, `NEXT_TELEMETRY_DISABLED=1`. Web imagem fixa `NODE_ENV=production`, `HOSTNAME=0.0.0.0`, `PORT=3000`.
-- Opcionais da API fora do compose: `AUTH_RATE_LIMIT_MAX` (5), `TAX_CALCULATOR_TIMEOUT_MS` (10000).
-- Novidade rastreável: `REFRESH_TOKEN_PEPPER` introduzido em `6e26518`; em `248dc25`, as quatro variáveis secretas acima passam a ser obrigatórias no compose. Sem SHA do último deploy, não é possível afirmar quais são novas naquele ambiente. Comparar `<PREVIOUS_DEPLOY_SHA>` com o release.
+Exemplo de backup (substituir o destino; contém dados privados):
 
-## Deploy
+```bash
+docker compose -f docker-compose.prod.yml exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' > <BACKUP_PATH>
+```
 
-1. Com checkout em `<RELEASE_SHA>`, construir API/web: `docker compose -f docker-compose.prod.yml build api app`. Não executar seeds.
-2. A imagem API inicia somente `node dist/server.js`: **não executa migrate deploy**. Após revisão/aceite do SQL, parar API/web para evitar escrita concorrente e aplicar explicitamente `docker compose -f docker-compose.prod.yml run --rm --no-deps api pnpm exec prisma migrate deploy`. DB deve estar saudável.
-3. Migrations versionadas em ordem (somente as ausentes em `_prisma_migrations` serão aplicadas):
-   - `20260519145502_init`
-   - `20260614213115_add_tax_engine_fields`
-   - `20260718064912_add_split_payment_fields`
-   - `20260721230859_add_ncm_catalog`
-   - `20260905142925_refresh_token_hash`: apaga refresh tokens antigos; exige novo login.
-   - `20260921180000_correct_obsolete_ncm_rules`: mapeia quatro NCMs de produtos/regras, arquiva regras antigas e fictícias; preserva snapshots de vendas. Produtos `99999999` exigem correção manual. Falha se houver regra ACTIVE e ARCHIVED coexistentes no mesmo código/regime obsoleto.
-4. Subir `docker compose -f docker-compose.prod.yml up -d --no-build`, verificar healthchecks e HTTPS em `https://<WEB_HOST>/api/health` e `https://<API_HOST>/health`. Validar login/refresh, Produtos, Clientes e simulação. Executar novamente o SQL de preflight.
+## Configuração
+
+- Compose exige `POSTGRES_PASSWORD`, `JWT_SECRET`, `REFRESH_TOKEN_PEPPER` e
+  `NEXTAUTH_SECRET`. O último ainda é exigido pelo compose, embora a aplicação
+  use autenticação própria, não NextAuth.
+- API recebe `DATABASE_URL`, origens permitidas de CORS e URLs da calculadora.
+  `CORS_ORIGIN=https://<WEB_HOST>` deve ser explícito, com credenciais. Não
+  usar wildcard em produção. Calculadora deve ser alcançável somente pela rede
+  privada; ausência de publicação local não prova o firewall externo.
+- `NEXT_PUBLIC_API_URL=https://<API_HOST>` é embutida no build; mudar a variável
+  somente em runtime não altera o bundle. `API_INTERNAL_URL` e `NEXTAUTH_URL`
+  são passadas pelo compose, mas não usadas pelo fluxo atual de dados do Web.
+- JWT de 15 minutos e refresh de sete dias são definidos no código; as variáveis
+  `JWT_EXPIRES_IN` e `REFRESH_TOKEN_EXPIRES_IN` do compose não alteram esses prazos.
+  `DEFAULT_TAX_REGIME` também não é lida hoje pela API.
+- `AUTH_RATE_LIMIT_MAX` não está no compose de produção: mantém o padrão de
+  cinco tentativas por minuto em login/cadastro. Não relaxar para aprovar smoke.
+- Cookie: `SameSite=None; Secure; HttpOnly; Path=/auth` em produção. A separação
+  de sites Web/API exige o atributo None; Path inclui refresh e logout. Limites
+  de CORS/cookies de terceiros/CSRF nos [contratos](../API_CONTRACTS.md).
+
+## Publicação aprovada
+
+1. Construir API/Web da revisão aprovada:
+   `docker compose -f docker-compose.prod.yml build api app`. Não rodar seeds.
+2. Comparar migrations já aplicadas com as versionadas. O startup da API não
+   roda migrations. Somente se houver pendências, SQL revisado, backup validado
+   e autorização específica, suspender API/Web e executar o procedimento
+   explícito de migrations. Não reaplicar manualmente nem usar reset.
+3. A migração histórica de hash de refresh encerra sessões antigas; a correção
+   histórica de NCM preserva snapshots e requer revisão de produtos fictícios.
+   Conferir o estado aplicado em vez de presumir nova execução necessária.
+4. Subir a revisão construída com
+   `docker compose -f docker-compose.prod.yml up -d --no-build`; conferir
+   healthchecks, HTTPS e logs sem dados sensíveis.
+5. Smoke: cadastro/login, recarga com sessão, logout e recuperação de falha;
+   produtos/clientes; simulação manual/catálogo; venda e dashboard. Validar
+   metadados públicos e noindex privado pelo HTTP da revisão publicada.
+   `/health` não prova disponibilidade da calculadora: testar fluxo fiscal
+   controlado e mensagem de indisponibilidade. Não usar dados fiscais reais.
+6. Registrar resultados privadamente e atualizar status público resumido.
+   Somente depois reconciliar issues e criar release/tag em autorização própria.
+   Este documento não executa essas ações.
 
 ## Rollback
 
-- Antes de migrations: restaurar SHA/imagens anteriores e configuração compatível; subir com `up -d --no-build`.
-- Depois de migrations: não basta voltar imagem; a API antiga pode exigir coluna token removida. Manter escrita suspensa, restaurar backup em banco novo/isolado, validar, apontar a configuração para ele e subir imagens anteriores. Não usar `migrate reset`, não apagar volume e não improvisar SQL reverso. Restauração perde escritas posteriores ao backup; conciliar antes de reabrir tráfego.
-- Preservar logs, banco atual e SHA para investigação. Não fazer deploy ou rollback automaticamente a partir deste documento.
+- Sem mudança de schema: restaurar revisão/imagens/configuração compatíveis
+  previamente guardadas; verificar saúde e smoke antes de reabrir escrita.
+- Com mudança de schema: imagem antiga pode ser incompatível. Manter escrita
+  suspensa, restaurar backup validado em banco novo/isolado e validar antes de
+  apontar a aplicação. Não apagar volume, executar `migrate reset` ou improvisar
+  SQL reverso. Restauração pode perder escritas posteriores; conciliar antes de
+  reabrir o serviço.
+- Preservar logs e banco atual para investigação. Não fazer rollback automático
+  com base apenas em Lighthouse ou em falha transitória de dependência.
