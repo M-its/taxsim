@@ -34,6 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [company, setCompany] = useState<Company | null>(null)
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>('restoring')
   const [isSlowRestoration, setIsSlowRestoration] = useState(false)
+  const [hasStartedRestoration, setHasStartedRestoration] = useState(false)
   const restorationRef = useRef<AbortController | null>(null)
   const attemptRef = useRef(0)
   const isLoading = sessionStatus === 'restoring'
@@ -91,6 +92,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setSessionStatus(result.status)
     })
+    // Server-rendered public inputs become interactive only once hydration has
+    // installed their handlers and initiated the first session check.
+    setHasStartedRestoration(true)
   }, [cancelRestoration, clearSession])
 
   useEffect(() => {
@@ -158,6 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: user !== null,
       sessionStatus,
       isSlowRestoration,
+      hasStartedRestoration,
       retrySession,
       login,
       register,
@@ -170,6 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       sessionStatus,
       isSlowRestoration,
+      hasStartedRestoration,
       retrySession,
       login,
       register,

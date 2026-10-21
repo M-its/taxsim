@@ -26,7 +26,7 @@ import { safeRedirectPath } from '@/lib/safe-redirect'
 export const dynamic = 'force-dynamic'
 
 function LoginForm() {
-  const { login } = useAuth()
+  const { login, isLoading, hasStartedRestoration } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = safeRedirectPath(searchParams.get('redirectTo'))
@@ -44,6 +44,7 @@ function LoginForm() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (isLoading || isSubmitting) return
     setFormError(null)
 
     const errors: Partial<Record<'email' | 'password', string>> = {}
@@ -85,10 +86,17 @@ function LoginForm() {
             Insira suas credenciais para acessar o sistema.
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit} noValidate aria-busy={isSubmitting}>
-          <AsyncStatus message={isSubmitting ? 'Entrando no TaxSim.' : ''} />
+        <form
+          method="post"
+          onSubmit={handleSubmit}
+          noValidate
+          aria-busy={isLoading || isSubmitting}
+        >
+          <AsyncStatus
+            message={isLoading ? 'Verificando sessão.' : isSubmitting ? 'Entrando no TaxSim.' : ''}
+          />
           <CardContent className="space-y-4">
-            {(formError || Object.keys(fieldErrors).length > 0) && (
+            {(formError || Object.values(fieldErrors).some(Boolean)) && (
               <div
                 ref={errorSummaryRef}
                 tabIndex={-1}
@@ -117,6 +125,7 @@ function LoginForm() {
               </Label>
               <Input
                 id="email"
+                disabled={!hasStartedRestoration}
                 type="email"
                 autoComplete="email"
                 value={email}
@@ -142,6 +151,7 @@ function LoginForm() {
               </Label>
               <Input
                 id="password"
+                disabled={!hasStartedRestoration}
                 type="password"
                 autoComplete="current-password"
                 value={password}
@@ -166,10 +176,10 @@ function LoginForm() {
           <CardFooter className="flex flex-col gap-4">
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isLoading || isSubmitting}
               className="w-full rounded-none bg-[#34d399] text-[#09090b] hover:bg-[#34d399]/90"
             >
-              {isSubmitting ? 'Entrando...' : 'Entrar'}
+              {isLoading ? 'Verificando sessão...' : isSubmitting ? 'Entrando...' : 'Entrar'}
             </Button>
             <p className="text-sm text-[#a1a1aa]">
               Não tem conta?{' '}

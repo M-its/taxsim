@@ -71,7 +71,7 @@ const REGISTRATION_FIELD_ORDER: RegistrationField[] = [
 ]
 
 function RegisterForm() {
-  const { register } = useAuth()
+  const { register, isLoading, hasStartedRestoration } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = safeRedirectPath(searchParams.get('redirectTo'))
@@ -114,6 +114,7 @@ function RegisterForm() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (isLoading || isSubmitting) return
     setFormError(null)
 
     const validationErrors = validate()
@@ -167,10 +168,17 @@ function RegisterForm() {
             Cadastre sua empresa e o primeiro usuário.
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit} noValidate aria-busy={isSubmitting}>
-          <AsyncStatus message={isSubmitting ? 'Criando sua conta.' : ''} />
+        <form
+          method="post"
+          onSubmit={handleSubmit}
+          noValidate
+          aria-busy={isLoading || isSubmitting}
+        >
+          <AsyncStatus
+            message={isLoading ? 'Verificando sessão.' : isSubmitting ? 'Criando sua conta.' : ''}
+          />
           <CardContent className="space-y-4">
-            {(formError || Object.keys(fieldErrors).length > 0) && (
+            {(formError || Object.values(fieldErrors).some(Boolean)) && (
               <div
                 ref={errorSummaryRef}
                 tabIndex={-1}
@@ -197,6 +205,7 @@ function RegisterForm() {
               </Label>
               <Input
                 id="companyName"
+                disabled={!hasStartedRestoration}
                 value={form.companyName}
                 onChange={(e) => updateField('companyName', e.target.value)}
                 placeholder="Acme Ltda"
@@ -219,6 +228,7 @@ function RegisterForm() {
                 </Label>
                 <Input
                   id="document"
+                  disabled={!hasStartedRestoration}
                   value={form.document}
                   onChange={(e) => updateField('document', formatCnpj(e.target.value))}
                   placeholder="00.000.000/E08G-12"
@@ -241,6 +251,7 @@ function RegisterForm() {
                   Regime tributário
                 </Label>
                 <Select
+                  disabled={!hasStartedRestoration}
                   value={form.taxRegime}
                   onValueChange={(value) => updateField('taxRegime', value as TaxRegime)}
                 >
@@ -279,6 +290,7 @@ function RegisterForm() {
                 </Label>
                 <Input
                   id="municipioCode"
+                  disabled={!hasStartedRestoration}
                   type="number"
                   value={form.municipioCode}
                   onChange={(e) => updateField('municipioCode', e.target.value)}
@@ -300,6 +312,7 @@ function RegisterForm() {
                 </Label>
                 <Input
                   id="uf"
+                  disabled={!hasStartedRestoration}
                   value={form.uf}
                   onChange={(e) => updateField('uf', e.target.value)}
                   placeholder="SP"
@@ -324,6 +337,7 @@ function RegisterForm() {
               </Label>
               <Input
                 id="userName"
+                disabled={!hasStartedRestoration}
                 value={form.userName}
                 onChange={(e) => updateField('userName', e.target.value)}
                 placeholder="João Silva"
@@ -345,6 +359,7 @@ function RegisterForm() {
               </Label>
               <Input
                 id="email"
+                disabled={!hasStartedRestoration}
                 type="email"
                 value={form.email}
                 onChange={(e) => updateField('email', e.target.value)}
@@ -367,6 +382,7 @@ function RegisterForm() {
               </Label>
               <Input
                 id="password"
+                disabled={!hasStartedRestoration}
                 type="password"
                 value={form.password}
                 onChange={(e) => updateField('password', e.target.value)}
@@ -388,10 +404,14 @@ function RegisterForm() {
           <CardFooter className="flex flex-col gap-4">
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isLoading || isSubmitting}
               className="w-full rounded-none bg-[#34d399] text-[#09090b] hover:bg-[#34d399]/90"
             >
-              {isSubmitting ? 'Criando conta...' : 'Criar conta'}
+              {isLoading
+                ? 'Verificando sessão...'
+                : isSubmitting
+                  ? 'Criando conta...'
+                  : 'Criar conta'}
             </Button>
             <p className="text-sm text-[#a1a1aa]">
               Já tem conta?{' '}

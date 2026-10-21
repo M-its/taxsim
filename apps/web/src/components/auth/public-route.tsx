@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from './auth-provider'
 import { AuthLoading } from './auth-loading'
@@ -12,11 +12,6 @@ export function PublicRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = safeRedirectPath(searchParams.get('redirectTo'))
-  const [hasShownForm, setHasShownForm] = useState(false)
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) setHasShownForm(true)
-  }, [isLoading, isAuthenticated])
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -24,13 +19,15 @@ export function PublicRoute({ children }: { children: React.ReactNode }) {
     }
   }, [isLoading, isAuthenticated, redirectTo, router])
 
-  if ((isLoading && !hasShownForm) || isAuthenticated) {
+  // These forms contain no private data. Keep their server-rendered content
+  // available during hydration/restoration; submission is gated in each form.
+  if (isAuthenticated) {
     return <AuthLoading />
   }
 
   return (
     <>
-      <SessionRecovery />
+      {!isLoading && <SessionRecovery />}
       {children}
     </>
   )
