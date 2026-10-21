@@ -82,7 +82,10 @@ function ExampleComparison() {
   const percentage = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 4 })
   const ibsRate = Number(reformGroup.gIBSUF.pIBSUF) + Number(reformGroup.gIBSMun.pIBSMun)
   return (
-    <section aria-labelledby="exemplo-title" className="min-w-0 border border-zinc-700 bg-zinc-950">
+    <section
+      aria-labelledby="exemplo-title"
+      className="@container min-w-0 border border-zinc-700 bg-zinc-950"
+    >
       <div className="border-b border-zinc-800 p-5 sm:p-6">
         <h2 id="exemplo-title" className="text-xl font-semibold">
           {scenario.product}
@@ -94,7 +97,7 @@ function ExampleComparison() {
           NCM <span className="font-mono">{scenario.ncmCode}</span> · Lucro Real
         </p>
       </div>
-      <div className="grid grid-cols-1 divide-y divide-zinc-800 min-[380px]:grid-cols-2 min-[380px]:divide-x min-[380px]:divide-y-0">
+      <div className="grid grid-cols-1 divide-y divide-zinc-800 @min-[480px]:grid-cols-2 @min-[480px]:divide-x @min-[480px]:divide-y-0">
         <div className="min-w-0 p-5 sm:p-6">
           <h3 className="text-sm font-medium text-zinc-300">Modelo atual</h3>
           <p className="mt-3 font-numbers text-3xl font-semibold tracking-tight">

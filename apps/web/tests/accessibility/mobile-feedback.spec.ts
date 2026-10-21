@@ -1,5 +1,51 @@
 import { expect, test } from '@playwright/test'
 import { expectNoBlockingAxeViolations } from './axe'
+import fixture from '../../src/lib/landing-example.json'
+
+test('comparativo mantém valores dentro de cada caixa nas larguras intermediárias', async ({
+  page,
+}) => {
+  await page.route('**/auth/refresh', (route) => route.fulfill({ status: 401, json: {} }))
+  await page.goto('/')
+  await page.evaluate(() => document.fonts.ready)
+  const comparison = page.getByRole('region', { name: fixture.scenario.product })
+  for (const width of [320, 379, 380, 390, 400, 480, 520, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 844 })
+    for (const amount of ['R$ 272,50', 'R$ 10,00']) {
+      const total = comparison.getByText(amount, { exact: true })
+      await expect(total).toBeVisible()
+      const bounds = await total.evaluate((element) => {
+        const range = document.createRange()
+        range.selectNodeContents(element)
+        const text = range.getBoundingClientRect()
+        const parent = element.parentElement!
+        const box = parent.getBoundingClientRect()
+        const style = getComputedStyle(parent)
+        return {
+          textLeft: text.left,
+          textRight: text.right,
+          contentLeft: box.left + parseFloat(style.paddingLeft),
+          contentRight: box.right - parseFloat(style.paddingRight),
+          scrollWidth: parent.scrollWidth,
+          clientWidth: parent.clientWidth,
+        }
+      })
+      expect(
+        bounds.textLeft,
+        `${width}px: ${amount} começa dentro da caixa`,
+      ).toBeGreaterThanOrEqual(bounds.contentLeft - 1)
+      expect(bounds.textRight, `${width}px: ${amount} termina dentro da caixa`).toBeLessThanOrEqual(
+        bounds.contentRight + 1,
+      )
+      expect(bounds.scrollWidth, `${width}px: sem overflow interno`).toBeLessThanOrEqual(
+        bounds.clientWidth,
+      )
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    )
+  }
+})
 
 for (const failure of ['network', 'unavailable'] as const) {
   test(`cadastro distingue falha ${failure} de validação e permite reenvio manual`, async ({
