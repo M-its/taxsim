@@ -194,3 +194,44 @@ test('foco contrastante, GitHub em nova aba e movimento reduzido', async ({ page
   expect(Math.abs(nav.x + nav.width / 2 - 384)).toBeLessThan(1)
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(768)
 })
+
+test('fragmento nativo vence histórico atrasado sem perder URL nem seção', async ({ page }) => {
+  let refreshes = 0
+  await page.route('**/auth/refresh', (route) => {
+    refreshes += 1
+    return route.fulfill({ status: 401, json: {} })
+  })
+  await page.goto('/')
+  await expect.poll(() => refreshes).toBeGreaterThan(0)
+  for (const hash of ['#produto', '#arquitetura', '#qualidade']) {
+    await page.evaluate((fragment) => {
+      // Reproduce the observed ordering deterministically: native hash first,
+      // then Next's stale canonical history write before hashchange dispatch.
+      window.location.hash = fragment
+      window.history.replaceState(window.history.state, '', '/')
+    }, hash)
+    await expect(page).toHaveURL(new RegExp(`${hash}$`))
+    await expect(page.locator(hash)).toBeInViewport()
+  }
+})
+
+test('retorno explícito de login e cadastro usa novo documento na raiz', async ({ page }) => {
+  await page.route('**/auth/refresh', (route) => route.fulfill({ status: 401, json: {} }))
+  for (const [path, title] of [
+    ['/login', 'Entrar no TaxSim'],
+    ['/register', 'Criar conta no TaxSim'],
+  ]) {
+    await page.goto(path)
+    await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
+    await page.evaluate(() => {
+      document.documentElement.dataset.authDocument = 'previous'
+    })
+    await page.getByRole('link', { name: 'Voltar ao início', exact: true }).focus()
+    await page.keyboard.press('Enter')
+    await expect(page).toHaveURL(/\/$/)
+    await expect(
+      page.getByRole('heading', { name: 'Do NCM à comparação tributária.' }),
+    ).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.dataset.authDocument)).toBeUndefined()
+  }
+})

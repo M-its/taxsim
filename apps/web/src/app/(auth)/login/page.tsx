@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/auth/auth-provider'
-import { PublicRoute } from '@/components/auth/public-route'
+import { BackToHomeLink, PublicRoute } from '@/components/auth/public-route'
 import { Button } from '@/components/ui/button'
 import { AsyncStatus } from '@/components/ui/async-status'
 import {
@@ -190,12 +190,7 @@ function LoginForm() {
           </CardFooter>
         </form>
       </Card>
-      <Link
-        href="/"
-        className="mt-4 inline-flex min-h-11 items-center text-sm text-zinc-300 underline underline-offset-4 hover:text-white"
-      >
-        Voltar ao início
-      </Link>
+      <BackToHomeLink />
       <ComplianceBanner className="max-w-sm" />
     </main>
   )

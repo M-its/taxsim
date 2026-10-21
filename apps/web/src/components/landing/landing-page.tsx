@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowDown, ArrowRight, Database, FileSearch, ScanSearch } from 'lucide-react'
 import { AuthProvider, useAuth } from '@/components/auth/auth-provider'
 import { SessionRecovery } from '@/components/auth/session-recovery'
+import { LandingFragmentSync } from './landing-fragment-sync'
 import example from '@/lib/landing-example.json'
 import { formatCurrency } from '@/lib/formatters'
 
@@ -198,6 +199,7 @@ function ArchitectureDiagram() {
 function LandingContent() {
   return (
     <div className="taxsim-landing min-h-screen bg-[#09090b] text-zinc-50 selection:bg-emerald-400 selection:text-zinc-950">
+      <LandingFragmentSync />
       <Link
         href="#conteudo"
         className="landing-skip-link sr-only z-50 border-2 border-zinc-950 bg-emerald-400 px-4 py-3 font-semibold text-zinc-950 focus:not-sr-only focus:fixed focus:left-4 focus:top-4"

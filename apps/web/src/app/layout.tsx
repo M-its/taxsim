@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from 'next'
 import { headers } from 'next/headers'
+import Script from 'next/script'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import { MotionPreferences } from '@/components/accessibility/motion-preferences'
 import { isProductionHost, productionUrl, themeColor } from '@/lib/site-metadata'
+import { LANDING_FRAGMENT_CAPTURE } from '@/lib/landing-fragments'
 import 'driver.js/dist/driver.css'
 import './globals.css'
 
@@ -63,6 +65,11 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased dark`}
     >
       <body className="min-h-full flex flex-col bg-[#09090b] text-[#fafafa]">
+        <Script
+          id="taxsim-landing-fragments"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: LANDING_FRAGMENT_CAPTURE }}
+        />
         <MotionPreferences>{children}</MotionPreferences>
       </body>
     </html>
