@@ -32,13 +32,14 @@ test('public discovery is canonical, scoped to the landing and non-installable',
   expect(schema).not.toHaveProperty('offers')
   expect(schema).not.toHaveProperty('aggregateRating')
   const ogUrl = await page.locator('meta[property="og:image"]').getAttribute('content')
-  // Next serves file-based social images from localhost in development; the release
-  // build must resolve them against the canonical production metadataBase.
-  if (process.env.TAXSIM_PRODUCTION_BUILD === '1' || process.env.CI === 'true')
-    expect(ogUrl).toContain('https://taxsim-web.duckdns.org/')
+  // CI controls the runner, not whether the Web server uses next dev or next build.
+  // Next uses localhost:PORT for file-based social images in development, even
+  // when the browser reaches the server through a different Compose alias.
+  if (process.env.TAXSIM_PRODUCTION_BUILD === '1')
+    expect(new URL(ogUrl!).origin).toBe('https://taxsim-web.duckdns.org')
   else
-    expect(['https://taxsim-web.duckdns.org', new URL(page.url()).origin]).toContain(
-      new URL(ogUrl!).origin,
+    expect(new URL(ogUrl!).origin).toBe(
+      new URL(process.env.TAXSIM_DEV_METADATA_ORIGIN ?? 'http://localhost:3000').origin,
     )
   const og = await request.get(new URL(ogUrl!).pathname)
   expect(og.ok()).toBe(true)
@@ -114,9 +115,11 @@ test('public discovery is canonical, scoped to the landing and non-installable',
   expect(dashboard).not.toContain('application/ld+json')
   expect(dashboard).not.toContain('property="og:image"')
   expect(dashboard).not.toContain('rel="canonical"')
-  expect(
-    await page.evaluate(() =>
-      navigator.serviceWorker.getRegistrations().then((entries) => entries.length),
-    ),
-  ).toBe(0)
+  const serviceWorkerRegistrations = await page.evaluate(async () => {
+    // HTTP Compose aliases are not secure contexts, so this API is unavailable.
+    if (!('serviceWorker' in navigator)) return null
+    return (await navigator.serviceWorker.getRegistrations()).length
+  })
+  if (process.env.TAXSIM_PRODUCTION_BUILD === '1') expect(serviceWorkerRegistrations).toBe(0)
+  else expect([null, 0]).toContain(serviceWorkerRegistrations)
 })
