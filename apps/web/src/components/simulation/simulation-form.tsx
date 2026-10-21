@@ -997,6 +997,20 @@ export function SimulationForm({
           type="submit"
           data-tour="simulation-submit"
           disabled={isSubmitting || isCheckingEligibility}
+          onMouseDown={(event) => {
+            const focused = document.activeElement
+            if (
+              event.button === 0 &&
+              focused?.getAttribute('role') === 'combobox' &&
+              focused.getAttribute('aria-expanded') === 'true' &&
+              event.currentTarget.closest('form')?.contains(focused)
+            ) {
+              // Blurring an inline autocomplete collapses its list and moves
+              // this button before mouseup. Keep focus until submit validates
+              // and moves it to the first invalid field instead.
+              event.preventDefault()
+            }
+          }}
           className={cn(
             'h-auto min-h-8 max-w-full whitespace-normal rounded-none border border-transparent bg-[#1a1a1a] px-5 py-2 text-sm font-medium text-[#fafafa] transition-colors duration-150 hover:bg-[#1f2a1f]',
             (isSubmitting || isCheckingEligibility) && 'cursor-not-allowed opacity-60',
