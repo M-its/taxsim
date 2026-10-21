@@ -144,8 +144,12 @@ function RegisterForm() {
       router.replace(redirectTo)
     } catch (err) {
       const message =
-        err instanceof ApiError ? err.message : 'Erro ao criar conta. Tente novamente.'
-      if (message.toLowerCase().includes('cnpj')) {
+        err instanceof ApiError
+          ? err.status >= 500
+            ? 'O serviço está indisponível no momento. Tente novamente em instantes.'
+            : err.message
+          : 'Não foi possível conectar ao serviço. Confira sua conexão e tente novamente.'
+      if (err instanceof ApiError && err.status < 500 && message.toLowerCase().includes('cnpj')) {
         setFieldErrors((current) => ({ ...current, document: publicDocumentErrorMessage('CNPJ') }))
         requestAnimationFrame(() => document.getElementById('document')?.focus())
       } else {
@@ -185,7 +189,9 @@ function RegisterForm() {
                 role="alert"
                 className="rounded-none border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400 outline-none focus:ring-2 focus:ring-red-300"
               >
-                <p className="font-medium">Revise os campos indicados:</p>
+                <p className="font-medium">
+                  {formError ? 'Não foi possível criar a conta.' : 'Revise os campos indicados:'}
+                </p>
                 <ul className="mt-1 list-disc pl-5">
                   {formError && <li>{formError}</li>}
                   {REGISTRATION_FIELD_ORDER.map((field) =>

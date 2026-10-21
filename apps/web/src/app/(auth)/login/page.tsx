@@ -66,8 +66,10 @@ function LoginForm() {
         err instanceof ApiError
           ? err.status === 401
             ? 'E-mail ou senha inválidos.'
-            : err.message
-          : 'Erro ao entrar. Tente novamente.'
+            : err.status >= 500
+              ? 'O serviço está indisponível no momento. Tente novamente em instantes.'
+              : err.message
+          : 'Não foi possível conectar ao serviço. Confira sua conexão e tente novamente.'
       setFormError(message)
       requestAnimationFrame(() => errorSummaryRef.current?.focus())
     } finally {
@@ -103,7 +105,9 @@ function LoginForm() {
                 role="alert"
                 className="rounded-none border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400 outline-none focus:ring-2 focus:ring-red-300"
               >
-                <p className="font-medium">Revise os dados para entrar:</p>
+                <p className="font-medium">
+                  {formError ? 'Não foi possível entrar.' : 'Revise os dados para entrar:'}
+                </p>
                 <ul className="mt-1 list-disc pl-5">
                   {formError && <li>{formError}</li>}
                   {fieldErrors.email && (
