@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/auth/auth-provider'
@@ -34,9 +34,13 @@ function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<'email' | 'password', string>>>({})
-  const [formError, setFormError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<{ message: string } | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const errorSummaryRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    if (formError) errorSummaryRef.current?.focus()
+  }, [formError])
 
   function focusField(id: 'email' | 'password') {
     requestAnimationFrame(() => document.getElementById(id)?.focus())
@@ -70,8 +74,9 @@ function LoginForm() {
               ? 'O serviço está indisponível no momento. Tente novamente em instantes.'
               : err.message
           : 'Não foi possível conectar ao serviço. Confira sua conexão e tente novamente.'
-      setFormError(message)
-      requestAnimationFrame(() => errorSummaryRef.current?.focus())
+      // A new error object also focuses consecutive failures with the same message,
+      // even when React batches the clearing and replacement into one render.
+      setFormError({ message })
     } finally {
       setIsSubmitting(false)
     }
@@ -109,7 +114,7 @@ function LoginForm() {
                   {formError ? 'Não foi possível entrar.' : 'Revise os dados para entrar:'}
                 </p>
                 <ul className="mt-1 list-disc pl-5">
-                  {formError && <li>{formError}</li>}
+                  {formError && <li>{formError.message}</li>}
                   {fieldErrors.email && (
                     <li>
                       <a href="#email">{fieldErrors.email}</a>
