@@ -2,31 +2,35 @@
 
 ## Estado atual
 
-Atualizado em **15/10/2026** com inspeção do checkout e resultados locais.
+Atualizado em **23/10/2026** com inspeção do checkout e evidências locais de 22/10.
 **Versão alvo: v1.0** — só será considerada publicada após CI da revisão final,
 integração na main, deploy, smoke dos fluxos principais e limitações documentadas.
 A versão no package.json e a existência de uma demo anterior não comprovam isso.
 
-Fechamento em `codex/v1-closeout`, baseado na main local. O responsável confirmou
-que a main remota foi avançada em 11/10; portanto não permanece válida a antiga
-pendência de 19/20 commits de diferença. As mudanças de fechamento posteriores
-continuam locais, sem push/merge/deploy/tag nesta rodada. Não foi consultado nem
-alterado o servidor para atualizar este documento.
+Fechamento em `codex/v1-closeout`, com implementação e correções locais commitadas.
+A revisão documental de 23/10 foi aprovada pelo responsável; publicação via PR/CI
+continua pendente. A antiga divergência da main foi resolvida pelo responsável
+em 11/10; não confundir esse avanço com a integração do fechamento posterior.
+Não houve push, PR publicado, merge, deploy, tag ou
+alteração de issues nesta rodada. Servidor e estado remoto não foram consultados.
 
 ### Checklist de release, em ordem
 
-1. **Fechar conteúdo — em revisão final.** Sessão, landing, descoberta e polimento
-   implementados; performance encerrada como **medido**, com metas móveis abertas.
-   Checkpoint C aprovado; material privado copiado e verificado antes de retirar
-   do índice. Esta revisão documental e o teste manual final ainda precisam de
-   aceite. Diffs locais de lockfile e Split Payment continuam separados, sem commit.
-2. **CI — pendente para a revisão final.** Testes, typechecks, lint e cenários
-   desktop/móvel passaram localmente nas etapas funcionais. Nenhuma execução
-   anterior da CI comprova a nova revisão, que ainda não foi enviada. Acessibilidade
-   e lint devem ser checks obrigatórios na proteção da branch.
-3. **Integrar na main — pendente para o fechamento.** A main anterior foi
-   sincronizada; ainda falta integrar esta branch após revisão e CI. Não foi
-   feito merge/push nesta rodada.
+1. **Fechar conteúdo — implementação e validação local concluídas; revisão humana
+   final pendente.** Sessão, landing, descoberta, polimento e correções de feedback
+   implementados. Performance encerrada como **medido**, com metas móveis abertas.
+   Material privado já retirado do índice após cópia verificada; não repetir a
+   remoção. README, contratos/contexto e limitações reorganizados. Atualização
+   documental aprovada para commit; revisão do PR e aceite dirigido ainda pendentes.
+   Os dois diffs preexistentes permanecem preservados e fora do PR proposto.
+2. **CI — pendente para a revisão final.** Verificações locais aprovadas não
+   substituem CI remoto. Após autorização, enviar apenas a branch e abrir PR contra
+   `main`: o workflow atual não dispara somente com push em `codex/v1-closeout`.
+   Confirmar checks obrigatórios de testes/typechecks, lint e acessibilidade na
+   proteção da branch; não presumir configuração remota já verificada.
+3. **Integrar na main — pendente.** Requer revisão humana do diff e CI da revisão
+   exata aprovada. Não foi feito merge/push. Parar após o merge, deixando o deploy
+   para outra janela, é uma opção válida; merge não comprova publicação.
 4. **Preparação do servidor — confirmação anterior recebida, renovar no deploy.**
    O responsável informou em 11/10 remoção do SSH antigo, ausência de container
    de restauração, migrations alinhadas e preflight sem produtos/regras ativas
@@ -35,14 +39,38 @@ alterado o servidor para atualizar este documento.
    Antes da próxima publicação, registrar revisão/imagens, conferir pepper e
    validar backup/restauração atuais privadamente; não presumir que a cópia
    privada de documentos é backup do banco. [Runbook](./docs/runbooks/release-deploy-rollback.md).
-5. **Deploy — pendente para esta revisão.** Demo existente não significa que
-   o fechamento esteja publicado. Requer autorização e revisão alvo aprovada.
+5. **Deploy — pendente, somente Web (`app`).** A comparação local não apresenta
+   mudança em backend executável, schema/migrations ou infraestrutura produtiva.
+   O Compose alterado é o de testes. Antes de publicar, confirmar o mesmo escopo
+   contra a revisão realmente em produção e registrar a imagem de retorno.
+   Construir/substituir somente `app`, com `--no-deps`; não parar nem recriar
+   API, banco ou Caddy. Se a comparação divergir, parar e revisar o plano, sem
+   aplicar migrations ou ampliar o deploy. Requer autorização e janela próprias.
 6. **Smoke test — pendente em produção para esta revisão.** Cadastro/login,
    restauração/logout, Produtos/Clientes, simulação, venda/dashboard e metadados
-   públicos/noindex privado. Revisão manual local antes da integração permanece
-   necessária; o baseline manual anterior não exige repetir tudo sem motivo.
-7. **Tag/notas — pendentes.** Criar `v1.0.0` somente na revisão integrada,
-   publicada e verificada. Não criar tag nem afirmar release concluído agora.
+   públicos/noindex privado. O responsável já validou sessão, responsividade e
+   acessibilidade em rodadas anteriores; resta revisar o fechamento e conferir
+   mensagens/foco recentes de forma dirigida. Não repetir toda a auditoria sem
+   motivo. Credenciais e testes autenticados de produção ficam com o responsável.
+7. **Tag/notas/issues — pendentes.** Notas de release e reconciliação das issues
+   são rascunhos. Criar `v1.0.0`, publicar release e fechar issues somente após
+   integração, deploy, smoke e autorização própria. Só então atualizar o README
+   para afirmar que a v1.0 está publicada.
+
+### Validação local mais recente
+
+Em **22/10/2026**, depois do commit do ajuste do runner: **106 testes E2E
+aprovados, dois skips condicionais de viewport, zero falhas**, sem retries;
+**115 testes API e 55 Web**, ambos os typechecks e lint aprovados. O lint mantém
+zero erros e dois warnings conhecidos. Builds produtivos e 40 cenários de
+descoberta/landing/autenticação passaram na rodada anterior de correção do foco;
+não foram reexecutados só por mudanças posteriores no ambiente de testes.
+
+O runner descartável usa init e memória compartilhada ampliada, sem compartilhar
+IPC com o host. Não houve novo crash nem acúmulo de processos zumbis na execução
+final. A causa exata do SIGSEGV nativo anterior não foi comprovada: preservar a
+evidência histórica, sem trocar testes ou tratar o resultado local como CI remoto.
+Relatórios e dados operacionais completos permanecem privados.
 
 ### Fechamento implementado e limites aceitos
 
@@ -92,7 +120,12 @@ ou de servidor nos documentos públicos.
 - Novo redesign amplo. As oportunidades móveis acima ficam pós-v1.0, sem reabrir
   o escopo de implementação deste fechamento.
 
-### Diffs locais não aprovados para commit
+### Diffs preexistentes preservados e fora do PR
+
+Nenhum dos dois acréscimos locais será incluído no pacote de diff do PR desta
+rodada. Não foram descartados, editados ou adicionados ao staging. Excluir seus
+diffs não remove os arquivos já versionados nem seu histórico; uma decisão futura
+de descarte, publicação ou retirada do índice exige aprovação separada.
 
 - **pnpm-lock.yaml:** 94 linhas acrescentam um documento YAML de resolução do
   próprio `pnpm`/`@pnpm/exe` 10.17.1 e binários por plataforma, antes do documento
