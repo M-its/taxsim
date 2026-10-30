@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
 import { LandingPage } from '@/components/landing/landing-page'
-
-const title = 'TaxSim — engenharia fiscal como demonstração técnica'
-const description =
-  'Portfólio full-stack de um SaaS fiscal multi-tenant que compara o modelo atual ao IVA Dual com segurança, acessibilidade e integração à calculadora pública da RFB.'
+import {
+  applicationSchema,
+  landingDescription as description,
+  landingTitle as title,
+  serializeSchema,
+} from '@/lib/site-metadata'
 
 export const metadata: Metadata = {
   title: { absolute: title },
@@ -25,5 +27,13 @@ export const metadata: Metadata = {
 }
 
 export default function Home() {
-  return <LandingPage />
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: serializeSchema(applicationSchema) }}
+      />
+      <LandingPage />
+    </>
+  )
 }

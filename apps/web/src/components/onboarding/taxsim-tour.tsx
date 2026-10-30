@@ -163,8 +163,6 @@ export function TaxSimTour() {
           return
         }
 
-        let tourDriver: Driver
-
         const moveToStep = (nextIndex: number) => {
           const nextStep = TOUR_STEPS[nextIndex]
           if (!nextStep) {
@@ -186,7 +184,7 @@ export function TaxSimTour() {
 
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-        tourDriver = driver({
+        const tourDriver: Driver = driver({
           steps: TOUR_STEPS,
           animate: !reduceMotion,
           smoothScroll: !reduceMotion,

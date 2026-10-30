@@ -1,0 +1,31 @@
+{
+  "version": "2026-10-14",
+  "note": "Carga sintética de interface, não cenário fiscal validado nem dados de produção.",
+  "apiDelayMs": 100,
+  "profile": {
+    "user": {"id":"perf-user","companyId":"perf-company","name":"Usuário de laboratório","email":"laboratorio@taxsim.test","role":"OWNER"},
+    "company": {"id":"perf-company","name":"Empresa de laboratório","document":"11222333000181","taxRegime":"LUCRO_REAL","municipioCode":3550308,"uf":"SP"}
+  },
+  "summary": {
+    "kpis":{"estimatedSavings":"4800.00","estimatedSavingsPercent":"0.16","projectedIbs":"1200.00","projectedCbs":"2400.00","projectedIs":"400.00"},
+    "taxLoadByMonth":[
+      {"month":"2026-01","current":"4500.00","reform":"3900.00"},
+      {"month":"2026-02","current":"5000.00","reform":"4300.00"},
+      {"month":"2026-03","current":"4700.00","reform":"4100.00"},
+      {"month":"2026-04","current":"5200.00","reform":"4400.00"},
+      {"month":"2026-05","current":"5100.00","reform":"4200.00"},
+      {"month":"2026-06","current":"5500.00","reform":"4300.00"}
+    ],
+    "taxComposition":[{"name":"IBS","value":"1200.00"},{"name":"CBS","value":"2400.00"},{"name":"IS","value":"400.00"}]
+  },
+  "sales": {
+    "data":[
+      {"id":"sale-perf-001","clientId":"client-perf-001","clientName":"Cliente fictício A","status":"CONFIRMED","totalAmount":"1000.00","createdAt":"2026-06-01T12:00:00Z"},
+      {"id":"sale-perf-002","clientId":"client-perf-002","clientName":"Cliente fictício B","status":"DRAFT","totalAmount":"2500.00","createdAt":"2026-06-02T12:00:00Z"},
+      {"id":"sale-perf-003","clientId":"client-perf-003","clientName":"Cliente fictício C","status":"CANCELLED","totalAmount":"800.00","createdAt":"2026-06-03T12:00:00Z"},
+      {"id":"sale-perf-004","clientId":"client-perf-004","clientName":"Cliente fictício D","status":"CONFIRMED","totalAmount":"3200.00","createdAt":"2026-06-04T12:00:00Z"},
+      {"id":"sale-perf-005","clientId":"client-perf-005","clientName":"Cliente fictício E","status":"CONFIRMED","totalAmount":"1600.00","createdAt":"2026-06-05T12:00:00Z"}
+    ],
+    "pagination":{"page":1,"limit":5,"total":5,"totalPages":1}
+  }
+}

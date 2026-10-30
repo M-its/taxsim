@@ -21,12 +21,11 @@ O seed destrutivo possui duas travas: somente executa com `NODE_ENV=test` e
 `A11Y_SEED_ALLOWED=true`. Nunca aponte a composição de acessibilidade para um
 banco compartilhado, de desenvolvimento ou de produção.
 
-O runner Playwright acessa a web em `http://web.taxsim.test:3000` e a API em
-`http://api.taxsim.test:3333`, pela rede interna do Compose. O CORS da API e a URL pública
-da API usada pelo navegador de teste seguem esses mesmos endereços. As portas
-publicadas em `127.0.0.1` servem apenas para inspeção local; o runner não depende
-de `host.docker.internal` nem do gateway do host. Os aliases compartilham o
-site `taxsim.test` para preservar o cookie de sessão `SameSite=Lax` sem
+O runner Playwright acessa Web/API pelos aliases de teste definidos no Compose,
+na rede interna descartável. O CORS da API e a URL da API usada pelo navegador
+seguem esses aliases. As portas publicadas somente em loopback servem para
+inspeção local; o runner não depende do gateway do host. Os aliases compartilham
+o mesmo site de teste para preservar o cookie de sessão `SameSite=Lax` sem
 alterar a autenticação nem os fixtures.
 
 ## Gate de pull request
@@ -99,7 +98,8 @@ A matriz mínima é:
 - desktop e viewport móvel;
 - zoom em 200% e checagem dirigida em 400%.
 
-Registrar em `docs/decisions-log.md` a data, versão/commit, rotas percorridas,
-combinações efetivamente testadas, achados por severidade e pendências. A
+Registrar em evidência privada de release a data, versão/commit, rotas percorridas,
+combinações efetivamente testadas, achados por severidade e pendências; publicar
+somente um resumo sem dados operacionais no ROADMAP e nas notas de release. A
 automação em Chromium é executada a cada PR; Firefox, NVDA e a inspeção de zoom
 permanecem verificações humanas periódicas.

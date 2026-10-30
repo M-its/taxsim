@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "catalogVersion": "2026-07-10",
+  "scenario": {
+    "product": "Notebook demonstrativo",
+    "ncmCode": "84713012",
+    "quantity": 1,
+    "unitPrice": "1000.00",
+    "taxRegime": "LUCRO_REAL",
+    "date": "2026-10-12",
+    "municipality": 3550308,
+    "uf": "SP",
+    "operation": "Venda doméstica comum, sem benefício ou regime especial"
+  },
+  "responseSource": "Resposta sintética versionada; não obtida da RFB",
+  "reformResponse": {
+    "objetos": [
+      {
+        "nObj": 1,
+        "tribCalc": {
+          "IBSCBS": {
+            "gIBSCBS": {
+              "gIBSUF": {
+                "pIBSUF": "0.10"
+              },
+              "gIBSMun": {
+                "pIBSMun": "0.00"
+              },
+              "vIBS": "1.00",
+              "gCBS": {
+                "pCBS": "0.90",
+                "vCBS": "9.00"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "total": {
+      "tribCalc": {
+        "IBSCBSTot": {
+          "gIBS": {
+            "vIBS": "1.00"
+          },
+          "gCBS": {
+            "vCBS": "9.00"
+          }
+        }
+      }
+    }
+  },
+  "display": {
+    "currentTax": "272.50",
+    "reformTax": "10.00",
+    "pis": "16.50",
+    "cofins": "76.00",
+    "icms": "180.00",
+    "iss": "0.00",
+    "ibs": "1.00",
+    "cbs": "9.00",
+    "is": "0.00"
+  }
+}

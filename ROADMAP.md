@@ -2,78 +2,144 @@
 
 ## Estado atual
 
-Atualizado em **07/10/2026**, após `git fetch origin` e consulta ao estado da CI.
+Atualizado em **23/10/2026** com inspeção do checkout e evidências locais de 22/10.
+**Versão alvo: v1.0** — só será considerada publicada após CI da revisão final,
+integração na main, deploy, smoke dos fluxos principais e limitações documentadas.
+A versão no package.json e a existência de uma demo anterior não comprovam isso.
 
-**Versão alvo: v1.0** — publicada, CI verde, fluxos principais verificados em
-produção e limitações documentadas. A versão no `package.json` não constitui
-evidência de release publicado.
-
-O código do release está em `origin/release/oct-2026`, na revisão `7e1c49d`,
-igual à `main` local antes deste commit documental. A `main` local estava
-19 commits à frente de `origin/main`; o release ainda não foi integrado à
-`main` remota. A acessibilidade manual e os tooltips de Produtos/Clientes
-estão concluídos e registrados.
+Fechamento em `codex/v1-closeout`, com implementação e correções locais commitadas.
+A revisão documental de 23/10 foi aprovada pelo responsável; publicação via PR/CI
+continua pendente. A antiga divergência da main foi resolvida pelo responsável
+em 11/10; não confundir esse avanço com a integração do fechamento posterior.
+Não houve push, PR publicado, merge, deploy, tag ou
+alteração de issues nesta rodada. Servidor e estado remoto não foram consultados.
 
 ### Checklist de release, em ordem
 
-1. **Fechar conteúdo — em fechamento.** Funcionalidades e acessibilidade
-   commitadas; resta resolver o diff local de `pnpm-lock.yaml`. As notas locais
-   de Split Payment ficam fora deste release. Após este commit documental,
-   publicar a revisão final na branch de release para validá-la na CI.
-2. **CI — aprovada para `7e1c49d`.** O workflow da branch `release/oct-2026`
-   terminou com sucesso em 06/10/2026:
-   [execução aprovada](https://github.com/M-its/taxsim/actions/runs/37487894105).
-   A revisão final, incluindo esta documentação, ainda deve passar pela CI.
-3. **Integrar na main — pendente.** `origin/main` ainda está 19 commits atrás
-   do código do release; integrar a revisão aprovada e conferir a CI da main.
-4. **Preparação do servidor — pendente de comprovação.** Runbook e SQL de
-   preflight prontos; não há registro do SHA implantado, estado das migrations,
-   backup validado e configuração do servidor para este release. Seguir
-   [deploy e rollback](./docs/runbooks/release-deploy-rollback.md).
-5. **Deploy — pendente de comprovação.** Não há evidência registrada de
-   implantação deste release em produção; registrar SHA e imagens publicados.
-6. **Smoke test — pendente em produção.** Verificar cadastro, login, refresh,
-   Produtos, Clientes, simulação, venda e logout; registrar resultados e
-   comportamento quando a calculadora estiver indisponível.
-7. **Tag — pendente.** Nenhuma tag foi encontrada após o fetch. Criar `v1.0.0`
-   sobre a revisão integrada e verificada em produção, com notas de release
-   e limitações conhecidas.
+1. **Fechar conteúdo — implementação e validação local concluídas; revisão humana
+   final pendente.** Sessão, landing, descoberta, polimento e correções de feedback
+   implementados. Performance encerrada como **medido**, com metas móveis abertas.
+   Material privado já retirado do índice após cópia verificada; não repetir a
+   remoção. README, contratos/contexto e limitações reorganizados. Atualização
+   documental aprovada para commit; revisão do PR e aceite dirigido ainda pendentes.
+   Os dois diffs preexistentes permanecem preservados e fora do PR proposto.
+2. **CI — pendente para a revisão final.** Verificações locais aprovadas não
+   substituem CI remoto. Após autorização, enviar apenas a branch e abrir PR contra
+   `main`: o workflow atual não dispara somente com push em `codex/v1-closeout`.
+   Confirmar checks obrigatórios de testes/typechecks, lint e acessibilidade na
+   proteção da branch; não presumir configuração remota já verificada.
+3. **Integrar na main — pendente.** Requer revisão humana do diff e CI da revisão
+   exata aprovada. Não foi feito merge/push. Parar após o merge, deixando o deploy
+   para outra janela, é uma opção válida; merge não comprova publicação.
+4. **Preparação do servidor — confirmação anterior recebida, renovar no deploy.**
+   O responsável informou em 11/10 remoção do SSH antigo, ausência de container
+   de restauração, migrations alinhadas e preflight sem produtos/regras ativas
+   nos NCMs obsoletos; demo2 é seed de teste. Restart da calculadora ARM foi
+   desabilitado depois. Esses pontos não estão mais abertos naquele escopo.
+   Antes da próxima publicação, registrar revisão/imagens, conferir pepper e
+   validar backup/restauração atuais privadamente; não presumir que a cópia
+   privada de documentos é backup do banco. [Runbook](./docs/runbooks/release-deploy-rollback.md).
+5. **Deploy — pendente, somente Web (`app`).** A comparação local não apresenta
+   mudança em backend executável, schema/migrations ou infraestrutura produtiva.
+   O Compose alterado é o de testes. Antes de publicar, confirmar o mesmo escopo
+   contra a revisão realmente em produção e registrar a imagem de retorno.
+   Construir/substituir somente `app`, com `--no-deps`; não parar nem recriar
+   API, banco ou Caddy. Se a comparação divergir, parar e revisar o plano, sem
+   aplicar migrations ou ampliar o deploy. Requer autorização e janela próprias.
+6. **Smoke test — pendente em produção para esta revisão.** Cadastro/login,
+   restauração/logout, Produtos/Clientes, simulação, venda/dashboard e metadados
+   públicos/noindex privado. O responsável já validou sessão, responsividade e
+   acessibilidade em rodadas anteriores; resta revisar o fechamento e conferir
+   mensagens/foco recentes de forma dirigida. Não repetir toda a auditoria sem
+   motivo. Credenciais e testes autenticados de produção ficam com o responsável.
+7. **Tag/notas/issues — pendentes.** Notas de release e reconciliação das issues
+   são rascunhos. Criar `v1.0.0`, publicar release e fechar issues somente após
+   integração, deploy, smoke e autorização própria. Só então atualizar o README
+   para afirmar que a v1.0 está publicada.
 
-### Acabamento pós-deploy
+### Validação local mais recente
 
-- CTAs da landing: timeout/recuperação da restauração de sessão para evitar
-  espera indefinida, mantendo as ações públicas disponíveis.
-- Hero e prova do produto: explicitar a audiência, mostrar um exemplo concreto
-  e melhorar a ação no header móvel.
-- **P2 #3:** sitemap público, manifest, ícones, `themeColor`, JSON-LD e
-  validação dos metadados publicados.
-- **P2 #4:** performance de laboratório, orçamento de recursos e correções
-  dirigidas às medições. Estes itens são acabamento, não requisitos adicionais
-  para fechar o release funcional acima.
+Em **22/10/2026**, depois do commit do ajuste do runner: **106 testes E2E
+aprovados, dois skips condicionais de viewport, zero falhas**, sem retries;
+**115 testes API e 55 Web**, ambos os typechecks e lint aprovados. O lint mantém
+zero erros e dois warnings conhecidos. Builds produtivos e 40 cenários de
+descoberta/landing/autenticação passaram na rodada anterior de correção do foco;
+não foram reexecutados só por mudanças posteriores no ambiente de testes.
+
+O runner descartável usa init e memória compartilhada ampliada, sem compartilhar
+IPC com o host. Não houve novo crash nem acúmulo de processos zumbis na execução
+final. A causa exata do SIGSEGV nativo anterior não foi comprovada: preservar a
+evidência histórica, sem trocar testes ou tratar o resultado local como CI remoto.
+Relatórios e dados operacionais completos permanecem privados.
+
+### Fechamento implementado e limites aceitos
+
+- CTAs públicos estáveis e restauração limitada a oito segundos, com recuperação
+  manual; refresh não é repetido automaticamente. App conserva formulários.
+- Hero com produto primeiro e exemplo versionado/sintético, header móvel,
+  navegação por âncoras, foco e ícones TS. Pequenos ajustes no app sem redesign.
+- P2 #3 implementado e validado por HTTP de build local de produção;
+  confirmação no domínio publicado ainda faz parte do smoke.
+- P2 #4 encerrado como **medido**, não como otimizado nem metas móveis cumpridas.
+
+### Performance — medido em laboratório
+
+Em 14/10/2026, medianas de três execuções por página/perfil, ordem
+**landing/login/dashboard**: **desktop 100/99/92; móvel simulado 86/82/59**.
+**Metas móveis de LCP, TBT e pontuação não atingidas**: LCP 2,80/3,40/4,52 s;
+TBT 409/352/1.408 ms. Metas mantidas: LCP ≤ 2,5 s, TBT ≤ 200 ms, pontuação
+≥ 90 nas públicas e ≥ 80 no dashboard. CLS e transferências JS/fontes/imagens
+ficaram dentro dos orçamentos da amostra. Não foi retido o experimento sem ganho
+consistente; não houve refatoração ampla de gráficos/arquitetura.
+
+Build standalone de produção, API/usuário/dados sintéticos, cache HTTP frio,
+Lighthouse 12.8.2 e navegador fixo; móvel simulado 390 × 844, rede com RTT 150 ms,
+CPU 4×; desktop 1440 × 900, RTT 40 ms, CPU 1×. São dados de laboratório local,
+não Core Web Vitals de tráfego real, INP de usuários ou tempo do backend produtivo.
+
+Comando a partir de `apps/web` (placeholders substituídos):
+`node scripts/performance-audit.mjs --build=<BUILD_ISOLADO> --tools=<FERRAMENTAS> --output=<RELATORIOS_FORA_DO_CHECKOUT> --phase=before`.
+Build isolado com `NEXT_PUBLIC_API_URL=http://localhost:3339`, dependências Web,
+Chromium Playwright e Lighthouse externo preparados conforme README/ajuda do
+script. Relatórios brutos ficam privados, fora do checkout, sem caminhos locais
+ou de servidor nos documentos públicos.
+
+**Três maiores oportunidades do relatório — backlog pós-v1.0:**
+
+1. Perfilar scripting/hidratação na thread principal móvel, especialmente
+   dashboard/Recharts, antes de escolher outra alteração.
+2. Avaliar carregamento tardio de gráficos/tour com espaço reservado,
+   alternativa textual e testes de regressão. Ganho ainda não comprovado.
+3. Revisar preloads de fontes não usados no login; não alterados nem medidos
+   isoladamente nesta rodada.
 
 ### Fora do escopo da v1.0
 
-- **P3:** Split Payment, NF-e/PSC, PSPs, conciliação e exportações associadas.
-- Atualização automática do catálogo NCM; permanece manual e versionada.
-- Métricas reais de performance com tráfego de produção.
-- Novo redesign ou expansão de funcionalidades.
+- P3: Split Payment operacional, NF-e/PSC, PSPs, conciliação e exportações.
+- Atualização automática do catálogo NCM, métricas reais/monitoramento periódico.
+- Novo redesign amplo. As oportunidades móveis acima ficam pós-v1.0, sem reabrir
+  o escopo de implementação deste fechamento.
 
-### Diff local de `pnpm-lock.yaml`
+### Diffs preexistentes preservados e fora do PR
 
-O lockfile raiz recebeu **94 linhas**, acrescentando antes do documento
-original um documento YAML com `packageManagerDependencies` para `pnpm` e
-`@pnpm/exe` 10.17.1 e seus binários por plataforma. O conteúdo anterior do
-lockfile foi preservado; os lockfiles de API/Web não fazem parte desse diff.
-O acréscimo é compatível com resolução automática do gerenciador configurado
-em `devEngines.packageManager`, embora sua origem exata não esteja registrada.
+Nenhum dos dois acréscimos locais será incluído no pacote de diff do PR desta
+rodada. Não foram descartados, editados ou adicionados ao staging. Excluir seus
+diffs não remove os arquivos já versionados nem seu histórico; uma decisão futura
+de descarte, publicação ou retirada do índice exige aprovação separada.
 
-**Recomendação: descartar somente esse diff antes de fechar o release.** Não
-há mudança intencional de dependência da aplicação ou requisito aprovado para
-versionar os binários do gerenciador. Se essa gestão passar a ser desejada,
-tratá-la em alteração própria de tooling. O arquivo foi preservado nesta
-rodada e não entra no commit documental.
-
-Este documento organiza features, correções e melhorias transversais do TaxSim por prioridade. O roadmap de Split Payment continua detalhado em [`SPLIT_PAYMENT_ROADMAP.md`](./SPLIT_PAYMENT_ROADMAP.md); aqui ele aparece apenas como uma trilha dependente de serviços externos.
+- **pnpm-lock.yaml:** 94 linhas acrescentam um documento YAML de resolução do
+  próprio `pnpm`/`@pnpm/exe` 10.17.1 e binários por plataforma, antes do documento
+  original intacto. Compatível com gestão automática de
+  `devEngines.packageManager`; não há registro suficiente para atribuir a um
+  comando específico. Não muda as dependências das apps. Proposta: descartar
+  apenas esse acréscimo após aprovação; se desejado como tooling, avaliar em
+  commit próprio. Mantido nesta rodada.
+- **SPLIT_PAYMENT_ROADMAP.md:** acréscimo local de notas de pesquisa, com nomes
+  de fontes sem links e afirmações regulatórias não verificadas nesta rodada.
+  O arquivo completo é rascunho, não backlog fiscal validado. Não editado nem
+  commitado. Proposta: manter a pesquisa privada e usar a seção P3 abaixo como
+  backlog público; decidir depois, com aprovação, se o arquivo sai do índice ou
+  vira um resumo sem afirmações legais. P3 é a referência vigente deste ROADMAP.
 
 ## Critério de prioridade
 
@@ -204,20 +270,27 @@ Tooltips nativos de editar/excluir adicionados a Produtos e Clientes.
 
 ### 3. Adicionar superfícies técnicas de descoberta
 
-- [ ] Criar `sitemap.ts` somente com páginas públicas canônicas.
-- [ ] Criar manifest com nome, descrição, cores e ícones.
-- [ ] Revisar favicon, Apple Touch Icon e `themeColor`.
-- [ ] Adicionar JSON-LD `SoftwareApplication` ou `WebApplication` à landing.
-- [ ] Validar robots, sitemap, canonical e dados estruturados publicados.
+- [x] Criar `sitemap.ts` somente com a landing pública canônica.
+- [x] Criar manifest informativo com nome, descrição, cores e ícones (sem PWA offline).
+- [x] Revisar favicon, Apple Touch Icon e `themeColor` com monograma TS aprovado.
+- [x] Adicionar JSON-LD `WebApplication` à landing.
+- [x] Validar robots, sitemap, canonical e dados estruturados por HTTP de build local de produção.
+- [ ] Confirmar os mesmos metadados na revisão publicada após deploy.
 
-### 4. Definir metas de performance para SEO e acessibilidade
+### 4. Performance de laboratório — medido
 
-- [ ] Medir Core Web Vitals da landing e dos fluxos autenticados separadamente.
-- [ ] Reservar dimensões de imagens e gráficos para evitar CLS.
-- [ ] Priorizar Server Components na superfície pública.
-- [ ] Evitar animações que atrasem conteúdo ou interação.
-- [ ] Definir orçamento de JavaScript, imagens e fontes.
-- [ ] Adicionar Lighthouse periódico após estabilizar a landing.
+- [x] Medir landing, login e dashboard preenchido em build de produção isolado.
+- [x] Definir orçamentos: JS transferido ≤ 180 kB públicas/400 kB dashboard;
+  fontes ≤ 150 kB; imagens iniciais ≤ 300 kB; imagem principal ≤ 150 kB quando
+  aplicável (sem imagem principal nesta amostra). Limites de métricas no Estado atual.
+- [x] Registrar CLS e transferência, preservar renderização pública com componentes
+  de servidor e descartar experimento sem melhora consistente.
+- [x] Documentar método, comando reproduzível e resultados sem alegar dados reais.
+- [ ] Pós-v1.0: reduzir LCP/TBT móveis e atingir as metas de pontuação, seguindo
+  as três oportunidades do Estado atual. Não bloqueante para este escopo aceito.
+
+Não há gate Lighthouse nem execução periódica nesta v1.0. Monitoramento real e
+INP de campo estão fora do escopo; medições de laboratório não os substituem.
 
 ### 5. Validar NCM contra o catálogo vigente
 
@@ -239,7 +312,9 @@ Tooltips nativos de editar/excluir adicionados a Produtos e Clientes.
 - [ ] Fase 3: webhooks, idempotência e conciliação.
 - [ ] Fase 4: relatórios fiscais e exportações.
 
-Detalhes permanecem em [`SPLIT_PAYMENT_ROADMAP.md`](./SPLIT_PAYMENT_ROADMAP.md).
+Esta seção é o backlog público vigente. O documento separado de pesquisa está
+pendente de decisão de publicação, conforme os diffs locais acima; não usar suas
+notas legais como contrato ou funcionalidade prometida.
 
 ## Itens existentes que devem ser preservados
 

@@ -58,6 +58,10 @@ jobs:
       - name: Typecheck
         run: pnpm exec tsc --noEmit
 
+      - name: Lint Web (errors block, warnings remain informational)
+        if: matrix.app == 'web'
+        run: pnpm exec eslint .
+
   accessibility:
     name: Accessibility (Chromium desktop/mobile)
     runs-on: ubuntu-latest

@@ -12,13 +12,12 @@ test.describe('landing pública', () => {
     await expect(
       page.getByRole('heading', {
         level: 1,
-        name: 'Engenharia fiscal para uma reforma em movimento.',
+        name: 'Do NCM à comparação tributária.',
       }),
     ).toBeVisible()
-    await expect(page.getByRole('link', { name: /Experimentar demonstração/ }).first()).toHaveAttribute(
-      'href',
-      '/register',
-    )
+    await expect(
+      page.getByRole('link', { name: /Experimentar demonstração/ }).first(),
+    ).toHaveAttribute('href', '/register')
     await expect(page.getByText(disclaimer)).toBeVisible()
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       'href',
@@ -37,7 +36,9 @@ test.describe('landing pública', () => {
       'href',
       '/dashboard',
     )
-    await expect(page.getByRole('link', { name: /Experimentar demonstração/ })).toHaveCount(0)
+    await expect(
+      page.getByRole('link', { name: /Experimentar demonstração/ }).first(),
+    ).toHaveAttribute('href', '/register')
     await expectNoBlockingAxeViolations(page, testInfo, 'landing-autenticada')
   })
 })

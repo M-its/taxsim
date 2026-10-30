@@ -1,10 +1,10 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/auth/auth-provider'
-import { PublicRoute } from '@/components/auth/public-route'
+import { BackToHomeLink, PublicRoute } from '@/components/auth/public-route'
 import { Button } from '@/components/ui/button'
 import { AsyncStatus } from '@/components/ui/async-status'
 import {
@@ -26,7 +26,7 @@ import { safeRedirectPath } from '@/lib/safe-redirect'
 export const dynamic = 'force-dynamic'
 
 function LoginForm() {
-  const { login } = useAuth()
+  const { login, isLoading, hasStartedRestoration } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = safeRedirectPath(searchParams.get('redirectTo'))
@@ -34,9 +34,13 @@ function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<'email' | 'password', string>>>({})
-  const [formError, setFormError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<{ message: string } | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const errorSummaryRef = useRef<HTMLDivElement>(null)
+
+  useLayoutEffect(() => {
+    if (formError) errorSummaryRef.current?.focus()
+  }, [formError])
 
   function focusField(id: 'email' | 'password') {
     requestAnimationFrame(() => document.getElementById(id)?.focus())
@@ -44,6 +48,7 @@ function LoginForm() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (isLoading || isSubmitting) return
     setFormError(null)
 
     const errors: Partial<Record<'email' | 'password', string>> = {}
@@ -61,9 +66,17 @@ function LoginForm() {
       await login({ email: email.trim(), password })
       router.replace(redirectTo)
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Erro ao entrar. Tente novamente.'
-      setFormError(message)
-      requestAnimationFrame(() => errorSummaryRef.current?.focus())
+      const message =
+        err instanceof ApiError
+          ? err.status === 401
+            ? 'E-mail ou senha inválidos.'
+            : err.status >= 500
+              ? 'O serviço está indisponível no momento. Tente novamente em instantes.'
+              : err.message
+          : 'Não foi possível conectar ao serviço. Confira sua conexão e tente novamente.'
+      // A new error object also focuses consecutive failures with the same message,
+      // even when React batches the clearing and replacement into one render.
+      setFormError({ message })
     } finally {
       setIsSubmitting(false)
     }
@@ -80,19 +93,28 @@ function LoginForm() {
             Insira suas credenciais para acessar o sistema.
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit} noValidate aria-busy={isSubmitting}>
-          <AsyncStatus message={isSubmitting ? 'Entrando no TaxSim.' : ''} />
+        <form
+          method="post"
+          onSubmit={handleSubmit}
+          noValidate
+          aria-busy={isLoading || isSubmitting}
+        >
+          <AsyncStatus
+            message={isLoading ? 'Verificando sessão.' : isSubmitting ? 'Entrando no TaxSim.' : ''}
+          />
           <CardContent className="space-y-4">
-            {(formError || Object.keys(fieldErrors).length > 0) && (
+            {(formError || Object.values(fieldErrors).some(Boolean)) && (
               <div
                 ref={errorSummaryRef}
                 tabIndex={-1}
                 role="alert"
                 className="rounded-none border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400 outline-none focus:ring-2 focus:ring-red-300"
               >
-                <p className="font-medium">Revise os dados para entrar:</p>
+                <p className="font-medium">
+                  {formError ? 'Não foi possível entrar.' : 'Revise os dados para entrar:'}
+                </p>
                 <ul className="mt-1 list-disc pl-5">
-                  {formError && <li>{formError}</li>}
+                  {formError && <li>{formError.message}</li>}
                   {fieldErrors.email && (
                     <li>
                       <a href="#email">{fieldErrors.email}</a>
@@ -112,6 +134,7 @@ function LoginForm() {
               </Label>
               <Input
                 id="email"
+                disabled={!hasStartedRestoration}
                 type="email"
                 autoComplete="email"
                 value={email}
@@ -137,6 +160,7 @@ function LoginForm() {
               </Label>
               <Input
                 id="password"
+                disabled={!hasStartedRestoration}
                 type="password"
                 autoComplete="current-password"
                 value={password}
@@ -161,10 +185,10 @@ function LoginForm() {
           <CardFooter className="flex flex-col gap-4">
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isLoading || isSubmitting}
               className="w-full rounded-none bg-[#34d399] text-[#09090b] hover:bg-[#34d399]/90"
             >
-              {isSubmitting ? 'Entrando...' : 'Entrar'}
+              {isLoading ? 'Verificando sessão...' : isSubmitting ? 'Entrando...' : 'Entrar'}
             </Button>
             <p className="text-sm text-[#a1a1aa]">
               Não tem conta?{' '}
@@ -175,6 +199,7 @@ function LoginForm() {
           </CardFooter>
         </form>
       </Card>
+      <BackToHomeLink />
       <ComplianceBanner className="max-w-sm" />
     </main>
   )

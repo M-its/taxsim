@@ -108,6 +108,9 @@ services:
 
   a11y:
     image: mcr.microsoft.com/playwright:v1.55.0-noble
+    # Reap browser children and provide shared memory without sharing host IPC.
+    init: true
+    shm_size: 1gb
     working_dir: /work
     command:
       - sh

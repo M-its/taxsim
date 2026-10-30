@@ -1,13 +1,13 @@
-"use client"
+'use client'
 
-import type { RefObject } from "react"
-import { usePathname } from "next/navigation"
-import Link from "next/link"
-import { Menu } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { useAuth } from "@/components/auth/auth-provider"
+import type { RefObject } from 'react'
+import { usePathname } from 'next/navigation'
+import Link from 'next/link'
+import { Menu } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Input } from '@/components/ui/input'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { useAuth } from '@/components/auth/auth-provider'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,25 +16,25 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from '@/components/ui/dropdown-menu'
 
 function breadcrumbLabel(path: string): string {
   const map: Record<string, string> = {
-    "/customers": "Clientes",
-    "/dashboard": "Dashboard",
-    "/products": "Produtos",
-    "/sales": "Vendas",
-    "/settings": "Configurações",
-    "/simulation": "Simulação"
+    '/customers': 'Clientes',
+    '/dashboard': 'Dashboard',
+    '/products': 'Produtos',
+    '/sales': 'Vendas',
+    '/settings': 'Configurações',
+    '/simulation': 'Simulação',
   }
-  return map[path] ?? "Taxsim"
+  return map[path] ?? 'Taxsim'
 }
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/)
-  const first = parts[0]?.[0] ?? ""
-  const last = parts.length > 1 ? parts[parts.length - 1][0] : ""
-  return (first + last).toUpperCase() || "U"
+  const first = parts[0]?.[0] ?? ''
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : ''
+  return (first + last).toUpperCase() || 'U'
 }
 
 interface TopbarProps {
@@ -57,9 +57,9 @@ export function Topbar({
   return (
     <header
       className={cn(
-        "fixed left-0 right-0 top-0 z-30 flex h-14 items-center justify-between border-b border-[#27272a] bg-[#09090b]/95 px-6 backdrop-blur",
-        isSidebarOpen ? "md:pl-64" : "md:pl-16",
-        className
+        'fixed left-0 right-0 top-0 z-30 flex h-14 items-center justify-between border-b border-[#27272a] bg-[#09090b]/95 px-6 backdrop-blur',
+        isSidebarOpen ? 'md:pl-64' : 'md:pl-16',
+        className,
       )}
     >
       {/* Lado Esquerdo: Botão Menu + Breadcrumbs */}
@@ -68,7 +68,7 @@ export function Topbar({
           ref={menuButtonRef}
           type="button"
           onClick={onToggleSidebar}
-          className="p-2 hover:bg-zinc-800 transition-colors cursor-pointer rounded-none md:hidden"
+          className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 hover:bg-zinc-800 transition-colors cursor-pointer rounded-none md:hidden"
           aria-label="Abrir menu"
           aria-controls="app-sidebar"
           aria-expanded={isSidebarOpen}
@@ -90,12 +90,12 @@ export function Topbar({
             render={
               <button
                 type="button"
-                className="p-2 hover:bg-zinc-800 transition-colors cursor-pointer rounded-none"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center p-2 hover:bg-zinc-800 transition-colors cursor-pointer rounded-none"
                 aria-label="Abrir menu do usuário"
               >
                 <Avatar className="h-5 w-5 rounded-none">
                   <AvatarFallback className="rounded-none bg-transparent text-[10px] font-medium text-[#fafafa]">
-                    {user ? initials(user.name) : "U"}
+                    {user ? initials(user.name) : 'U'}
                   </AvatarFallback>
                 </Avatar>
               </button>
@@ -105,22 +105,22 @@ export function Topbar({
           <DropdownMenuContent
             align="end"
             sideOffset={8}
-            className="rounded-none border border-[#27272a] bg-[#18181b] text-[#fafafa] min-w-[220px]"
+            className="w-72 min-w-0 max-w-[calc(100vw-2rem)] rounded-none border border-[#27272a] bg-[#18181b] text-[#fafafa]"
           >
             <DropdownMenuGroup>
-              <DropdownMenuLabel className="rounded-none px-3 py-1.5 text-sm font-medium text-[#fafafa]">
-                {user?.name ?? "Usuário"}
+              <DropdownMenuLabel className="whitespace-normal [overflow-wrap:anywhere] rounded-none px-3 py-1.5 text-sm font-medium text-[#fafafa]">
+                {user?.name ?? 'Usuário'}
               </DropdownMenuLabel>
-              <DropdownMenuLabel className="rounded-none px-3 py-0 text-xs font-normal text-[#a1a1aa]">
-                {user?.email ?? "—"}
+              <DropdownMenuLabel className="whitespace-normal [overflow-wrap:anywhere] rounded-none px-3 py-0 text-xs font-normal text-[#a1a1aa]">
+                {user?.email ?? '—'}
               </DropdownMenuLabel>
-              <DropdownMenuLabel className="rounded-none px-3 py-1.5 text-xs text-[#a1a1aa]">
-                {company?.name ?? "—"}
+              <DropdownMenuLabel className="whitespace-normal [overflow-wrap:anywhere] rounded-none px-3 py-1.5 text-xs text-[#a1a1aa]">
+                {company?.name ?? '—'}
               </DropdownMenuLabel>
             </DropdownMenuGroup>
-            
+
             <DropdownMenuSeparator className="bg-[#27272a]" />
-            
+
             <DropdownMenuItem
               render={
                 <Link
