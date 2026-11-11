@@ -2,60 +2,72 @@
 
 ## Estado atual
 
-Atualizado em **23/10/2026** com inspeção do checkout e evidências locais de 22/10.
-**Versão alvo: v1.0** — só será considerada publicada após CI da revisão final,
-integração na main, deploy, smoke dos fluxos principais e limitações documentadas.
-A versão no package.json e a existência de uma demo anterior não comprovam isso.
+Atualizado em **07/11/2026**. **Versão alvo: v1.0** — implementação integrada,
+CI verde, Web implantado em 05/11 e fluxos principais aceitos pelo responsável
+em 06/11. Limitações e detalhes não bloqueantes registrados; publicação formal
+da tag/release `v1.0.0` e reconciliação das issues ainda aguardam autorização.
 
-Fechamento em `codex/v1-closeout`, com implementação e correções locais commitadas.
-A revisão documental de 23/10 foi aprovada pelo responsável; publicação via PR/CI
-continua pendente. A antiga divergência da main foi resolvida pelo responsável
-em 11/10; não confundir esse avanço com a integração do fechamento posterior.
-Não houve push, PR publicado, merge, deploy, tag ou
-alteração de issues nesta rodada. Servidor e estado remoto não foram consultados.
+O [PR #18](https://github.com/M-its/taxsim/pull/18) foi integrado à `main` em
+30/10, na revisão `4526eb1`; o CI pós-merge passou. O deploy foi exclusivamente
+Web, com API, banco e Caddy preservados. Não confundir implantação/aceite da
+aplicação com criação de tag ou publicação de release, ainda não realizadas.
+Esta atualização é documental: não corrige código, altera configuração remota
+ou encerra issues. Os dois diffs preexistentes continuam preservados e separados.
 
 ### Checklist de release, em ordem
 
-1. **Fechar conteúdo — implementação e validação local concluídas; revisão humana
-   final pendente.** Sessão, landing, descoberta, polimento e correções de feedback
-   implementados. Performance encerrada como **medido**, com metas móveis abertas.
-   Material privado já retirado do índice após cópia verificada; não repetir a
-   remoção. README, contratos/contexto e limitações reorganizados. Atualização
-   documental aprovada para commit; revisão do PR e aceite dirigido ainda pendentes.
-   Os dois diffs preexistentes permanecem preservados e fora do PR proposto.
-2. **CI — pendente para a revisão final.** Verificações locais aprovadas não
-   substituem CI remoto. Após autorização, enviar apenas a branch e abrir PR contra
-   `main`: o workflow atual não dispara somente com push em `codex/v1-closeout`.
-   Confirmar checks obrigatórios de testes/typechecks, lint e acessibilidade na
-   proteção da branch; não presumir configuração remota já verificada.
-3. **Integrar na main — pendente.** Requer revisão humana do diff e CI da revisão
-   exata aprovada. Não foi feito merge/push. Parar após o merge, deixando o deploy
-   para outra janela, é uma opção válida; merge não comprova publicação.
-4. **Preparação do servidor — confirmação anterior recebida, renovar no deploy.**
-   O responsável informou em 11/10 remoção do SSH antigo, ausência de container
-   de restauração, migrations alinhadas e preflight sem produtos/regras ativas
-   nos NCMs obsoletos; demo2 é seed de teste. Restart da calculadora ARM foi
-   desabilitado depois. Esses pontos não estão mais abertos naquele escopo.
-   Antes da próxima publicação, registrar revisão/imagens, conferir pepper e
-   validar backup/restauração atuais privadamente; não presumir que a cópia
-   privada de documentos é backup do banco. [Runbook](./docs/runbooks/release-deploy-rollback.md).
-5. **Deploy — pendente, somente Web (`app`).** A comparação local não apresenta
-   mudança em backend executável, schema/migrations ou infraestrutura produtiva.
-   O Compose alterado é o de testes. Antes de publicar, confirmar o mesmo escopo
-   contra a revisão realmente em produção e registrar a imagem de retorno.
-   Construir/substituir somente `app`, com `--no-deps`; não parar nem recriar
-   API, banco ou Caddy. Se a comparação divergir, parar e revisar o plano, sem
-   aplicar migrations ou ampliar o deploy. Requer autorização e janela próprias.
-6. **Smoke test — pendente em produção para esta revisão.** Cadastro/login,
-   restauração/logout, Produtos/Clientes, simulação, venda/dashboard e metadados
-   públicos/noindex privado. O responsável já validou sessão, responsividade e
-   acessibilidade em rodadas anteriores; resta revisar o fechamento e conferir
-   mensagens/foco recentes de forma dirigida. Não repetir toda a auditoria sem
-   motivo. Credenciais e testes autenticados de produção ficam com o responsável.
-7. **Tag/notas/issues — pendentes.** Notas de release e reconciliação das issues
-   são rascunhos. Criar `v1.0.0`, publicar release e fechar issues somente após
-   integração, deploy, smoke e autorização própria. Só então atualizar o README
-   para afirmar que a v1.0 está publicada.
+1. **Fechar conteúdo — concluído e revisado.** Sessão, landing, descoberta,
+   polimento e correções integrados. Performance encerrada como **medido**, sem
+   alegar metas móveis cumpridas. Arquivo privado verificado antes da retirada
+   de material pessoal do índice; não repetir remoções ou recópias.
+2. **CI — aprovado no PR e na `main`; checks agora obrigatórios.** Em 07/11,
+   após autorização, a proteção da `main` passou a exigir os três checks atuais
+   do GitHub Actions (API, Web e acessibilidade), com branch atualizada e aplicação
+   inclusive a administradores. O PR temporário #19, sem mudanças de arquivos ou
+   checks executados, ficou bloqueado apesar de não ter conflitos; foi fechado
+   sem merge e sua branch removida. Nenhuma aprovação de segunda pessoa foi
+   imposta. A `main` permaneceu no mesmo SHA. #6 pode ser proposta para fechamento,
+   mas nenhuma issue foi alterada.
+3. **Integrar na main — concluído em 30/10.** PR #18 revisado pelo responsável,
+   merge autorizado e CI pós-merge aprovado na revisão `4526eb1`.
+4. **Preparação do servidor — concluída e renovada na janela de 05/11.**
+   Procedência das imagens confirmada por registros BuildKit/digests e hashes;
+   preflight somente leitura sem bloqueios conhecidos, pepper presente,
+   backup novo com checksum/leitura e restauração isolada aprovados. Imagem Web
+   de retorno preservada e override privado validado. Cópia externa conferida.
+   [Runbook](./docs/runbooks/release-deploy-rollback.md). Evidências operacionais
+   e dados de backup permanecem privados.
+5. **Deploy — concluído em 05/11, somente Web (`app`).** Build e troca exclusivos
+   do Web; sem migration, seed ou alteração de configuração produtiva. API,
+   banco e Caddy mantiveram IDs, imagens e horários de início. Web saudável.
+6. **Smoke test — concluído no escopo dirigido.** Em 05/11, 44 verificações
+   públicas, redirect HTTPS e sete verificações de portas da origem autorizada
+   aprovados. Em 06/11, responsável confirmou login, sessão/logout, dashboard,
+   cálculo com `85171300`, bloqueio de `85171200` e preview social. Não se afirma
+   nova auditoria completa, teste de todas as mutações ou teste autenticado
+   direto do 422: o código obsoleto foi barrado na UI. Não foram repetidos testes
+   de firewall de outra origem/IPv6 nesta janela.
+7. **Tag/notas/issues — formalização pendente.** Notas finalizadas para revisão,
+   ainda não publicadas; proposta de reconciliação preparada sem alterar issues.
+   Revisar/integrar esta documentação e autorizar separadamente a tag `v1.0.0`,
+   a release e os fechamentos exatos. Distinguir o SHA de código implantado de
+   eventual commit posterior exclusivamente documental.
+
+### Detalhes aceitos como não bloqueantes em 07/11
+
+- **NCM manual:** diagnóstico e validação podem repetir “NCM não encontrado no
+  catálogo.” em duas mensagens próximas. O bloqueio funciona; consolidar a
+  apresentação mantendo associação ao campo/resumo em manutenção futura.
+- **Catálogo:** `85171200` não consta da base versionada e é apresentado como
+  não encontrado. Não inventar histórico para classificá-lo como expirado.
+- **Preview social:** aparência correta aceita pelo responsável. Avisos de
+  descrição/meta description longa ficam para acabamento. “Image is missing
+  conversion text” permanece aviso a esclarecer, sem atribuir significado não
+  comprovado; `og:image:alt` foi confirmado presente.
+
+Estes detalhes foram aceitos explicitamente. A pendência distinta de proteção da
+`main` foi resolvida depois por autorização específica em 07/11, sem mudança no
+código do produto. Nenhuma correção funcional desses detalhes foi realizada.
 
 ### Validação local mais recente
 
@@ -78,8 +90,7 @@ Relatórios e dados operacionais completos permanecem privados.
   manual; refresh não é repetido automaticamente. App conserva formulários.
 - Hero com produto primeiro e exemplo versionado/sintético, header móvel,
   navegação por âncoras, foco e ícones TS. Pequenos ajustes no app sem redesign.
-- P2 #3 implementado e validado por HTTP de build local de produção;
-  confirmação no domínio publicado ainda faz parte do smoke.
+- P2 #3 implementado, conferido no domínio publicado e no smoke pós-deploy.
 - P2 #4 encerrado como **medido**, não como otimizado nem metas móveis cumpridas.
 
 ### Performance — medido em laboratório
@@ -237,7 +248,13 @@ Tooltips nativos de editar/excluir adicionados a Produtos e Clientes.
 - [x] Adicionar axe aos fluxos prioritários.
 - [x] Testar teclado em menu, dialogs e simulação.
 - [x] Executar na CI sem substituir auditoria manual.
-- [x] Fazer violações críticas ou sérias novas bloquearem merge.
+- [x] Fazer violações críticas ou sérias novas falharem no job da CI.
+- [x] Exigir os checks na proteção/regras da `main` para bloquear merge.
+
+Proteção configurada e consultada novamente em 07/11 após autorização. Checks
+vinculados ao GitHub Actions e aplicados a administradores; PR #19 bloqueado por
+checks ausentes, sem tentativa de merge. Issue #6 ainda aberta, aguardando somente
+autorização de reconciliação; configuração não fecha issues automaticamente.
 
 ### 6. Impedir indexação de rotas privadas
 
@@ -275,7 +292,7 @@ Tooltips nativos de editar/excluir adicionados a Produtos e Clientes.
 - [x] Revisar favicon, Apple Touch Icon e `themeColor` com monograma TS aprovado.
 - [x] Adicionar JSON-LD `WebApplication` à landing.
 - [x] Validar robots, sitemap, canonical e dados estruturados por HTTP de build local de produção.
-- [ ] Confirmar os mesmos metadados na revisão publicada após deploy.
+- [x] Confirmar os mesmos metadados na revisão publicada após deploy.
 
 ### 4. Performance de laboratório — medido
 

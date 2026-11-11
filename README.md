@@ -9,8 +9,13 @@ de acessibilidade.
 [Escopo e estado do release](./ROADMAP.md) · [Arquitetura](./docs/PROJECT_CONTEXT.md)
 
 > Projeto de demonstração técnica, sem vínculo com a Receita Federal. Não deve
-> ser usado para cálculos fiscais reais. A branch de fechamento ainda não
-> representa uma v1.0 publicada; a demo pode executar uma revisão anterior.
+> ser usado para cálculos fiscais reais.
+
+O fechamento da **v1.0 está em produção desde 05/11/2026**, após o
+[PR #18](https://github.com/M-its/taxsim/pull/18) e CI pós-merge aprovado.
+O responsável validou login, sessão/logout, dashboard, simulação e preview social
+em 06/11. A publicação formal da tag/release `v1.0.0` ainda está pendente;
+[limitações conhecidas](#limitações) não significam uso fiscal autorizado.
 
 ## Sumário
 
@@ -137,13 +142,18 @@ continuam sujeitas a revisão manual antes de integração. Não é certificaç�
 
 Playwright/axe cobre login, cadastro, simulação, produtos, clientes, vendas e
 componentes compartilhados em Chromium desktop/móvel. Sérios/críticos e falhas
-obrigatórias de teclado fazem o job falhar; a branch deve exigir o check para
-bloquear merge. [Processo e matriz manual](./docs/runbooks/accessibility-regression-tests.md).
+obrigatórias de teclado fazem o job falhar. Desde 07/11/2026, a `main` exige os
+checks de testes/typecheck API, testes/typecheck/lint Web e acessibilidade,
+emitidos pelo GitHub Actions, com branch atualizada e aplicação inclusive a
+administradores. O bloqueio por checks ausentes foi verificado em PR temporário,
+fechado sem merge; não se exige aprovação de uma segunda pessoa nesta configuração.
+[Processo e matriz manual](./docs/runbooks/accessibility-regression-tests.md).
 
 Somente a landing recebe sitemap, canonical, OG/Twitter e JSON-LD público.
 Login/cadastro e rotas privadas são noindex e não compartilham dados do tenant
 em metadados. Manifest e ícones TS são informativos: sem service worker ou
-promessa de uso offline. Metadados produtivos ainda exigem smoke após deploy.
+promessa de uso offline. O smoke público após o deploy passou e o responsável
+conferiu o preview social em produção; os avisos de acabamento constam abaixo.
 
 ## Executar localmente
 
@@ -209,6 +219,13 @@ sintética e servidor somente em loopback; relatórios devem ficar fora do check
 
 ## Limitações
 
+- **Acabamento aceito como não bloqueante em 07/11/2026:** no modo manual, o
+  diagnóstico e a validação podem repetir a mensagem de NCM não encontrado;
+  o cálculo continua bloqueado. `85171200` não consta do catálogo versionado e
+  recebe esse diagnóstico, não uma comprovação histórica de vigência. O preview
+  social foi aceito, com avisos de descrição longa e “Image is missing conversion
+  text” a revisar. Este último não foi identificado como falha de texto alternativo:
+  `og:image:alt` está presente. Não foram feitas correções desses detalhes nesta versão.
 - **Uso fiscal:** catálogo/regras limitados e versionados manualmente. Não há
   resolução universal por CST/cClassTrib, CFOP, benefícios ou operações especiais.
   A integração RFB não garante atualidade jurídica nem cálculo fiscal válido.
