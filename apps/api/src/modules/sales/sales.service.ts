@@ -635,6 +635,14 @@ export const getSale = async (companyId: string, saleId: string): Promise<SaleRe
 }
 
 export const confirmSale = async (companyId: string, saleId: string) => {
+  const updated = await prisma.sale.updateMany({
+    where: { id: saleId, companyId, status: 'DRAFT' },
+    data: { status: 'CONFIRMED' },
+  })
+  if (updated.count === 1) {
+    return { id: saleId, status: 'CONFIRMED' as const }
+  }
+
   const sale = await prisma.sale.findFirst({
     where: { id: saleId, companyId },
   })
@@ -643,19 +651,18 @@ export const confirmSale = async (companyId: string, saleId: string) => {
     throw AppError.notFound('Sale not found')
   }
 
-  if (sale.status !== 'DRAFT') {
-    throw AppError.unprocessable('Sale is not in DRAFT status')
-  }
-
-  const updated = await prisma.sale.update({
-    where: { id: saleId },
-    data: { status: 'CONFIRMED' },
-  })
-
-  return { id: updated.id, status: updated.status }
+  throw AppError.unprocessable('Sale is not in DRAFT status')
 }
 
 export const cancelSale = async (companyId: string, saleId: string) => {
+  const updated = await prisma.sale.updateMany({
+    where: { id: saleId, companyId, status: 'DRAFT' },
+    data: { status: 'CANCELLED' },
+  })
+  if (updated.count === 1) {
+    return { id: saleId, status: 'CANCELLED' as const }
+  }
+
   const sale = await prisma.sale.findFirst({
     where: { id: saleId, companyId },
   })
@@ -668,12 +675,7 @@ export const cancelSale = async (companyId: string, saleId: string) => {
     throw AppError.unprocessable('Cannot cancel a confirmed sale')
   }
 
-  const updated = await prisma.sale.update({
-    where: { id: saleId },
-    data: { status: 'CANCELLED' },
-  })
-
-  return { id: updated.id, status: updated.status }
+  return { id: sale.id, status: sale.status }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

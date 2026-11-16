@@ -4,3 +4,8 @@ onlyBuiltDependencies:
   - "@prisma/engines"
   - prisma
   - esbuild
+
+overrides:
+  # Prisma 6 config merges plain records; v8 fixes recursive-graph exhaustion.
+  "@prisma/config>deepmerge-ts": "8.0.0"
+  "esbuild@0.28": "0.28.1"

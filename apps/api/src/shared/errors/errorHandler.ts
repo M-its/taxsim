@@ -39,7 +39,7 @@ export const errorHandlerPlugin = fp(async (app: FastifyInstance): Promise<void>
           error: {
             code: 'VALIDATION_ERROR',
             message: 'Validation failed',
-            details: error.errors,
+            details: error.issues,
           },
         } satisfies ErrorPayload)
         return

@@ -2,6 +2,15 @@ allowBuilds:
   sharp: true
   unrs-resolver: true
 overrides:
-  hono: "4.12.25"
-  nanoid: "3.3.12"
+  hono: "4.13.18"
+  nanoid: "3.3.18"
   node-releases: "2.0.47"
+  # Fix native image decoders and source-map handling without upgrading Next's major.
+  "next>sharp": "0.35.5"
+  "next>postcss": "8.5.33"
+  # Security fixes for the test runner, linter and component generator.
+  "brace-expansion@1": "1.1.22"
+  "brace-expansion@5": "5.0.13"
+  "js-yaml@4": "4.3.2"
+  "fast-uri@3": "3.1.9"
+  "systeminformation@5": "5.33.16"
