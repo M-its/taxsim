@@ -32,6 +32,9 @@ describe('errorHandlerPlugin - propagation across sibling route plugins', () => 
     expect(response.statusCode).toBe(400)
     const body = JSON.parse(response.body)
     expect(body.error.code).toBe('VALIDATION_ERROR')
+    expect(body.error.details).toEqual([
+      expect.objectContaining({ path: ['value'], message: expect.any(String) }),
+    ])
   })
 
   it('returns a valid response for well-formed input (sanity check)', async () => {

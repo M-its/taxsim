@@ -63,6 +63,14 @@ export const register = async (
 
   try {
     const result = await prisma.$transaction(async (tx) => {
+      const existingUser = await tx.user.findFirst({
+        where: { email: { equals: input.user.email.toLowerCase(), mode: 'insensitive' } },
+        select: { id: true },
+      })
+      if (existingUser) {
+        throw AppError.conflict('Não foi possível concluir o cadastro')
+      }
+
       const company = await tx.company.create({
         data: {
           name: input.company.name,
@@ -111,13 +119,16 @@ export const login = async (
   app: FastifyInstance,
   input: LoginInput,
 ): Promise<{ user: User; tokens: { accessToken: string; refreshToken: string } }> => {
-  const user = await prisma.user.findFirst({
-    where: { email: input.email.toLowerCase() },
+  // Fail closed for legacy duplicates until the unique-email migration is applied.
+  const users = await prisma.user.findMany({
+    where: { email: { equals: input.email.toLowerCase(), mode: 'insensitive' } },
+    take: 2,
   })
 
-  if (!user) {
+  if (users.length !== 1) {
     throw AppError.unauthorized('Invalid credentials')
   }
+  const user = users[0]!
 
   const valid = await verifyPassword(input.password, user.passwordHash)
   if (!valid) {

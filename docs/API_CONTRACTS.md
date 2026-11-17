@@ -79,6 +79,24 @@ reduz detalhes na interface, mas não torna os protocolos indistinguíveis.
 Conflito de email tem mensagem genérica de cadastro. Não há migração de valor
 dos CNPJs numéricos existentes.
 
+E-mail identifica uma única conta globalmente, armazenado em minúsculas. A
+verificação de cadastro ignora diferença de caixa e o índice único arbitra
+cadastros concorrentes. A migração `20261116120000_unique_user_email` está
+preparada, **não aplicada nesta manutenção**: bloqueia se houver duplicados
+ignorando caixa, sem excluir ou unir contas, e exige reconciliação humana antes
+da aplicação. O login rejeita ambiguidades legadas com o mesmo `401` genérico;
+nunca escolhe uma empresa pela ordem dos registros ou pela senha.
+
+Manutenção local de dependências em 16/11/2026: auditoria dos lockfiles pnpm
+sem alertas nas dependências de produção da API e do Web, e sem alertas em
+desenvolvimento na API. No Web, restam somente dois avisos de desenvolvimento:
+`deepmerge` via gerador shadcn (baixo, sem versão corrigida publicada) e
+`minimatch` via ESLint (moderado, correção indicada na major 11). Essas
+ferramentas não recebem payloads do usuário da aplicação; não forçar mudança
+de major ou substituição de biblioteca somente para zerar a auditoria.
+O gerador shadcn foi movido para desenvolvimento. Auditoria é uma observação
+datada dos lockfiles, não garantia de ausência de vulnerabilidades na implantação.
+
 ### POST /auth/login — público
 
 Corpo `{ email, password }`. Resposta `200`:
@@ -206,6 +224,9 @@ delta, items, createdAt`. As respostas de venda não incluem `effectiveRate`.
 - `PATCH /sales/:id/confirm`: somente DRAFT → CONFIRMED; retorna `{ id, status }`.
 - `PATCH /sales/:id/cancel`: DRAFT → CANCELLED; aceita repetir em CANCELLED e
   rejeita CONFIRMED. Retorna `{ id, status }`.
+
+As transições usam atualização condicional atômica por ID, empresa e DRAFT;
+confirmação e cancelamento concorrentes não podem ambos alterar a venda.
 
 Antes de chamar a calculadora, simulação/venda validam todos os itens. Erro
 `422 NCM_NOT_ELIGIBLE` inclui `details.issues[]` com `itemIndex` (base zero),
