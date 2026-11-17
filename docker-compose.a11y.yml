@@ -107,7 +107,7 @@ services:
       start_period: 10s
 
   a11y:
-    image: mcr.microsoft.com/playwright:v1.55.0-noble
+    image: mcr.microsoft.com/playwright:v1.55.1-noble
     # Reap browser children and provide shared memory without sharing host IPC.
     init: true
     shm_size: 1gb
