@@ -1,5 +1,8 @@
 # Deploy e rollback — somente Web
 
+> Procedimento histórico do fechamento Web da v1.0. Para a manutenção do PR #21,
+> que também altera API e schema, usar o [plano específico](./pr21-migration-deploy-rollback.md).
+
 Procedimento manual, não autorização para executar comandos. Preencher os
 placeholders com configuração privada; não publicar hosts, endereços, caminhos
 operacionais, identificadores de backup ou saídas com segredos.
